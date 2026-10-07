@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>多機能 住宅ローン＆家計シミュレーター</title>
+  <title>住宅ローン＆家計統合シミュレーター</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <!-- アプリアイコンの設定（イラスト風住宅アイコン） -->
   <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/000000/real-estate.png">
@@ -32,7 +32,7 @@
       max-width: 650px;
     }
     h1 {
-      font-size: 1.4rem;
+      font-size: 1.3rem;
       text-align: center;
       margin-bottom: 16px;
     }
@@ -124,7 +124,7 @@
 </head>
 <body>
   <div class="container">
-    <h1>住宅ローン＆繰り上げ返済シミュレーター</h1>
+    <h1>住宅ローン＆家計統合シミュレーター</h1>
 
     <!-- 1. 基本条件 -->
     <div class="card">
@@ -135,7 +135,7 @@
           <input type="number" id="amount" value="3500" step="100">
         </div>
         <div class="input-group">
-          <label for="rate">金利 (%)</label>
+          <label for="rate">当初金利 (%)</label>
           <input type="number" id="rate" value="0.5" step="0.05">
         </div>
         <div class="input-group">
@@ -143,15 +143,44 @@
           <input type="number" id="years" value="35" step="1">
         </div>
         <div class="input-group">
-          <label for="income">世帯手取り月収 (万円)</label>
-          <input type="number" id="income" value="45" step="1">
+          <label for="bonus">ボーナス加算 (万円/回)</label>
+          <input type="number" id="bonus" value="0" step="1">
         </div>
       </div>
     </div>
 
-    <!-- 2. 繰り上げ返済の設定 -->
+    <!-- 2. 家計簿連携 -->
     <div class="card">
-      <div class="card-title">2. 繰り上げ返済実行条件</div>
+      <div class="card-title">2. 家計収支・貯蓄連携</div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label for="income">世帯手取り月収 (万円)</label>
+          <input type="number" id="income" value="45" step="1">
+        </div>
+        <div class="input-group">
+          <label for="livingCost">住居費以外の生活費 (万円)</label>
+          <input type="number" id="livingCost" value="25" step="1">
+        </div>
+      </div>
+      <div class="result-box">
+        <div class="result-row">
+          <span>毎月返済額 (当初):</span>
+          <span class="result-value" id="monthlyPayment" style="color:var(--primary-color);">0 円</span>
+        </div>
+        <div class="result-row">
+          <span>返済後の毎月手残り:</span>
+          <span class="result-value" id="monthlySavings" style="color:var(--secondary-color);">0 円</span>
+        </div>
+        <div class="result-row">
+          <span>年間貯蓄ペース (概算):</span>
+          <span id="annualSavingsText" style="font-weight:bold;">0 万円/年</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 3. 繰り上げ返済比較 -->
+    <div class="card">
+      <div class="card-title">3. 繰り上げ返済シナリオ比較</div>
       <div class="input-grid">
         <div class="input-group">
           <label for="prepayYear">繰り上げ時期 (経過年数)</label>
@@ -163,7 +192,6 @@
         </div>
       </div>
 
-      <!-- 比較結果表示エリア -->
       <div class="comparison-grid">
         <div class="comp-card" style="border-top: 3px solid var(--primary-color);">
           <div class="comp-title" style="color: var(--primary-color);">① 期間短縮型</div>
@@ -176,7 +204,7 @@
             <span id="shortSavedTime" class="result-value" style="color:var(--secondary-color);">0 ヶ月</span>
           </div>
           <div class="result-row">
-            <span>軽減利息総額:</span>
+            <span>軽減利息:</span>
             <span id="shortSavedInterest" class="result-value" style="color:var(--secondary-color);">0 万円</span>
           </div>
         </div>
@@ -192,16 +220,37 @@
             <span id="reduceMonthlyDiff" class="result-value" style="color:var(--secondary-color);">0 円/月</span>
           </div>
           <div class="result-row">
-            <span>軽減利息総額:</span>
+            <span>軽減利息:</span>
             <span id="reduceSavedInterest" class="result-value" style="color:var(--secondary-color);">0 万円</span>
           </div>
         </div>
       </div>
     </div>
 
-    <!-- 3. 比較グラフ -->
+    <!-- 4. 金利上昇リスク＆控除 -->
     <div class="card">
-      <div class="card-title">3. 返済方式別 残高推移の比較</div>
+      <div class="card-title">4. 金利上昇リスク＆住宅ローン控除</div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label for="riseYear">金利上昇時期 (年後)</label>
+          <input type="number" id="riseYear" value="5" step="1">
+        </div>
+        <div class="input-group">
+          <label for="newRate">上昇後の金利 (%)</label>
+          <input type="number" id="newRate" value="1.0" step="0.1">
+        </div>
+      </div>
+      <div class="result-box">
+        <div class="result-row">
+          <span>住宅ローン控除概算 (13年間):</span>
+          <span id="taxDeductionText" style="color:var(--secondary-color); font-weight:bold;">約 0 万円還元</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 5. 比較グラフ -->
+    <div class="card">
+      <div class="card-title">5. 残高推移グラフ（3パターン比較）</div>
       <div class="chart-container">
         <canvas id="loanChart"></canvas>
       </div>
@@ -214,50 +263,57 @@
 
     function calculate() {
       const amountWan = parseFloat(document.getElementById('amount').value) || 0;
-      const rate = parseFloat(document.getElementById('rate').value) || 0;
+      const initialRate = parseFloat(document.getElementById('rate').value) || 0;
       const years = parseInt(document.getElementById('years').value) || 0;
+      const bonusWan = parseFloat(document.getElementById('bonus').value) || 0;
+
+      const monthlyIncome = parseFloat(document.getElementById('income').value) || 0;
+      const livingCost = parseFloat(document.getElementById('livingCost').value) || 0;
 
       const prepayYear = parseInt(document.getElementById('prepayYear').value) || 0;
       const prepayAmountWan = parseFloat(document.getElementById('prepayAmount').value) || 0;
 
+      const riseYear = parseInt(document.getElementById('riseYear').value) || 0;
+      const newRate = parseFloat(document.getElementById('newRate').value) || 0;
+
       const totalMonths = years * 12;
-      const monthlyRate = (rate / 100) / 12;
+      const monthlyRate = (initialRate / 100) / 12;
       const principal = amountWan * 10000;
       const prepayVal = prepayAmountWan * 10000;
 
       if (principal <= 0 || totalMonths <= 0) return;
 
-      // 1. 通常の毎月返済額
+      // 初期の基本毎月返済額
       const normalPMT = calcPMT(principal, monthlyRate, totalMonths);
-      const prepayMonth = prepayYear * 12;
+      document.getElementById('monthlyPayment').innerText = Math.round(normalPMT).toLocaleString() + ' 円';
 
-      // 繰り上げ時の直前残高
+      // 家計計算
+      const monthlySavingsVal = (monthlyIncome * 10000) - (livingCost * 10000) - normalPMT;
+      const savingsElem = document.getElementById('monthlySavings');
+      savingsElem.innerText = Math.round(monthlySavingsVal).toLocaleString() + ' 円';
+      savingsElem.style.color = monthlySavingsVal < 0 ? 'var(--danger-color)' : 'var(--secondary-color)';
+      document.getElementById('annualSavingsText').innerText = Math.round((monthlySavingsVal * 12) / 10000) + ' 万円/年';
+
+      // 繰り上げ返済前の状態集計
+      const prepayMonth = prepayYear * 12;
       let balanceAtPrepay = principal;
-      let totalInterestNormal = 0;
 
       for (let m = 1; m <= prepayMonth; m++) {
         const interest = balanceAtPrepay * monthlyRate;
-        totalInterestNormal += interest;
         balanceAtPrepay -= (normalPMT - interest);
       }
 
-      // --- ① 期間短縮型の計算 ---
+      // --- ① 期間短縮型 ---
       const newBalShort = Math.max(0, balanceAtPrepay - prepayVal);
       let shortMonthsLeft = 0;
       let tempBal = newBalShort;
-      let totalInterestShort = totalInterestNormal;
-
       while (tempBal > 0 && shortMonthsLeft < (totalMonths - prepayMonth)) {
         const interest = tempBal * monthlyRate;
-        totalInterestShort += interest;
-        const p = normalPMT - interest;
-        tempBal -= p;
+        tempBal -= (normalPMT - interest);
         shortMonthsLeft++;
       }
-
       const savedMonths = (totalMonths - prepayMonth) - shortMonthsLeft;
-      
-      // 通常の残り利息 vs 短縮型の残り利息
+
       let normalRemainingInterest = 0;
       let tempBalNorm = balanceAtPrepay;
       for (let m = prepayMonth + 1; m <= totalMonths; m++) {
@@ -273,10 +329,9 @@
         shortRemainingInterest += interest;
         tempBal -= (normalPMT - interest);
       }
-
       const shortInterestSaved = normalRemainingInterest - shortRemainingInterest;
 
-      // --- ② 返済額軽減型の計算 ---
+      // --- ② 返済額軽減型 ---
       const newBalReduce = Math.max(0, balanceAtPrepay - prepayVal);
       const remainingMonths = totalMonths - prepayMonth;
       const newReducePMT = calcPMT(newBalReduce, monthlyRate, remainingMonths);
@@ -288,10 +343,9 @@
         reduceRemainingInterest += interest;
         tempBal -= (newReducePMT - interest);
       }
-
       const reduceInterestSaved = normalRemainingInterest - reduceRemainingInterest;
 
-      // --- 画面表示更新 ---
+      // --- 画面表示（繰り上げ比較） ---
       document.getElementById('shortMonthly').innerText = Math.round(normalPMT).toLocaleString() + ' 円';
       document.getElementById('shortSavedTime').innerText = Math.floor(savedMonths / 12) + '年 ' + (savedMonths % 12) + 'ヶ月';
       document.getElementById('shortSavedInterest').innerText = Math.round(shortInterestSaved / 10000).toLocaleString() + ' 万円';
@@ -300,7 +354,19 @@
       document.getElementById('reduceMonthlyDiff').innerText = '-' + Math.round(normalPMT - newReducePMT).toLocaleString() + ' 円';
       document.getElementById('reduceSavedInterest').innerText = Math.round(reduceInterestSaved / 10000).toLocaleString() + ' 万円';
 
-      // --- グラフ用データ作成 ---
+      // --- 住宅ローン控除概算 ---
+      let taxDeductionTotal = 0;
+      let tempTaxBal = principal;
+      for (let m = 1; m <= 156; m++) {
+        const interest = tempTaxBal * monthlyRate;
+        tempTaxBal -= (normalPMT - interest);
+        if (m % 12 === 0) {
+          taxDeductionTotal += Math.min(tempTaxBal * 0.007, 210000);
+        }
+      }
+      document.getElementById('taxDeductionText').innerText = '約 ' + Math.round(taxDeductionTotal / 10000).toLocaleString() + ' 万円還元';
+
+      // --- グラフ描画 ---
       const labels = [];
       const dataNormal = [];
       const dataShort = [];
@@ -316,32 +382,20 @@
         dataShort.push(Math.round(bShort / 10000));
         dataReduce.push(Math.round(bRed / 10000));
 
-        // 1年（12ヶ月）進める
         for (let m = 0; m < 12; m++) {
           const currentM = y * 12 + m + 1;
           
-          // 通常
-          if (bNorm > 0) {
-            bNorm -= (normalPMT - bNorm * monthlyRate);
-            if (bNorm < 0) bNorm = 0;
-          }
+          if (bNorm > 0) bNorm = Math.max(0, bNorm - (normalPMT - bNorm * monthlyRate));
 
-          // 短縮・軽減の分岐（繰り上げ実行）
           if (currentM === prepayMonth) {
             bShort = Math.max(0, bShort - prepayVal);
             bRed = Math.max(0, bRed - prepayVal);
           } else if (currentM > prepayMonth) {
-            if (bShort > 0) {
-              bShort -= (normalPMT - bShort * monthlyRate);
-              if (bShort < 0) bShort = 0;
-            }
-            if (bRed > 0) {
-              bRed -= (newReducePMT - bRed * monthlyRate);
-              if (bRed < 0) bRed = 0;
-            }
+            if (bShort > 0) bShort = Math.max(0, bShort - (normalPMT - bShort * monthlyRate));
+            if (bRed > 0) bRed = Math.max(0, bRed - (newReducePMT - bRed * monthlyRate));
           } else {
-            if (bShort > 0) bShort -= (normalPMT - bShort * monthlyRate);
-            if (bRed > 0) bRed -= (normalPMT - bRed * monthlyRate);
+            if (bShort > 0) bShort = Math.max(0, bShort - (normalPMT - bShort * monthlyRate));
+            if (bRed > 0) bRed = Math.max(0, bRed - (normalPMT - bRed * monthlyRate));
           }
         }
       }
@@ -371,12 +425,8 @@
         options: {
           responsive: true,
           maintainAspectRatio: false,
-          plugins: {
-            legend: { display: true, position: 'bottom' }
-          },
-          scales: {
-            y: { beginAtZero: true, title: { display: true, text: '残高 (万円)' } }
-          }
+          plugins: { legend: { display: true, position: 'bottom' } },
+          scales: { y: { beginAtZero: true, title: { display: true, text: '残高 (万円)' } } }
         }
       });
     }
