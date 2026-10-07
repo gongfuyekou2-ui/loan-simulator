@@ -27,10 +27,9 @@
       display: flex;
       justify-content: center;
     }
-    .container { width: 100%; max-width: 680px; }
+    .container { width: 100%; max-width: 720px; }
     h1 { font-size: 1.2rem; text-align: center; margin-bottom: 12px; }
     
-    /* タブ切替スタイル */
     .tab-container {
       display: flex;
       background-color: #e3e3e8;
@@ -75,6 +74,14 @@
       justify-content: space-between;
       align-items: center;
     }
+    .sub-title {
+      font-size: 0.85rem;
+      font-weight: bold;
+      color: var(--primary-color);
+      margin: 10px 0 6px 0;
+      border-left: 3px solid var(--primary-color);
+      padding-left: 6px;
+    }
     .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
     .input-group { margin-bottom: 8px; }
     label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; color: #555; }
@@ -91,13 +98,43 @@
     .comp-title { font-size: 0.8rem; font-weight: bold; margin-bottom: 6px; text-align: center; padding-bottom: 4px; border-bottom: 1px solid var(--border-color); }
     .chart-container { position: relative; height: 260px; width: 100%; margin-top: 10px; }
     .save-badge { font-size: 0.65rem; background-color: #e5f5e0; color: #2e7d32; padding: 2px 6px; border-radius: 10px; }
+    
+    /* テーブルスタイル */
+    .table-wrapper {
+      overflow-x: auto;
+      max-height: 400px;
+      margin-top: 10px;
+      border: 1px solid var(--border-color);
+      border-radius: 8px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.78rem;
+      text-align: right;
+      white-space: nowrap;
+    }
+    th, td {
+      padding: 8px 10px;
+      border-bottom: 1px solid var(--border-color);
+    }
+    th {
+      background-color: #f8f9fa;
+      position: sticky;
+      top: 0;
+      font-weight: bold;
+      color: #333;
+      text-align: center;
+    }
+    tr:nth-child(even) { background-color: #fafafa; }
+    .event-text { text-align: left; color: var(--primary-color); font-weight: bold; }
+    .minus-val { color: var(--danger-color); font-weight: bold; }
   </style>
 </head>
 <body>
   <div class="container">
     <h1>住宅ローン＆家計ライフプラン統合シミュレーター</h1>
 
-    <!-- タブ切り替えボタン -->
     <div class="tab-container">
       <button class="tab-button active" onclick="switchTab('loan')">住宅ローン＆繰り上げ</button>
       <button class="tab-button" onclick="switchTab('life')">詳細家計簿＆ライフプラン</button>
@@ -146,38 +183,80 @@
     <!-- ===== TAB 2: 詳細家計簿＆ライフプラン ===== -->
     <div id="tab-life" class="tab-content">
       <div class="card">
-        <div class="card-title">1. 詳細月間家計簿 (住居費除く)</div>
+        <div class="card-title">1. 詳細月間家計簿 (住居費除く) <span class="save-badge">自動保存中</span></div>
         <div class="input-grid">
           <div class="input-group"><label for="inc_hand">世帯手取り月収 (万円)</label><input type="number" id="inc_hand" value="45" step="1"></div>
           <div class="input-group"><label for="exp_food">食費・日用品 (万円)</label><input type="number" id="exp_food" value="8" step="0.5"></div>
           <div class="input-group"><label for="exp_util">電気・ガス・水道 (万円)</label><input type="number" id="exp_util" value="2.5" step="0.1"></div>
           <div class="input-group"><label for="exp_comm">通信・サブスク (万円)</label><input type="number" id="exp_comm" value="1.5" step="0.1"></div>
-          <div class="input-group"><label for="exp_car">自動車関連費 (万円)</label><input type="number" id="exp_car" value="3" step="0.5"></div>
+          <div class="input-group"><label for="exp_car">車の維持費・ガソリン (万円)</label><input type="number" id="exp_car" value="2" step="0.5"></div>
           <div class="input-group"><label for="exp_ins">各種保険料 (万円)</label><input type="number" id="exp_ins" value="2" step="0.5"></div>
           <div class="input-group"><label for="exp_play">教養・娯楽・小遣い (万円)</label><input type="number" id="exp_play" value="5" step="1"></div>
           <div class="input-group"><label for="exp_other">その他雑費 (万円)</label><input type="number" id="exp_other" value="3" step="0.5"></div>
         </div>
         <div class="result-box">
-          <div class="result-row"><span>住居費以外 合計生活費:</span><span id="totalLivingCost" class="result-value">0 万円</span></div>
+          <div class="result-row"><span>生活費 合計 (月額):</span><span id="totalLivingCost" class="result-value">0 万円</span></div>
           <div class="result-row"><span>ローン返済後の毎月手残り:</span><span id="netMonthlySavings" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">2. 将来ライフイベント・資産前提</div>
+        <div class="card-title">2. ライフイベント＆特別支出設定</div>
+        
+        <div class="sub-title">基本前提・退職・住居維持費</div>
         <div class="input-grid">
+          <div class="input-group"><label for="myAge">現在のご年齢 (歳)</label><input type="number" id="myAge" value="34" step="1"></div>
           <div class="input-group"><label for="initAsset">現在の総金融資産 (万円)</label><input type="number" id="initAsset" value="500" step="50"></div>
           <div class="input-group"><label for="wifeRetireYear">奥様退職予定 (年後)</label><input type="number" id="wifeRetireYear" value="10" step="1"></div>
-          <div class="input-group"><label for="wifeIncomeDec">退職後 世帯月収減少幅 (万円)</label><input type="number" id="wifeIncomeDec" value="15" step="1"></div>
-          <div class="input-group"><label for="carBuyYear">車買い替え時期 (年後)</label><input type="number" id="carBuyYear" value="5" step="1"></div>
-          <div class="input-group"><label for="carBuyCost">車買い替え予算 (万円)</label><input type="number" id="carBuyCost" value="250" step="10"></div>
+          <div class="input-group"><label for="wifeIncomeDec">退職後の世帯月収減少額 (万円)</label><input type="number" id="wifeIncomeDec" value="15" step="1"></div>
+          <div class="input-group"><label for="houseTax">固定資産税・都市計画税 (万円/年)</label><input type="number" id="houseTax" value="12" step="1"></div>
+          <div class="input-group"><label for="houseRepair">住宅修繕積立目安 (万円/年)</label><input type="number" id="houseRepair" value="10" step="1"></div>
+        </div>
+
+        <div class="sub-title">自動車の買い替え計画 (最大3回)</div>
+        <div class="input-grid">
+          <div class="input-group"><label for="car1Year">車 1回目買い替え (年後)</label><input type="number" id="car1Year" value="5" step="1"></div>
+          <div class="input-group"><label for="car1Cost">1回目 予算 (万円)</label><input type="number" id="car1Cost" value="250" step="10"></div>
+          <div class="input-group"><label for="car2Year">車 2回目買い替え (年後)</label><input type="number" id="car2Year" value="12" step="1"></div>
+          <div class="input-group"><label for="car2Cost">2回目 予算 (万円)</label><input type="number" id="car2Cost" value="300" step="10"></div>
+          <div class="input-group"><label for="car3Year">車 3回目買い替え (年後)</label><input type="number" id="car3Year" value="20" step="1"></div>
+          <div class="input-group"><label for="car3Cost">3回目 予算 (万円)</label><input type="number" id="car3Cost" value="300" step="10"></div>
+        </div>
+
+        <div class="sub-title">旅行・レジャー＆大型イベント</div>
+        <div class="input-grid">
+          <div class="input-group"><label for="travelAnnual">毎年の旅行・レジャー予算 (万円/年)</label><input type="number" id="travelAnnual" value="20" step="5"></div>
+          <div class="input-group"><label for="specialTravelYear">特別記念旅行 (年後)</label><input type="number" id="specialTravelYear" value="10" step="1"></div>
+          <div class="input-group"><label for="specialTravelCost">特別旅行 予算 (万円)</label><input type="number" id="specialTravelCost" value="100" step="10"></div>
           <div class="input-group"><label for="reformYear">大規模リフォーム (年後)</label><input type="number" id="reformYear" value="20" step="1"></div>
+          <div class="input-group"><label for="reformCost">リフォーム 予算 (万円)</label><input type="number" id="reformCost" value="250" step="10"></div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">3. 長期資産推移グラフ (40年予測)</div>
+        <div class="card-title">3. 40年間の資産推移グラフ</div>
         <div class="chart-container"><canvas id="assetChart"></canvas></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">4. 1年ごとの詳細キャッシュフロー年表</div>
+        <div class="table-wrapper">
+          <table>
+            <thead>
+              <tr>
+                <th>経過年</th>
+                <th>年齢</th>
+                <th>主なイベント</th>
+                <th>年間手取り収入</th>
+                <th>年間支出(総額)</th>
+                <th>年間収支</th>
+                <th>貯蓄残高</th>
+              </tr>
+            </thead>
+            <tbody id="cashflowTableBody">
+            </tbody>
+          </table>
+        </div>
       </div>
     </div>
 
@@ -201,21 +280,21 @@
 
     function restoreInputs() {
       document.querySelectorAll('input').forEach(input => {
-        const val = localStorage.getItem('loan_sim_v2_' + input.id);
+        const val = localStorage.getItem('loan_sim_v3_' + input.id);
         if (val !== null) input.value = val;
       });
     }
 
     function saveInputs() {
       document.querySelectorAll('input').forEach(input => {
-        localStorage.setItem('loan_sim_v2_' + input.id, input.value);
+        localStorage.setItem('loan_sim_v3_' + input.id, input.value);
       });
     }
 
     function calculate() {
       saveInputs();
 
-      // 基本ローン計算
+      // ローン基本計算
       const amountWan = parseFloat(document.getElementById('amount').value) || 0;
       const initialRate = parseFloat(document.getElementById('rate').value) || 0;
       const years = parseInt(document.getElementById('years').value) || 0;
@@ -237,7 +316,7 @@
         balanceAtPrepay -= (normalPMT - balanceAtPrepay * monthlyRate);
       }
 
-      // 繰り上げ計算 (短縮 vs 軽減)
+      // 繰り上げ計算
       const newBalShort = Math.max(0, balanceAtPrepay - prepayVal);
       let shortMonthsLeft = 0, tempBal = newBalShort;
       while (tempBal > 0 && shortMonthsLeft < (totalMonths - prepayMonth)) {
@@ -270,7 +349,7 @@
       document.getElementById('reduceMonthlyDiff').innerText = '-' + Math.round(normalPMT - newReducePMT).toLocaleString() + ' 円';
       document.getElementById('reduceSavedInterest').innerText = Math.round((normRemInt - redRemInt)/10000).toLocaleString() + ' 万円';
 
-      // 詳細家計簿計算
+      // 詳細家計計算
       const handInc = parseFloat(document.getElementById('inc_hand').value) || 0;
       const livingTotal = (parseFloat(document.getElementById('exp_food').value)||0) +
                           (parseFloat(document.getElementById('exp_util').value)||0) +
@@ -284,33 +363,82 @@
       const netSavingsWan = handInc - livingTotal - (normalPMT / 10000);
       document.getElementById('netMonthlySavings').innerText = netSavingsWan.toFixed(1) + ' 万円/月';
 
-      // 40年資産推移計算
+      // 40年キャッシュフロー＆ライフプラン計算
+      const startAge = parseInt(document.getElementById('myAge').value) || 34;
       const initAsset = parseFloat(document.getElementById('initAsset').value) || 0;
       const wifeRetireYear = parseInt(document.getElementById('wifeRetireYear').value) || 0;
       const wifeDec = parseFloat(document.getElementById('wifeIncomeDec').value) || 0;
-      const carYear = parseInt(document.getElementById('carBuyYear').value) || 0;
-      const carCost = parseFloat(document.getElementById('carBuyCost').value) || 0;
-      const reformYear = parseInt(document.getElementById('reformYear').value) || 0;
+      
+      const houseTax = parseFloat(document.getElementById('houseTax').value) || 0;
+      const houseRepair = parseFloat(document.getElementById('houseRepair').value) || 0;
+      
+      const car1Y = parseInt(document.getElementById('car1Year').value) || 0, car1C = parseFloat(document.getElementById('car1Cost').value) || 0;
+      const car2Y = parseInt(document.getElementById('car2Year').value) || 0, car2C = parseFloat(document.getElementById('car2Cost').value) || 0;
+      const car3Y = parseInt(document.getElementById('car3Year').value) || 0, car3C = parseFloat(document.getElementById('car3Cost').value) || 0;
+      
+      const travelAnnual = parseFloat(document.getElementById('travelAnnual').value) || 0;
+      const spTravelY = parseInt(document.getElementById('specialTravelYear').value) || 0, spTravelC = parseFloat(document.getElementById('specialTravelCost').value) || 0;
+      const reformY = parseInt(document.getElementById('reformYear').value) || 0, reformC = parseFloat(document.getElementById('reformCost').value) || 0;
 
       let currentAsset = initAsset;
       const assetLabels = [];
       const assetData = [];
+      const tableRowsHtml = [];
 
       for (let y = 0; y <= 40; y++) {
+        const currentAge = startAge + y;
+        let events = [];
+
+        // 収入計算
+        let mInc = handInc;
+        if (y >= wifeRetireYear && wifeRetireYear > 0) {
+          mInc -= wifeDec;
+          if (y === wifeRetireYear) events.push("奥様退職");
+        }
+        const annualIncome = mInc * 12;
+
+        // 支出計算
+        let annualExp = (livingTotal * 12) + (y < years ? (normalPMT / 10000 * 12) : 0) + houseTax + houseRepair + travelAnnual;
+
+        // イベン支出判定
+        if (y === car1Y && car1Y > 0) { annualExp += car1C; events.push(`車買い替え1回目(-${car1C}万)`); }
+        if (y === car2Y && car2Y > 0) { annualExp += car2C; events.push(`車買い替え2回目(-${car2C}万)`); }
+        if (y === car3Y && car3Y > 0) { annualExp += car3C; events.push(`車買い替え3回目(-${car3C}万)`); }
+
+        if (y === spTravelY && spTravelY > 0) { annualExp += spTravelC; events.push(`特別記念旅行(-${spTravelC}万)`); }
+        if (y === reformY && reformY > 0) { annualExp += reformC; events.push(`大規模リフォーム(-${reformC}万)`); }
+        if (y === prepayYear && prepayYear > 0) { annualExp += prepayAmountWan; events.push(`繰り上げ返済(-${prepayAmountWan}万)`); }
+        if (y === years) { events.push("住宅ローン完済！"); }
+
+        if (y === 0) {
+          events.push("スタート");
+        } else {
+          const annualNet = annualIncome - annualExp;
+          currentAsset += annualNet;
+        }
+
         assetLabels.push(y + '年後');
         assetData.push(Math.round(currentAsset));
 
-        let monthlyIncome = handInc;
-        if (y >= wifeRetireYear) monthlyIncome -= wifeDec;
+        const netVal = y === 0 ? 0 : (annualIncome - annualExp);
+        const netClass = netVal < 0 ? 'minus-val' : '';
+        const assetClass = currentAsset < 0 ? 'minus-val' : '';
 
-        let annualNet = (monthlyIncome - livingTotal - (y < years ? normalPMT/10000 : 0)) * 12;
-        currentAsset += annualNet;
-
-        if (y === carYear) currentAsset -= carCost;
-        if (y === reformYear) currentAsset -= 200; // リフォーム代概算200万
+        tableRowsHtml.push(`
+          <tr>
+            <td style="text-align:center;">${y === 0 ? '現在' : y + '年後'}</td>
+            <td style="text-align:center;">${currentAge}歳</td>
+            <td class="event-text">${events.join(', ')}</td>
+            <td>${Math.round(annualIncome)} 万円</td>
+            <td>${Math.round(annualExp)} 万円</td>
+            <td class="${netClass}">${y === 0 ? '-' : Math.round(netVal) + ' 万円'}</td>
+            <td class="${assetClass}">${Math.round(currentAsset)} 万円</td>
+          </tr>
+        `);
       }
 
-      // グラフ描画
+      document.getElementById('cashflowTableBody').innerHTML = tableRowsHtml.join('');
+
       updateLoanChart(years, principal, normalPMT, monthlyRate, prepayMonth, prepayVal, newReducePMT);
       updateAssetChart(assetLabels, assetData);
     }
