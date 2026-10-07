@@ -49,6 +49,9 @@
       margin-bottom: 12px;
       padding-bottom: 6px;
       border-bottom: 2px solid var(--primary-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
     .input-grid {
       display: grid;
@@ -120,6 +123,14 @@
       width: 100%;
       margin-top: 10px;
     }
+    .save-badge {
+      font-size: 0.7rem;
+      background-color: #e5f5e0;
+      color: #2e7d32;
+      padding: 2px 8px;
+      border-radius: 12px;
+      font-weight: normal;
+    }
   </style>
 </head>
 <body>
@@ -128,7 +139,10 @@
 
     <!-- 1. 基本条件 -->
     <div class="card">
-      <div class="card-title">1. ローン基本条件</div>
+      <div class="card-title">
+        1. ローン基本条件
+        <span class="save-badge">自動保存中</span>
+      </div>
       <div class="input-grid">
         <div class="input-group">
           <label for="amount">借入金額 (万円)</label>
@@ -261,7 +275,28 @@
   <script>
     let loanChart = null;
 
+    // 入力値の復元関数 (localStorage)
+    function restoreInputs() {
+      const inputs = document.querySelectorAll('input');
+      inputs.forEach(input => {
+        const savedVal = localStorage.getItem('loan_sim_' + input.id);
+        if (savedVal !== null) {
+          input.value = savedVal;
+        }
+      });
+    }
+
+    // 入力値の保存関数 (localStorage)
+    function saveInputs() {
+      const inputs = document.querySelectorAll('input');
+      inputs.forEach(input => {
+        localStorage.setItem('loan_sim_' + input.id, input.value);
+      });
+    }
+
     function calculate() {
+      saveInputs(); // 計算時に数値を記憶
+
       const amountWan = parseFloat(document.getElementById('amount').value) || 0;
       const initialRate = parseFloat(document.getElementById('rate').value) || 0;
       const years = parseInt(document.getElementById('years').value) || 0;
@@ -430,6 +465,9 @@
         }
       });
     }
+
+    // 初期化処理：保存値を復元してから計算・リスナー登録
+    restoreInputs();
 
     const inputs = document.querySelectorAll('input');
     inputs.forEach(input => input.addEventListener('input', calculate));
