@@ -3,10 +3,14 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>住宅ローンシミュレーター</title>
+  <title>多機能 住宅ローン＆家計シミュレーター</title>
+  <!-- グラフ描画用ライブラリ (Chart.js) -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <style>
     :root {
       --primary-color: #007aff;
+      --secondary-color: #34c759;
+      --danger-color: #ff3b30;
       --bg-color: #f2f2f7;
       --card-bg: #ffffff;
       --text-color: #1c1c1e;
@@ -17,134 +21,352 @@
       background-color: var(--bg-color);
       color: var(--text-color);
       margin: 0;
-      padding: 16px;
+      padding: 12px;
       display: flex;
       justify-content: center;
     }
     .container {
       width: 100%;
-      max-width: 480px;
+      max-width: 600px;
     }
     h1 {
-      font-size: 1.5rem;
+      font-size: 1.4rem;
       text-align: center;
-      margin-bottom: 20px;
+      margin-bottom: 16px;
     }
     .card {
       background-color: var(--card-bg);
       border-radius: 12px;
-      padding: 20px;
-      margin-bottom: 16px;
+      padding: 16px;
+      margin-bottom: 14px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
     }
-    .input-group {
-      margin-bottom: 16px;
+    .card-title {
+      font-size: 1.05rem;
+      font-weight: bold;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--primary-color);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
     }
-    .input-group:last-child {
-      margin-bottom: 0;
+    .input-grid {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 10px;
+    }
+    .input-group {
+      margin-bottom: 10px;
+    }
+    .input-group.full {
+      grid-column: span 2;
     }
     label {
       display: block;
-      font-size: 0.9rem;
+      font-size: 0.8rem;
       font-weight: 600;
-      margin-bottom: 6px;
+      margin-bottom: 4px;
+      color: #555;
     }
-    input, select {
+    input {
       width: 100%;
-      padding: 12px;
-      font-size: 1rem;
+      padding: 10px;
+      font-size: 0.95rem;
       border: 1px solid var(--border-color);
       border-radius: 8px;
       box-sizing: border-box;
       background-color: #fff;
     }
-    .result-title {
+    .result-box {
+      background-color: #f8f9fa;
+      border-radius: 8px;
+      padding: 12px;
+      margin-top: 8px;
+    }
+    .result-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 6px;
       font-size: 0.9rem;
-      color: #666;
-      margin-bottom: 4px;
+    }
+    .result-row:last-child {
+      margin-bottom: 0;
     }
     .result-value {
-      font-size: 1.8rem;
       font-weight: bold;
+      font-size: 1.1rem;
       color: var(--primary-color);
     }
-    .result-sub {
-      font-size: 1rem;
-      color: #333;
-      margin-top: 12px;
-      padding-top: 12px;
-      border-top: 1px dashed var(--border-color);
+    .highlight {
+      color: var(--secondary-color);
+    }
+    .chart-container {
+      position: relative;
+      height: 250px;
+      width: 100%;
+      margin-top: 10px;
     }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>住宅ローン計算</h1>
+    <h1>住宅ローン＆家計シミュレーター</h1>
 
+    <!-- 1. 借入条件 -->
     <div class="card">
-      <div class="input-group">
-        <label for="amount">借入金額 (万円)</label>
-        <input type="number" id="amount" value="3000" step="10">
-      </div>
-
-      <div class="input-group">
-        <label for="rate">金利 (%)</label>
-        <input type="number" id="rate" value="0.5" step="0.01">
-      </div>
-
-      <div class="input-group">
-        <label for="years">返済期間 (年)</label>
-        <input type="number" id="years" value="35" step="1">
+      <div class="card-title">1. ローン基本条件</div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label for="amount">借入金額 (万円)</label>
+          <input type="number" id="amount" value="3500" step="100">
+        </div>
+        <div class="input-group">
+          <label for="rate">当初金利 (%)</label>
+          <input type="number" id="rate" value="0.5" step="0.05">
+        </div>
+        <div class="input-group">
+          <label for="years">返済期間 (年)</label>
+          <input type="number" id="years" value="35" step="1">
+        </div>
+        <div class="input-group">
+          <label for="bonus">ボーナス加算 (万円/回)</label>
+          <input type="number" id="bonus" value="0" step="1">
+        </div>
       </div>
     </div>
 
+    <!-- 2. 家計簿連動シミュレーション -->
     <div class="card">
-      <div class="result-title">毎月の返済額</div>
-      <div class="result-value" id="monthly-payment">0 円</div>
-      
-      <div class="result-sub">
-        <div>総返済額: <strong id="total-payment">0</strong> 円</div>
-        <div>総利息額: <strong id="total-interest">0</strong> 円</div>
+      <div class="card-title">2. 家計収支・貯蓄連携</div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label for="income">世帯月手取り収入 (万円)</label>
+          <input type="number" id="income" value="45" step="1">
+        </div>
+        <div class="input-group">
+          <label for="livingCost">住居費以外の生活費 (万円)</label>
+          <input type="number" id="livingCost" value="25" step="1">
+        </div>
+      </div>
+      <div class="result-box">
+        <div class="result-row">
+          <span>毎月返済額:</span>
+          <span class="result-value" id="monthlyPayment">0 円</span>
+        </div>
+        <div class="result-row">
+          <span>ローン返済後の毎月手残り:</span>
+          <span class="result-value highlight" id="monthlySavings">0 円</span>
+        </div>
+        <div class="result-row">
+          <span>年間貯蓄ペース (概算):</span>
+          <span id="annualSavingsText" style="font-weight:bold;">0 万円/年</span>
+        </div>
       </div>
     </div>
+
+    <!-- 3. 変動金利上昇 & 繰り上げ返済シナリオ -->
+    <div class="card">
+      <div class="card-title">3. 条件変更・リスク検証</div>
+      <div class="input-grid">
+        <div class="input-group">
+          <label for="riseYear">金利上昇タイミング (年後)</label>
+          <input type="number" id="riseYear" value="5" step="1">
+        </div>
+        <div class="input-group">
+          <label for="newRate">上昇後の金利 (%)</label>
+          <input type="number" id="newRate" value="1.0" step="0.1">
+        </div>
+        <div class="input-group">
+          <label for="prepayYear">繰り上げ返済時期 (年後)</label>
+          <input type="number" id="prepayYear" value="10" step="1">
+        </div>
+        <div class="input-group">
+          <label for="prepayAmount">繰り上げ額 (万円)</label>
+          <input type="number" id="prepayAmount" value="200" step="50">
+        </div>
+      </div>
+      <div class="result-box">
+        <div class="result-row">
+          <span>総返済額:</span>
+          <span id="totalPaymentText">0 万円</span>
+        </div>
+        <div class="result-row">
+          <span>うち総利息額:</span>
+          <span id="totalInterestText" style="color:var(--danger-color);">0 万円</span>
+        </div>
+        <div class="result-row">
+          <span>住宅ローン控除概算(13年間):</span>
+          <span id="taxDeductionText" style="color:var(--secondary-color);">0 万円還元</span>
+        </div>
+      </div>
+    </div>
+
+    <!-- 4. 返済・残高推移グラフ -->
+    <div class="card">
+      <div class="card-title">4. 住宅ローン残高推移グラフ</div>
+      <div class="chart-container">
+        <canvas id="loanChart"></canvas>
+      </div>
+    </div>
+
   </div>
 
   <script>
+    let loanChart = null;
+
     function calculate() {
       const amountWan = parseFloat(document.getElementById('amount').value) || 0;
-      const annualRate = parseFloat(document.getElementById('rate').value) || 0;
-      const years = parseInt(document.getElementById('years').value) || 0;
+      const initialRate = parseFloat(document.getElementById('rate').value) || 0;
+      const totalYears = parseInt(document.getElementById('years').value) || 0;
+      const bonusWan = parseFloat(document.getElementById('bonus').value) || 0;
 
-      const principal = amountWan * 10000;
-      const monthlyRate = (annualRate / 100) / 12;
-      const numPayments = years * 12;
+      const monthlyIncome = parseFloat(document.getElementById('income').value) || 0;
+      const livingCost = parseFloat(document.getElementById('livingCost').value) || 0;
 
-      if (principal <= 0 || numPayments <= 0) {
-        document.getElementById('monthly-payment').innerText = '0 円';
-        document.getElementById('total-payment').innerText = '0';
-        document.getElementById('total-interest').innerText = '0';
-        return;
+      const riseYear = parseInt(document.getElementById('riseYear').value) || 0;
+      const newRate = parseFloat(document.getElementById('newRate').value) || 0;
+
+      const prepayYear = parseInt(document.getElementById('prepayYear').value) || 0;
+      const prepayAmountWan = parseFloat(document.getElementById('prepayAmount').value) || 0;
+
+      const totalMonths = totalYears * 12;
+      let balance = amountWan * 10000;
+      const bonusPrincipalTotal = bonusWan * 2 * 10000 * totalYears; 
+      
+      // 簡易元利均等計算
+      let currentRate = initialRate / 100 / 12;
+      let monthlyPayment = calcPMT(balance - (bonusWan * 2 * 10000 * totalYears / 2), currentRate, totalMonths);
+      
+      // 1カ月目の基本返済額
+      const initialMonthlyPayment = Math.round(monthlyPayment);
+
+      // 年次シミュレーション用
+      let yearlyBalances = [];
+      let yearlyInterests = [];
+      let yearlyPrincipals = [];
+      let labels = [];
+
+      let totalInterestAcc = 0;
+      let totalPaidAcc = 0;
+      let currentBalance = balance;
+      let taxDeductionTotal = 0;
+
+      let activeMonths = totalMonths;
+
+      for (let m = 1; m <= totalMonths; m++) {
+        if (currentBalance <= 0) break;
+
+        // 金利変更の判定
+        if (riseYear > 0 && m === (riseYear * 12 + 1)) {
+          currentRate = newRate / 100 / 12;
+          const remainingMonths = activeMonths - m + 1;
+          monthlyPayment = calcPMT(currentBalance, currentRate, remainingMonths);
+        }
+
+        // 繰り上げ返済の判定
+        if (prepayYear > 0 && m === (prepayYear * 12) && prepayAmountWan > 0) {
+          const prepayVal = prepayAmountWan * 10000;
+          currentBalance = Math.max(0, currentBalance - prepayVal);
+          totalPaidAcc += prepayVal;
+        }
+
+        // 月利・返済処理
+        const interestOfMonth = currentBalance * currentRate;
+        let principalOfMonth = monthlyPayment - interestOfMonth;
+
+        if (currentBalance < principalOfMonth) {
+          principalOfMonth = currentBalance;
+        }
+
+        currentBalance -= principalOfMonth;
+        totalInterestAcc += interestOfMonth;
+        totalPaidAcc += (principalOfMonth + interestOfMonth);
+
+        // 住宅ローン控除（13年目まで、年末残高の0.7%計算）
+        if (m <= 156 && m % 12 === 0) {
+          taxDeductionTotal += Math.min(currentBalance * 0.007, 210000); // 上限簡易計算
+        }
+
+        // 年次集計 (グラフ用)
+        if (m % 12 === 0 || currentBalance === 0) {
+          const yearNum = Math.ceil(m / 12);
+          labels.push(yearNum + '年目');
+          yearlyBalances.push(Math.round(currentBalance / 10000));
+        }
       }
 
-      let monthlyPayment = 0;
-      if (monthlyRate === 0) {
-        monthlyPayment = principal / numPayments;
+      // 結果の画面表示
+      document.getElementById('monthlyPayment').innerText = initialMonthlyPayment.toLocaleString() + ' 円';
+      
+      const monthlySavingsVal = (monthlyIncome * 10000) - (livingCost * 10000) - initialMonthlyPayment;
+      const savingsElem = document.getElementById('monthlySavings');
+      savingsElem.innerText = monthlySavingsVal.toLocaleString() + ' 円';
+      if (monthlySavingsVal < 0) {
+        savingsElem.style.color = 'var(--danger-color)';
       } else {
-        monthlyPayment = principal * (monthlyRate * Math.pow(1 + monthlyRate, numPayments)) / (Math.pow(1 + monthlyRate, numPayments) - 1);
+        savingsElem.style.color = 'var(--secondary-color)';
       }
 
-      const totalPayment = monthlyPayment * numPayments;
-      const totalInterest = totalPayment - principal;
+      const annualSavings = Math.round((monthlySavingsVal * 12) / 10000);
+      document.getElementById('annualSavingsText').innerText = annualSavings + ' 万円/年';
 
-      document.getElementById('monthly-payment').innerText = Math.round(monthlyPayment).toLocaleString() + ' 円';
-      document.getElementById('total-payment').innerText = Math.round(totalPayment).toLocaleString();
-      document.getElementById('total-interest').innerText = Math.round(totalInterest).toLocaleString();
+      document.getElementById('totalPaymentText').innerText = Math.round(totalPaidAcc / 10000).toLocaleString() + ' 万円';
+      document.getElementById('totalInterestText').innerText = Math.round(totalInterestAcc / 10000).toLocaleString() + ' 万円';
+      document.getElementById('taxDeductionText').innerText = '約 ' + Math.round(taxDeductionTotal / 10000).toLocaleString() + ' 万円還元';
+
+      // グラフ描画・更新
+      updateChart(labels, yearlyBalances);
     }
 
-    document.getElementById('amount').addEventListener('input', calculate);
-    document.getElementById('rate').addEventListener('input', calculate);
-    document.getElementById('years').addEventListener('input', calculate);
+    function calcPMT(pv, rate, nper) {
+      if (rate === 0) return pv / nper;
+      return pv * (rate * Math.pow(1 + rate, nper)) / (Math.pow(1 + rate, nper) - 1);
+    }
 
+    function updateChart(labels, balances) {
+      const ctx = document.getElementById('loanChart').getContext('2d');
+      if (loanChart) {
+        loanChart.destroy();
+      }
+
+      loanChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: 'ローン残高 (万円)',
+            data: balances,
+            borderColor: '#007aff',
+            backgroundColor: 'rgba(0, 122, 255, 0.1)',
+            fill: true,
+            tension: 0.2
+          }]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          plugins: {
+            legend: { display: true, position: 'bottom' }
+          },
+          scales: {
+            y: {
+              beginAtZero: true,
+              title: { display: true, text: '残高 (万円)' }
+            }
+          }
+        }
+      });
+    }
+
+    // イベントリスナー設定
+    const inputs = document.querySelectorAll('input');
+    inputs.forEach(input => {
+      input.addEventListener('input', calculate);
+    });
+
+    // 初回計算
     calculate();
   </script>
 </body>
