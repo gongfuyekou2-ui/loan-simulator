@@ -5,7 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>統合住宅ローン＆ライフプランシミュレーター</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <link rel="apple-touch-icon" href="https://img.icons8.com/color/180/000000/real-estate.png">
+  <!-- アプリアイコンの設定（ミニマルグラデーションタイプ） -->
+  <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/180/000000/real-estate.png">
   <style>
     :root {
       --primary-color: #007aff;
@@ -276,7 +277,6 @@
   <script>
     let loanChart = null;
     let assetChart = null;
-    let isIncomeAutoUpdated = false;
 
     function switchTab(tabName) {
       document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
@@ -311,14 +311,12 @@
     }
 
     function calculate(event) {
-      // 夫婦の手取り年収が変更された場合、月収を自動更新
       if (event && (event.target.id === 'inc_husband_net' || event.target.id === 'inc_wife_net')) {
         syncIncomeFromYearly();
       }
 
       saveInputs();
 
-      // ローン基本計算
       const amountWan = parseFloat(document.getElementById('amount').value) || 0;
       const initialRate = parseFloat(document.getElementById('rate').value) || 0;
       const years = parseInt(document.getElementById('years').value) || 0;
@@ -340,7 +338,6 @@
         balanceAtPrepay -= (normalPMT - balanceAtPrepay * monthlyRate);
       }
 
-      // 繰り上げ計算
       const newBalShort = Math.max(0, balanceAtPrepay - prepayVal);
       let shortMonthsLeft = 0, tempBal = newBalShort;
       while (tempBal > 0 && shortMonthsLeft < (totalMonths - prepayMonth)) {
@@ -373,7 +370,6 @@
       document.getElementById('reduceMonthlyDiff').innerText = '-' + Math.round(normalPMT - newReducePMT).toLocaleString() + ' 円';
       document.getElementById('reduceSavedInterest').innerText = Math.round((normRemInt - redRemInt)/10000).toLocaleString() + ' 万円';
 
-      // 夫婦の年収集計
       const hGross = parseFloat(document.getElementById('inc_husband_gross').value) || 0;
       const hNet = parseFloat(document.getElementById('inc_husband_net').value) || 0;
       const wGross = parseFloat(document.getElementById('inc_wife_gross').value) || 0;
@@ -385,7 +381,6 @@
       document.getElementById('totalGrossIncome').innerText = totalGross.toFixed(0) + ' 万円';
       document.getElementById('totalNetIncome').innerText = totalNet.toFixed(0) + ' 万円';
 
-      // 詳細家計計算
       const handInc = parseFloat(document.getElementById('inc_hand').value) || 0;
       const livingTotal = (parseFloat(document.getElementById('exp_food').value)||0) +
                           (parseFloat(document.getElementById('exp_util').value)||0) +
@@ -399,7 +394,6 @@
       const netSavingsWan = handInc - livingTotal - (normalPMT / 10000);
       document.getElementById('netMonthlySavings').innerText = netSavingsWan.toFixed(1) + ' 万円/月';
 
-      // 40年キャッシュフロー＆ライフプラン計算
       const startAge = parseInt(document.getElementById('myAge').value) || 34;
       const initAsset = parseFloat(document.getElementById('initAsset').value) || 0;
       const wifeRetireYear = parseInt(document.getElementById('wifeRetireYear').value) || 0;
@@ -424,7 +418,6 @@
         const currentAge = startAge + y;
         let events = [];
 
-        // 夫と妻の年収・手取りの年度別シミュレーション
         let currentHGross = hGross;
         let currentHNet = hNet;
         let currentWGross = wGross;
@@ -439,15 +432,13 @@
         const currentYearlyGross = currentHGross + currentWGross;
         const currentYearlyNet = currentHNet + currentWNet;
 
-        // 支出計算
         let annualExp = (livingTotal * 12) + (y < years ? (normalPMT / 10000 * 12) : 0) + houseTax + houseRepair + travelAnnual;
 
-        // イベント支出判定
         if (y === car1Y && car1Y > 0) { annualExp += car1C; events.push(`車1回目(-${car1C}万)`); }
         if (y === car2Y && car2Y > 0) { annualExp += car2C; events.push(`車2回目(-${car2C}万)`); }
         if (y === car3Y && car3Y > 0) { annualExp += car3C; events.push(`車3回目(-${car3C}万)`); }
 
-        if (y === spTravelY && spTravelY > 0) { annualExp += spTravelC; events.push(`特別記念旅行(-${spTravelC}万)`); }
+        if (y === spTravelY && spTravelY > 0) { annualExp += spTravelC; events.push(`リフレッシュ旅行(-${spTravelC}万)`); }
         if (y === reformY && reformY > 0) { annualExp += reformC; events.push(`リフォーム(-${reformC}万)`); }
         if (y === prepayYear && prepayYear > 0) { annualExp += prepayAmountWan; events.push(`繰り上げ返済(-${prepayAmountWan}万)`); }
         if (y === years) { events.push("住宅ローン完済！"); }
