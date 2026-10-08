@@ -99,7 +99,6 @@
     .chart-container { position: relative; height: 260px; width: 100%; margin-top: 10px; }
     .save-badge { font-size: 0.65rem; background-color: #e5f5e0; color: #2e7d32; padding: 2px 6px; border-radius: 10px; }
     
-    /* テーブルスタイル */
     .table-wrapper {
       overflow-x: auto;
       max-height: 400px;
@@ -183,7 +182,17 @@
     <!-- ===== TAB 2: 詳細家計簿＆ライフプラン ===== -->
     <div id="tab-life" class="tab-content">
       <div class="card">
-        <div class="card-title">1. 詳細月間家計簿 (住居費除く) <span class="save-badge">自動保存中</span></div>
+        <div class="card-title">1. 世帯収入＆詳細月間家計簿 <span class="save-badge">自動保存中</span></div>
+        
+        <div class="sub-title">夫婦の年収設定</div>
+        <div class="input-grid">
+          <div class="input-group"><label for="inc_husband_gross">夫 額面年収 (万円)</label><input type="number" id="inc_husband_gross" value="500" step="10"></div>
+          <div class="input-group"><label for="inc_husband_net">夫 想定手取り年収 (万円)</label><input type="number" id="inc_husband_net" value="390" step="10"></div>
+          <div class="input-group"><label for="inc_wife_gross">妻 額面年収 (万円)</label><input type="number" id="inc_wife_gross" value="200" step="10"></div>
+          <div class="input-group"><label for="inc_wife_net">妻 想定手取り年収 (万円)</label><input type="number" id="inc_wife_net" value="150" step="10"></div>
+        </div>
+
+        <div class="sub-title">月間収支・支出項目 (住居費除く)</div>
         <div class="input-grid">
           <div class="input-group"><label for="inc_hand">世帯手取り月収 (万円)</label><input type="number" id="inc_hand" value="45" step="1"></div>
           <div class="input-group"><label for="exp_food">食費・日用品 (万円)</label><input type="number" id="exp_food" value="8" step="0.5"></div>
@@ -195,6 +204,8 @@
           <div class="input-group"><label for="exp_other">その他雑費 (万円)</label><input type="number" id="exp_other" value="3" step="0.5"></div>
         </div>
         <div class="result-box">
+          <div class="result-row"><span>世帯 額面年収 合計:</span><span id="totalGrossIncome" class="result-value">0 万円</span></div>
+          <div class="result-row"><span>世帯 手取り年収 合計:</span><span id="totalNetIncome" class="result-value" style="color:var(--primary-color);">0 万円</span></div>
           <div class="result-row"><span>生活費 合計 (月額):</span><span id="totalLivingCost" class="result-value">0 万円</span></div>
           <div class="result-row"><span>ローン返済後の毎月手残り:</span><span id="netMonthlySavings" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
         </div>
@@ -208,7 +219,6 @@
           <div class="input-group"><label for="myAge">現在のご年齢 (歳)</label><input type="number" id="myAge" value="34" step="1"></div>
           <div class="input-group"><label for="initAsset">現在の総金融資産 (万円)</label><input type="number" id="initAsset" value="500" step="50"></div>
           <div class="input-group"><label for="wifeRetireYear">奥様退職予定 (年後)</label><input type="number" id="wifeRetireYear" value="10" step="1"></div>
-          <div class="input-group"><label for="wifeIncomeDec">退職後の世帯月収減少額 (万円)</label><input type="number" id="wifeIncomeDec" value="15" step="1"></div>
           <div class="input-group"><label for="houseTax">固定資産税・都市計画税 (万円/年)</label><input type="number" id="houseTax" value="12" step="1"></div>
           <div class="input-group"><label for="houseRepair">住宅修繕積立目安 (万円/年)</label><input type="number" id="houseRepair" value="10" step="1"></div>
         </div>
@@ -247,7 +257,8 @@
                 <th>経過年</th>
                 <th>年齢</th>
                 <th>主なイベント</th>
-                <th>年間手取り収入</th>
+                <th>世帯額面年収</th>
+                <th>世帯手取り年収</th>
                 <th>年間支出(総額)</th>
                 <th>年間収支</th>
                 <th>貯蓄残高</th>
@@ -265,6 +276,7 @@
   <script>
     let loanChart = null;
     let assetChart = null;
+    let isIncomeAutoUpdated = false;
 
     function switchTab(tabName) {
       document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
@@ -280,18 +292,30 @@
 
     function restoreInputs() {
       document.querySelectorAll('input').forEach(input => {
-        const val = localStorage.getItem('loan_sim_v3_' + input.id);
+        const val = localStorage.getItem('loan_sim_v4_' + input.id);
         if (val !== null) input.value = val;
       });
     }
 
     function saveInputs() {
       document.querySelectorAll('input').forEach(input => {
-        localStorage.setItem('loan_sim_v3_' + input.id, input.value);
+        localStorage.setItem('loan_sim_v4_' + input.id, input.value);
       });
     }
 
-    function calculate() {
+    function syncIncomeFromYearly() {
+      const hNet = parseFloat(document.getElementById('inc_husband_net').value) || 0;
+      const wNet = parseFloat(document.getElementById('inc_wife_net').value) || 0;
+      const monthlyComputed = (hNet + wNet) / 12;
+      document.getElementById('inc_hand').value = monthlyComputed.toFixed(1);
+    }
+
+    function calculate(event) {
+      // 夫婦の手取り年収が変更された場合、月収を自動更新
+      if (event && (event.target.id === 'inc_husband_net' || event.target.id === 'inc_wife_net')) {
+        syncIncomeFromYearly();
+      }
+
       saveInputs();
 
       // ローン基本計算
@@ -349,6 +373,18 @@
       document.getElementById('reduceMonthlyDiff').innerText = '-' + Math.round(normalPMT - newReducePMT).toLocaleString() + ' 円';
       document.getElementById('reduceSavedInterest').innerText = Math.round((normRemInt - redRemInt)/10000).toLocaleString() + ' 万円';
 
+      // 夫婦の年収集計
+      const hGross = parseFloat(document.getElementById('inc_husband_gross').value) || 0;
+      const hNet = parseFloat(document.getElementById('inc_husband_net').value) || 0;
+      const wGross = parseFloat(document.getElementById('inc_wife_gross').value) || 0;
+      const wNet = parseFloat(document.getElementById('inc_wife_net').value) || 0;
+
+      const totalGross = hGross + wGross;
+      const totalNet = hNet + wNet;
+
+      document.getElementById('totalGrossIncome').innerText = totalGross.toFixed(0) + ' 万円';
+      document.getElementById('totalNetIncome').innerText = totalNet.toFixed(0) + ' 万円';
+
       // 詳細家計計算
       const handInc = parseFloat(document.getElementById('inc_hand').value) || 0;
       const livingTotal = (parseFloat(document.getElementById('exp_food').value)||0) +
@@ -367,7 +403,6 @@
       const startAge = parseInt(document.getElementById('myAge').value) || 34;
       const initAsset = parseFloat(document.getElementById('initAsset').value) || 0;
       const wifeRetireYear = parseInt(document.getElementById('wifeRetireYear').value) || 0;
-      const wifeDec = parseFloat(document.getElementById('wifeIncomeDec').value) || 0;
       
       const houseTax = parseFloat(document.getElementById('houseTax').value) || 0;
       const houseRepair = parseFloat(document.getElementById('houseRepair').value) || 0;
@@ -389,38 +424,45 @@
         const currentAge = startAge + y;
         let events = [];
 
-        // 収入計算
-        let mInc = handInc;
+        // 夫と妻の年収・手取りの年度別シミュレーション
+        let currentHGross = hGross;
+        let currentHNet = hNet;
+        let currentWGross = wGross;
+        let currentWNet = wNet;
+
         if (y >= wifeRetireYear && wifeRetireYear > 0) {
-          mInc -= wifeDec;
+          currentWGross = 0;
+          currentWNet = 0;
           if (y === wifeRetireYear) events.push("奥様退職");
         }
-        const annualIncome = mInc * 12;
+
+        const currentYearlyGross = currentHGross + currentWGross;
+        const currentYearlyNet = currentHNet + currentWNet;
 
         // 支出計算
         let annualExp = (livingTotal * 12) + (y < years ? (normalPMT / 10000 * 12) : 0) + houseTax + houseRepair + travelAnnual;
 
-        // イベン支出判定
-        if (y === car1Y && car1Y > 0) { annualExp += car1C; events.push(`車買い替え1回目(-${car1C}万)`); }
-        if (y === car2Y && car2Y > 0) { annualExp += car2C; events.push(`車買い替え2回目(-${car2C}万)`); }
-        if (y === car3Y && car3Y > 0) { annualExp += car3C; events.push(`車買い替え3回目(-${car3C}万)`); }
+        // イベント支出判定
+        if (y === car1Y && car1Y > 0) { annualExp += car1C; events.push(`車1回目(-${car1C}万)`); }
+        if (y === car2Y && car2Y > 0) { annualExp += car2C; events.push(`車2回目(-${car2C}万)`); }
+        if (y === car3Y && car3Y > 0) { annualExp += car3C; events.push(`車3回目(-${car3C}万)`); }
 
         if (y === spTravelY && spTravelY > 0) { annualExp += spTravelC; events.push(`特別記念旅行(-${spTravelC}万)`); }
-        if (y === reformY && reformY > 0) { annualExp += reformC; events.push(`大規模リフォーム(-${reformC}万)`); }
+        if (y === reformY && reformY > 0) { annualExp += reformC; events.push(`リフォーム(-${reformC}万)`); }
         if (y === prepayYear && prepayYear > 0) { annualExp += prepayAmountWan; events.push(`繰り上げ返済(-${prepayAmountWan}万)`); }
         if (y === years) { events.push("住宅ローン完済！"); }
 
         if (y === 0) {
           events.push("スタート");
         } else {
-          const annualNet = annualIncome - annualExp;
-          currentAsset += annualNet;
+          const annualNetDiff = currentYearlyNet - annualExp;
+          currentAsset += annualNetDiff;
         }
 
         assetLabels.push(y + '年後');
         assetData.push(Math.round(currentAsset));
 
-        const netVal = y === 0 ? 0 : (annualIncome - annualExp);
+        const netVal = y === 0 ? 0 : (currentYearlyNet - annualExp);
         const netClass = netVal < 0 ? 'minus-val' : '';
         const assetClass = currentAsset < 0 ? 'minus-val' : '';
 
@@ -429,7 +471,8 @@
             <td style="text-align:center;">${y === 0 ? '現在' : y + '年後'}</td>
             <td style="text-align:center;">${currentAge}歳</td>
             <td class="event-text">${events.join(', ')}</td>
-            <td>${Math.round(annualIncome)} 万円</td>
+            <td>${Math.round(currentYearlyGross)} 万円</td>
+            <td>${Math.round(currentYearlyNet)} 万円</td>
             <td>${Math.round(annualExp)} 万円</td>
             <td class="${netClass}">${y === 0 ? '-' : Math.round(netVal) + ' 万円'}</td>
             <td class="${assetClass}">${Math.round(currentAsset)} 万円</td>
