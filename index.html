@@ -318,6 +318,23 @@
         ⚠️ <b>リスク警告:</b> <span id="riskAlertText">シミュレーション期間中に資金ショートまたは生活防衛資金を下回るタイミングがあります。</span>
       </div>
 
+      <!-- 現在の貯蓄額コントロールパネル（最重要項目） -->
+      <div class="card" style="border: 2px solid var(--primary-color); background: rgba(0, 122, 255, 0.03);">
+        <div class="card-title" style="border-bottom-color: var(--primary-color);">
+          <span>💰 現在の総金融資産（シミュレーション起点）</span>
+          <span class="save-badge">● リアルタイム連動</span>
+        </div>
+        <div class="input-grid" style="grid-template-columns: 1fr;">
+          <div class="input-group">
+            <label for="initAsset">現在の貯蓄額・資産総額 (万円) ※グラフの0年目になります</label>
+            <div class="dual-input">
+              <input type="number" id="initAsset" value="500" step="50" min="0" max="20000" oninput="syncVal('initAsset', this.value)" style="font-size: 1.1rem; font-weight: bold; color: var(--primary-color);">
+              <input type="range" id="initAsset_range" value="500" step="50" min="0" max="5000" oninput="syncVal('initAsset_range', this.value)">
+            </div>
+          </div>
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title">1. 世帯収入＆詳細月間家計簿 <span class="save-badge">● 自動保存中</span></div>
         
@@ -430,13 +447,6 @@
             <div class="dual-input">
               <input type="number" id="myAge" value="34" step="1" min="18" max="80" oninput="syncVal('myAge', this.value)">
               <input type="range" id="myAge_range" value="34" step="1" min="20" max="60" oninput="syncVal('myAge_range', this.value)">
-            </div>
-          </div>
-          <div class="input-group">
-            <label for="initAsset">現在の総金融資産 (★グラフの起点) (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="initAsset" value="500" step="50" min="0" max="10000" oninput="syncVal('initAsset', this.value)">
-              <input type="range" id="initAsset_range" value="500" step="50" min="0" max="3000" oninput="syncVal('initAsset_range', this.value)">
             </div>
           </div>
           <div class="input-group">
@@ -571,7 +581,7 @@
           3. 40年間の資産推移グラフ (複利運用対応)
         </div>
         <div style="font-size: 0.78rem; opacity: 0.7; margin-bottom: 6px;">
-          ※ 緑：月収ベース ｜ 青：源泉徴収ベース ｜ 紫：運用利回り込資産推移（現在の貯蓄額からスタート）
+          ※ 緑：月収ベース ｜ 青：源泉徴収ベース ｜ 紫：運用利回り込資産推移（設定した現在の貯蓄額からスタート）
         </div>
         <div class="chart-container"><canvas id="assetChart"></canvas></div>
       </div>
@@ -710,7 +720,7 @@
 
     function restoreInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        const val = localStorage.getItem('loan_sim_v14_' + input.id);
+        const val = localStorage.getItem('loan_sim_v15_' + input.id);
         if (val !== null) {
           input.value = val;
           let rangeInput = document.getElementById(input.id + '_range');
@@ -721,7 +731,7 @@
 
     function saveInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        localStorage.setItem('loan_sim_v14_' + input.id, input.value);
+        localStorage.setItem('loan_sim_v15_' + input.id, input.value);
       });
     }
 
