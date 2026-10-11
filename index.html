@@ -110,7 +110,7 @@
     .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
     .comp-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background-color: #fff; }
     .comp-title { font-size: 0.8rem; font-weight: bold; margin-bottom: 6px; text-align: center; padding-bottom: 4px; border-bottom: 1px solid var(--border-color); }
-    .chart-container { position: relative; height: 260px; width: 100%; margin-top: 10px; }
+    .chart-container { position: relative; height: 280px; width: 100%; margin-top: 10px; }
     .save-badge { font-size: 0.65rem; background-color: #e5f5e0; color: #2e7d32; padding: 2px 6px; border-radius: 10px; }
     
     .table-wrapper {
@@ -187,7 +187,6 @@
             </div>
           </div>
         </div>
-        <!-- ローン基本条件内の月々返済額表示エリア -->
         <div class="result-box" style="margin-top: 12px; background-color: #f0f6ff; border: 1px solid #cce0ff;">
           <div class="result-row">
             <span style="font-weight: bold; color: #0056b3;">算出される毎月の返済金額:</span>
@@ -241,7 +240,7 @@
       <div class="card">
         <div class="card-title">1. 世帯収入＆詳細月間家計簿 <span class="save-badge">自動保存中</span></div>
         
-        <div class="sub-title">夫婦の年収設定</div>
+        <div class="sub-title">夫婦の年収設定 (源泉徴収ベース)</div>
         <div class="input-grid">
           <div class="input-group">
             <label for="inc_husband_gross">夫 額面年収 (万円)</label>
@@ -273,7 +272,7 @@
           </div>
         </div>
 
-        <div class="sub-title">月間収支・支出項目 (住居費除く)</div>
+        <div class="sub-title">月間収支・支出項目 (普段の生活費ベース)</div>
         <div class="input-grid">
           <div class="input-group">
             <label for="inc_hand">世帯手取り月収 (万円)</label>
@@ -333,10 +332,10 @@
           </div>
         </div>
         <div class="result-box">
-          <div class="result-row"><span>世帯 額面年収 合計:</span><span id="totalGrossIncome" class="result-value">0 万円</span></div>
-          <div class="result-row"><span>世帯 手取り年収 合計:</span><span id="totalNetIncome" class="result-value" style="color:var(--primary-color);">0 万円</span></div>
+          <div class="result-row"><span>世帯 額面年収 合計 (源泉徴収):</span><span id="totalGrossIncome" class="result-value">0 万円</span></div>
+          <div class="result-row"><span>世帯 手取り年収 合計 (源泉徴収):</span><span id="totalNetIncome" class="result-value" style="color:var(--primary-color);">0 万円</span></div>
           <div class="result-row"><span>生活費 合計 (月額):</span><span id="totalLivingCost" class="result-value">0 万円</span></div>
-          <div class="result-row"><span>ローン返済後の毎月手残り:</span><span id="netMonthlySavings" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
+          <div class="result-row"><span>ローン返済後の毎月手残り (月収ベース):</span><span id="netMonthlySavings" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
         </div>
       </div>
 
@@ -480,12 +479,17 @@
       </div>
 
       <div class="card">
-        <div class="card-title">3. 40年間の資産推移グラフ</div>
+        <div class="card-title">
+          3. 40年間の資産推移グラフ (2本線比較)
+        </div>
+        <div style="font-size: 0.78rem; color: #666; margin-bottom: 6px;">
+          ※ 緑線：月収ベース予測 ｜ 青線：源泉徴収(年収)ベース予測
+        </div>
         <div class="chart-container"><canvas id="assetChart"></canvas></div>
       </div>
 
       <div class="card">
-        <div class="card-title">4. 1年ごとの詳細キャッシュフロー年表</div>
+        <div class="card-title">4. 1年ごとの詳細キャッシュフロー年表 (源泉徴収ベース)</div>
         <div class="table-wrapper">
           <table>
             <thead>
@@ -553,7 +557,7 @@
 
     function restoreInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        const val = localStorage.getItem('loan_sim_v7_' + input.id);
+        const val = localStorage.getItem('loan_sim_v8_' + input.id);
         if (val !== null) {
           input.value = val;
           let rangeInput = document.getElementById(input.id + '_range');
@@ -564,7 +568,7 @@
 
     function saveInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        localStorage.setItem('loan_sim_v7_' + input.id, input.value);
+        localStorage.setItem('loan_sim_v8_' + input.id, input.value);
       });
     }
 
@@ -574,7 +578,6 @@
       const amountWan = parseFloat(document.getElementById('amount').value) || 0;
       const initialRate = parseFloat(document.getElementById('rate').value) || 0;
       const years = parseInt(document.getElementById('years').value) || 0;
-      const bonusWan = parseFloat(document.getElementById('bonus').value) || 0;
       const prepayYear = parseInt(document.getElementById('prepayYear').value) || 0;
       const prepayAmountWan = parseFloat(document.getElementById('prepayAmount').value) || 0;
 
@@ -585,11 +588,7 @@
 
       if (principal <= 0 || totalMonths <= 0) return;
 
-      // ボーナス分を除いた元金に対する毎月返済額の計算
-      const bonusPrincipalRatio = bonusWan > 0 ? 0.3 : 0; // 簡易的にボーナス割合を考慮するか、全体のPMTを算出
       const normalPMT = calcPMT(principal, monthlyRate, totalMonths);
-
-      // ローン基本条件カード内の月々返済額に反映
       document.getElementById('cardMonthlyPayment').innerText = Math.round(normalPMT).toLocaleString() + ' 円';
 
       const prepayMonth = prepayYear * 12;
@@ -680,9 +679,12 @@
       const spTravelY = parseInt(document.getElementById('specialTravelYear').value) || 0, spTravelC = parseFloat(document.getElementById('specialTravelCost').value) || 0;
       const reformY = parseInt(document.getElementById('reformYear').value) || 0, reformC = parseFloat(document.getElementById('reformCost').value) || 0;
 
-      let currentAsset = initAsset;
+      let currentAssetNet = initAsset; // 月収ベース資産
+      let currentAssetGross = initAsset; // 源泉徴収ベース資産
+
       const assetLabels = [];
-      const assetData = [];
+      const assetDataNet = [];
+      const assetDataGross = [];
       const tableRowsHtml = [];
 
       for (let y = 0; y <= 40; y++) {
@@ -703,6 +705,7 @@
         const currentYearlyGross = currentHGross + currentWGross;
         const currentYearlyNet = currentHNet + currentWNet;
 
+        // 年間支出の基本（生活費12ヶ月 ＋ 住宅ローン年間返済 ＋ 維持費 ＋ 税金 ＋ 旅行）
         let annualExp = (livingTotal * 12) + (y < years ? (normalPMT / 10000 * 12) : 0) + houseTax + houseRepair + travelAnnual;
 
         let carLoanActiveYears = [car1Y, car2Y, car3Y];
@@ -726,16 +729,23 @@
         if (y === 0) {
           events.push("スタート");
         } else {
-          const annualNetDiff = currentYearlyNet - annualExp;
-          currentAsset += annualNetDiff;
+          // 1. 月収ベースの年間収支差分（世帯手取り月収×12 - 年間支出）
+          const netMonthlyAnnualIncome = handInc * 12;
+          const annualNetDiffNet = netMonthlyAnnualIncome - annualExp;
+          currentAssetNet += annualNetDiffNet;
+
+          // 2. 源泉徴収(年収)ベースの年間収支差分（世帯手取り年収 - 年間支出）
+          const annualNetDiffGross = currentYearlyNet - annualExp;
+          currentAssetGross += annualNetDiffGross;
         }
 
         assetLabels.push(y + '年後');
-        assetData.push(Math.round(currentAsset));
+        assetDataNet.push(Math.round(currentAssetNet));
+        assetDataGross.push(Math.round(currentAssetGross));
 
         const netVal = y === 0 ? 0 : (currentYearlyNet - annualExp);
         const netClass = netVal < 0 ? 'minus-val' : '';
-        const assetClass = currentAsset < 0 ? 'minus-val' : '';
+        const assetClass = currentAssetGross < 0 ? 'minus-val' : '';
 
         tableRowsHtml.push(`
           <tr>
@@ -746,7 +756,7 @@
             <td>${Math.round(currentYearlyNet)} 万円</td>
             <td>${Math.round(annualExp)} 万円</td>
             <td class="${netClass}">${y === 0 ? '-' : Math.round(netVal) + ' 万円'}</td>
-            <td class="${assetClass}">${Math.round(currentAsset)} 万円</td>
+            <td class="${assetClass}">${Math.round(currentAssetGross)} 万円</td>
           </tr>
         `);
       }
@@ -754,7 +764,7 @@
       document.getElementById('cashflowTableBody').innerHTML = tableRowsHtml.join('');
 
       updateLoanChart(years, principal, normalPMT, monthlyRate, prepayMonth, prepayVal, newReducePMT);
-      updateAssetChart(assetLabels, assetData);
+      updateAssetChart(assetLabels, assetDataNet, assetDataGross);
     }
 
     function calcPMT(pv, rate, nper) {
@@ -798,21 +808,31 @@
       });
     }
 
-    function updateAssetChart(labels, data) {
+    function updateAssetChart(labels, dataNet, dataGross) {
       const ctx = document.getElementById('assetChart').getContext('2d');
       if (assetChart) assetChart.destroy();
       assetChart = new Chart(ctx, {
         type: 'line',
         data: {
           labels: labels,
-          datasets: [{
-            label: '世帯金融資産推移 (万円)',
-            data: data,
-            borderColor: '#34c759',
-            backgroundColor: 'rgba(52, 199, 89, 0.1)',
-            fill: true,
-            tension: 0.2
-          }]
+          datasets: [
+            {
+              label: '月収ベース予測 (緑)',
+              data: dataNet,
+              borderColor: '#34c759',
+              backgroundColor: 'rgba(52, 199, 89, 0.05)',
+              fill: false,
+              tension: 0.2
+            },
+            {
+              label: '源泉徴収ベース予測 (青)',
+              data: dataGross,
+              borderColor: '#007aff',
+              backgroundColor: 'rgba(0, 122, 255, 0.05)',
+              fill: false,
+              tension: 0.2
+            }
+          ]
         },
         options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
       });
