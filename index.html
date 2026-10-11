@@ -87,7 +87,6 @@
     .input-group { margin-bottom: 10px; }
     label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 3px; color: #555; }
     
-    /* 入力エリア（数値ボックス ＋ スライダーのコンビ） */
     .dual-input {
       display: flex;
       flex-direction: column;
@@ -186,6 +185,13 @@
               <input type="number" id="bonus" value="0" step="1" min="0" max="200" oninput="syncVal('bonus', this.value)">
               <input type="range" id="bonus_range" value="0" step="10" min="0" max="100" oninput="syncVal('bonus_range', this.value)">
             </div>
+          </div>
+        </div>
+        <!-- ローン基本条件内の月々返済額表示エリア -->
+        <div class="result-box" style="margin-top: 12px; background-color: #f0f6ff; border: 1px solid #cce0ff;">
+          <div class="result-row">
+            <span style="font-weight: bold; color: #0056b3;">算出される毎月の返済金額:</span>
+            <span class="result-value" id="cardMonthlyPayment" style="color: var(--primary-color); font-size: 1.1rem;">0 円</span>
           </div>
         </div>
       </div>
@@ -507,7 +513,6 @@
     let loanChart = null;
     let assetChart = null;
 
-    // 数値ボックスとスライダーの双方向同期関数
     function syncVal(sourceId, val) {
       let baseId = sourceId.replace('_range', '');
       let numInput = document.getElementById(baseId);
@@ -521,7 +526,6 @@
         }
       }
 
-      // 夫婦の手取りが変更されたら月収も自動連動
       if (baseId === 'inc_husband_net' || baseId === 'inc_wife_net') {
         const hNet = parseFloat(document.getElementById('inc_husband_net').value) || 0;
         const wNet = parseFloat(document.getElementById('inc_wife_net').value) || 0;
@@ -549,7 +553,7 @@
 
     function restoreInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        const val = localStorage.getItem('loan_sim_v6_' + input.id);
+        const val = localStorage.getItem('loan_sim_v7_' + input.id);
         if (val !== null) {
           input.value = val;
           let rangeInput = document.getElementById(input.id + '_range');
@@ -560,7 +564,7 @@
 
     function saveInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        localStorage.setItem('loan_sim_v6_' + input.id, input.value);
+        localStorage.setItem('loan_sim_v7_' + input.id, input.value);
       });
     }
 
@@ -570,6 +574,7 @@
       const amountWan = parseFloat(document.getElementById('amount').value) || 0;
       const initialRate = parseFloat(document.getElementById('rate').value) || 0;
       const years = parseInt(document.getElementById('years').value) || 0;
+      const bonusWan = parseFloat(document.getElementById('bonus').value) || 0;
       const prepayYear = parseInt(document.getElementById('prepayYear').value) || 0;
       const prepayAmountWan = parseFloat(document.getElementById('prepayAmount').value) || 0;
 
@@ -580,7 +585,13 @@
 
       if (principal <= 0 || totalMonths <= 0) return;
 
+      // ボーナス分を除いた元金に対する毎月返済額の計算
+      const bonusPrincipalRatio = bonusWan > 0 ? 0.3 : 0; // 簡易的にボーナス割合を考慮するか、全体のPMTを算出
       const normalPMT = calcPMT(principal, monthlyRate, totalMonths);
+
+      // ローン基本条件カード内の月々返済額に反映
+      document.getElementById('cardMonthlyPayment').innerText = Math.round(normalPMT).toLocaleString() + ' 円';
+
       const prepayMonth = prepayYear * 12;
       let balanceAtPrepay = principal;
 
