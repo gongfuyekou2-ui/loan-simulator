@@ -207,30 +207,30 @@
     </div>
 
     <div class="scenario-bar">
-      <button class="scenario-btn active" onclick="loadScenario('standard')">📁 標準プラン</button>
-      <button class="scenario-btn" onclick="loadScenario('conservative')">📁 妻早めリタイア型</button>
-      <button class="scenario-btn" onclick="loadScenario('aggressive')">📁 積極投資型(年利4%)</button>
+      <button class="scenario-btn active" onclick="loadScenario('standard')">📁 標準シナリオ</button>
+      <button class="scenario-btn" onclick="loadScenario('conservative')">📁 妻早めリタイア案</button>
+      <button class="scenario-btn" onclick="loadScenario('aggressive')">📁 積極投資型(運用4%)</button>
     </div>
 
     <div class="tab-container">
-      <button class="tab-button active" onclick="switchTab('loan')">住宅ローン＆繰り上げ</button>
-      <button class="tab-button" onclick="switchTab('life')">詳細家計簿＆ライフプラン</button>
+      <button class="tab-button active" onclick="switchTab('loan')">住宅ローン＆繰り上げ判断</button>
+      <button class="tab-button" onclick="switchTab('life')">家計簿＆将来の資産シミュレーション</button>
     </div>
 
     <!-- TAB 1 -->
     <div id="tab-loan" class="tab-content active">
       <div class="card">
-        <div class="card-title">1. ローン基本条件 <span class="save-badge">● 自動保存中</span></div>
+        <div class="card-title">1. 住宅ローンの基本条件 <span class="save-badge">● リアルタイム自動保存</span></div>
         <div class="input-grid">
           <div class="input-group">
-            <label for="amount">借入金額 (万円)</label>
+            <label for="amount">住宅ローン借入額 (万円)</label>
             <div class="dual-input">
               <input type="number" id="amount" value="3500" step="100" min="0" max="10000" oninput="syncVal('amount', this.value)">
               <input type="range" id="amount_range" value="3500" step="50" min="1000" max="8000" oninput="syncVal('amount_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="rate">当初金利 (%)</label>
+            <label for="rate">適用されるローン金利 (%)</label>
             <div class="dual-input">
               <input type="number" id="rate" value="0.5" step="0.05" min="0" max="5" oninput="syncVal('rate', this.value)">
               <input type="range" id="rate_range" value="0.5" step="0.05" min="0.1" max="3.0" oninput="syncVal('rate_range', this.value)">
@@ -244,7 +244,7 @@
             </div>
           </div>
           <div class="input-group">
-            <label for="bonus">ボーナス加算 (万円/回)</label>
+            <label for="bonus">ボーナス時の増額返済 (万円/回)</label>
             <div class="dual-input">
               <input type="number" id="bonus" value="0" step="1" min="0" max="200" oninput="syncVal('bonus', this.value)">
               <input type="range" id="bonus_range" value="0" step="10" min="0" max="100" oninput="syncVal('bonus_range', this.value)">
@@ -253,31 +253,31 @@
         </div>
         <div class="result-box" style="margin-top: 12px;">
           <div class="result-row">
-            <span style="font-weight: 700;">毎月の返済額目安:</span>
+            <span style="font-weight: 700;">毎月の住宅ローン返済額:</span>
             <span class="result-value" id="cardMonthlyPayment" style="color: var(--primary-color); font-size: 1.15rem;">0 円</span>
           </div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">2. 繰り上げ返済 vs 投資（損益分岐点判定）</div>
+        <div class="card-title">2. 繰り上げ返済 vs 資産運用（損益分岐の判断）</div>
         <div class="input-grid">
           <div class="input-group">
-            <label for="prepayYear">繰り上げ時期 (経過年数)</label>
+            <label for="prepayYear">繰り上げ返済のタイミング (年後)</label>
             <div class="dual-input">
               <input type="number" id="prepayYear" value="10" step="1" min="1" max="35" oninput="syncVal('prepayYear', this.value)">
               <input type="range" id="prepayYear_range" value="10" step="1" min="1" max="30" oninput="syncVal('prepayYear_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="prepayAmount">繰り上げ額 (万円)</label>
+            <label for="prepayAmount">繰り上げ返済する金額 (万円)</label>
             <div class="dual-input">
               <input type="number" id="prepayAmount" value="300" step="50" min="10" max="3000" oninput="syncVal('prepayAmount', this.value)">
               <input type="range" id="prepayAmount_range" value="300" step="50" min="50" max="1500" oninput="syncVal('prepayAmount_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="investYield">比較する想定投資利回り (%)</label>
+            <label for="investYield">比較する想定運用利回り (%)</label>
             <div class="dual-input">
               <input type="number" id="investYield" value="4.0" step="0.5" min="0" max="15" oninput="syncVal('investYield', this.value)">
               <input type="range" id="investYield_range" value="4.0" step="0.5" min="1.0" max="10.0" oninput="syncVal('investYield_range', this.value)">
@@ -285,29 +285,29 @@
           </div>
         </div>
 
-        <div class="result-box" id="strategyAdviceBox">
-          <div class="result-row"><span style="font-weight: 700;">💡 戦略アドバイス（リアルタイム判定）:</span></div>
-          <div id="strategyAdviceText" style="font-size: 0.85rem; margin-top: 4px; line-height: 1.4;">判定中...</div>
+        <div class="result-box" id="strategyAdviceBox" style="background: rgba(0, 122, 255, 0.05); border: 1px solid var(--primary-color);">
+          <div class="result-row"><span style="font-weight: 700; color: var(--primary-color);">💡 専門家からの戦略アドバイス</span></div>
+          <div id="strategyAdviceText" style="font-size: 0.88rem; margin-top: 6px; line-height: 1.5;">判定中...</div>
         </div>
 
         <div class="comparison-grid">
           <div class="comp-card" style="border-top: 3px solid var(--primary-color);">
-            <div class="comp-title" style="color: var(--primary-color);">① 期間短縮型</div>
-            <div class="result-row"><span>毎月返済:</span><span id="shortMonthly" class="result-value">0 円</span></div>
-            <div class="result-row"><span>短縮期間:</span><span id="shortSavedTime" class="result-value" style="color:var(--secondary-color);">0 ヶ月</span></div>
-            <div class="result-row"><span>軽減利息:</span><span id="shortSavedInterest" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
+            <div class="comp-title" style="color: var(--primary-color);">① 期間短縮コース (早く完済)</div>
+            <div class="result-row"><span>毎月の返済:</span><span id="shortMonthly" class="result-value">0 円</span></div>
+            <div class="result-row"><span>完済の早まり:</span><span id="shortSavedTime" class="result-value" style="color:var(--secondary-color);">0 ヶ月</span></div>
+            <div class="result-row"><span>浮く利息合計:</span><span id="shortSavedInterest" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
           </div>
           <div class="comp-card" style="border-top: 3px solid var(--purple-color);">
-            <div class="comp-title" style="color: var(--purple-color);">② 返済額軽減型</div>
-            <div class="result-row"><span>毎月返済:</span><span id="reduceMonthly" class="result-value" style="color:var(--purple-color);">0 円</span></div>
-            <div class="result-row"><span>月減額幅:</span><span id="reduceMonthlyDiff" class="result-value" style="color:var(--secondary-color);">0 円</span></div>
-            <div class="result-row"><span>軽減利息:</span><span id="reduceSavedInterest" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
+            <div class="comp-title" style="color: var(--purple-color);">② 返済額軽減コース (毎月を楽に)</div>
+            <div class="result-row"><span>新しい毎月返済:</span><span id="reduceMonthly" class="result-value" style="color:var(--purple-color);">0 円</span></div>
+            <div class="result-row"><span>毎月の安上がり幅:</span><span id="reduceMonthlyDiff" class="result-value" style="color:var(--secondary-color);">0 円</span></div>
+            <div class="result-row"><span>浮く利息合計:</span><span id="reduceSavedInterest" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
           </div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">3. ローン残高推移グラフ</div>
+        <div class="card-title">3. 住宅ローン残高の減り方グラフ</div>
         <div class="chart-container"><canvas id="loanChart"></canvas></div>
       </div>
     </div>
@@ -318,15 +318,15 @@
         ⚠️ <b>リスク警告:</b> <span id="riskAlertText">シミュレーション期間中に資金ショートまたは生活防衛資金を下回るタイミングがあります。</span>
       </div>
 
-      <!-- 現在の貯蓄額コントロールパネル（最重要項目） -->
+      <!-- 現在の貯蓄額コントロールパネル（シミュレーションの原資） -->
       <div class="card" style="border: 2px solid var(--primary-color); background: rgba(0, 122, 255, 0.03);">
         <div class="card-title" style="border-bottom-color: var(--primary-color);">
-          <span>💰 現在の総金融資産（シミュレーション起点）</span>
+          <span>💰 現在の貯蓄・資産額 (シミュレーションのスタート地点)</span>
           <span class="save-badge">● リアルタイム連動</span>
         </div>
         <div class="input-grid" style="grid-template-columns: 1fr;">
           <div class="input-group">
-            <label for="initAsset">現在の貯蓄額・資産総額 (万円) ※グラフの0年目になります</label>
+            <label for="initAsset">手元の貯蓄総額 (万円) ※ここを調整して将来の増え方を比較できます</label>
             <div class="dual-input">
               <input type="number" id="initAsset" value="500" step="50" min="0" max="20000" oninput="syncVal('initAsset', this.value)" style="font-size: 1.1rem; font-weight: bold; color: var(--primary-color);">
               <input type="range" id="initAsset_range" value="500" step="50" min="0" max="5000" oninput="syncVal('initAsset_range', this.value)">
@@ -336,9 +336,9 @@
       </div>
 
       <div class="card">
-        <div class="card-title">1. 世帯収入＆詳細月間家計簿 <span class="save-badge">● 自動保存中</span></div>
+        <div class="card-title">1. 世帯収入＆毎月の生活費の内訳 <span class="save-badge">● 自動計算中</span></div>
         
-        <div class="sub-title">夫婦の年収設定 (源泉徴収ベース)</div>
+        <div class="sub-title">ご夫婦の年収設定 (額面・手取り)</div>
         <div class="input-grid">
           <div class="input-group">
             <label for="inc_husband_gross">夫 額面年収 (万円)</label>
@@ -348,7 +348,7 @@
             </div>
           </div>
           <div class="input-group">
-            <label for="inc_husband_net">夫 想定手取り年収 (万円)</label>
+            <label for="inc_husband_net">夫 年間のお持ち帰り額(手取り年収) (万円)</label>
             <div class="dual-input">
               <input type="number" id="inc_husband_net" value="390" step="10" min="0" max="2500" oninput="syncVal('inc_husband_net', this.value)">
               <input type="range" id="inc_husband_net_range" value="390" step="50" min="150" max="1200" oninput="syncVal('inc_husband_net_range', this.value)">
@@ -362,7 +362,7 @@
             </div>
           </div>
           <div class="input-group">
-            <label for="inc_wife_net">妻 想定手取り年収 (万円)</label>
+            <label for="inc_wife_net">妻 年間のお持ち帰り額(手取り年収) (万円)</label>
             <div class="dual-input">
               <input type="number" id="inc_wife_net" value="150" step="10" min="0" max="1500" oninput="syncVal('inc_wife_net', this.value)">
               <input type="range" id="inc_wife_net_range" value="150" step="50" min="0" max="800" oninput="syncVal('inc_wife_net_range', this.value)">
@@ -370,108 +370,112 @@
           </div>
         </div>
 
-        <div class="sub-title">月間収支・支出項目 (普段の生活費ベース)</div>
+        <div class="sub-title">毎月の生活費支出の内訳</div>
         <div class="input-grid">
           <div class="input-group">
-            <label for="inc_hand">世帯手取り月収 (万円)</label>
+            <label for="inc_hand">毎月の世帯手取り額 (万円)</label>
             <div class="dual-input">
               <input type="number" id="inc_hand" value="45" step="1" min="0" max="200" oninput="syncVal('inc_hand', this.value)">
               <input type="range" id="inc_hand_range" value="45" step="1" min="10" max="100" oninput="syncVal('inc_hand_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="exp_food">食費・日用品 (万円)</label>
+            <label for="exp_food">食費・日用品代 (万円)</label>
             <div class="dual-input">
               <input type="number" id="exp_food" value="8" step="0.5" min="0" max="30" oninput="syncVal('exp_food', this.value)">
               <input type="range" id="exp_food_range" value="8" step="0.5" min="3" max="20" oninput="syncVal('exp_food_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="exp_util">電気・ガス・水道 (万円)</label>
+            <label for="exp_util">電気・ガス・水道光熱費 (万円)</label>
             <div class="dual-input">
               <input type="number" id="exp_util" value="2.5" step="0.1" min="0" max="10" oninput="syncVal('exp_util', this.value)">
               <input type="range" id="exp_util_range" value="2.5" step="0.5" min="1" max="5" oninput="syncVal('exp_util_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="exp_comm">通信・サブスク (万円)</label>
+            <label for="exp_comm">スマホ・ネット・サブスク (万円)</label>
             <div class="dual-input">
               <input type="number" id="exp_comm" value="1.5" step="0.1" min="0" max="5" oninput="syncVal('exp_comm', this.value)">
               <input type="range" id="exp_comm_range" value="1.5" step="0.5" min="0.5" max="3" oninput="syncVal('exp_comm_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="exp_car_maint">車の維持費・ガソリン (万円/月)</label>
+            <label for="exp_car_maint">車の維持費・ガソリン代 (万円/月)</label>
             <div class="dual-input">
               <input type="number" id="exp_car_maint" value="2" step="0.5" min="0" max="10" oninput="syncVal('exp_car_maint', this.value)">
               <input type="range" id="exp_car_maint_range" value="2" step="0.5" min="0.5" max="5" oninput="syncVal('exp_car_maint_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="exp_ins">各種保険料 (万円)</label>
+            <label for="exp_ins">生命・医療保険料 (万円)</label>
             <div class="dual-input">
               <input type="number" id="exp_ins" value="2" step="0.5" min="0" max="10" oninput="syncVal('exp_ins', this.value)">
               <input type="range" id="exp_ins_range" value="2" step="0.5" min="0" max="5" oninput="syncVal('exp_ins_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="exp_play">教養・娯楽・小遣い (万円)</label>
+            <label for="exp_play">教養・娯楽・お小遣い (万円)</label>
             <div class="dual-input">
               <input type="number" id="exp_play" value="5" step="1" min="0" max="20" oninput="syncVal('exp_play', this.value)">
               <input type="range" id="exp_play_range" value="5" step="1" min="1" max="15" oninput="syncVal('exp_play_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="exp_other">その他雑費 (万円)</label>
+            <label for="exp_other">予備費・その他雑費 (万円)</label>
             <div class="dual-input">
               <input type="number" id="exp_other" value="3" step="0.5" min="0" max="15" oninput="syncVal('exp_other', this.value)">
               <input type="range" id="exp_other_range" value="3" step="0.5" min="0" max="10" oninput="syncVal('exp_other_range', this.value)">
             </div>
           </div>
         </div>
+
         <div class="result-box">
           <div class="result-row"><span>世帯 額面年収 合計:</span><span id="totalGrossIncome" class="result-value">0 万円</span></div>
           <div class="result-row"><span>世帯 手取り年収 合計:</span><span id="totalNetIncome" class="result-value" style="color:var(--primary-color);">0 万円</span></div>
           <div class="result-row"><span>生活費 合計 (月額):</span><span id="totalLivingCost" class="result-value">0 万円</span></div>
-          <div class="result-row"><span>ローン返済後の毎月余剰金:</span><span id="netMonthlySavings" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
+          <div class="result-row"><span>住宅ローン返済後の毎月の手残り貯蓄:</span><span id="netMonthlySavings" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
+          <div id="cashflowHealthAdvice" style="font-size: 0.8rem; margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border-color); color: var(--secondary-color);">
+            家計診断チェック中...
+          </div>
         </div>
       </div>
 
       <div class="card">
-        <div class="card-title">2. ライフイベント＆運用前提設定</div>
+        <div class="card-title">2. ライフイベント＆将来の前提設定</div>
         
-        <div class="sub-title">基本前提・退職・住居維持費・運用利回り</div>
+        <div class="sub-title">ご家族・住まい・資産運用の前提</div>
         <div class="input-grid">
           <div class="input-group">
-            <label for="myAge">現在のご年齢 (歳)</label>
+            <label for="myAge">ご本人の現在の年齢 (歳)</label>
             <div class="dual-input">
               <input type="number" id="myAge" value="34" step="1" min="18" max="80" oninput="syncVal('myAge', this.value)">
               <input type="range" id="myAge_range" value="34" step="1" min="20" max="60" oninput="syncVal('myAge_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="assetYield">余剰資金の想定運用利回り (%)</label>
+            <label for="assetYield">貯蓄・NISA等の想定運用利回り (%)</label>
             <div class="dual-input">
               <input type="number" id="assetYield" value="3.0" step="0.5" min="0" max="10" oninput="syncVal('assetYield', this.value)">
               <input type="range" id="assetYield_range" value="3.0" step="0.5" min="0" max="7" oninput="syncVal('assetYield_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="wifeRetireYear">奥様退職予定 (年後)</label>
+            <label for="wifeRetireYear">奥様の退職予定時期 (年後)</label>
             <div class="dual-input">
               <input type="number" id="wifeRetireYear" value="10" step="1" min="1" max="40" oninput="syncVal('wifeRetireYear', this.value)">
               <input type="range" id="wifeRetireYear_range" value="10" step="1" min="1" max="30" oninput="syncVal('wifeRetireYear_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="houseTax">固定資産税・都市税 (万円/年)</label>
+            <label for="houseTax">毎年の固定資産税・都市計画税 (万円/年)</label>
             <div class="dual-input">
               <input type="number" id="houseTax" value="12" step="1" min="0" max="50" oninput="syncVal('houseTax', this.value)">
               <input type="range" id="houseTax_range" value="12" step="1" min="0" max="30" oninput="syncVal('houseTax_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="houseRepair">住宅修繕積立目安 (万円/年)</label>
+            <label for="houseRepair">将来の外壁・屋根・設備リフォーム準備金 (万円/年)</label>
             <div class="dual-input">
               <input type="number" id="houseRepair" value="10" step="1" min="0" max="50" oninput="syncVal('houseRepair', this.value)">
               <input type="range" id="houseRepair_range" value="10" step="1" min="0" max="30" oninput="syncVal('houseRepair_range', this.value)">
@@ -479,31 +483,31 @@
           </div>
         </div>
 
-        <div class="sub-title">自動車の購入・ローン設定 (買い替え時共通)</div>
+        <div class="sub-title">マイカーの買い替え・マイカーローン設定</div>
         <div class="input-grid">
           <div class="input-group">
-            <label for="carPrice">車 購入金額 (万円)</label>
+            <label for="carPrice">車 買い替え時の予算 (万円)</label>
             <div class="dual-input">
               <input type="number" id="carPrice" value="300" step="10" min="50" max="1000" oninput="syncVal('carPrice', this.value)">
               <input type="range" id="carPrice_range" value="300" step="50" min="100" max="600" oninput="syncVal('carPrice_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="carDownPayment">頭金 (現金) (万円)</label>
+            <label for="carDownPayment">車 購入時の頭金(現金) (万円)</label>
             <div class="dual-input">
               <input type="number" id="carDownPayment" value="50" step="10" min="0" max="500" oninput="syncVal('carDownPayment', this.value)">
               <input type="range" id="carDownPayment_range" value="50" step="10" min="0" max="300" oninput="syncVal('carDownPayment_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="carLoanYears">ローン返済期間 (年)</label>
+            <label for="carLoanYears">マイカーローンの返済期間 (年)</label>
             <div class="dual-input">
               <input type="number" id="carLoanYears" value="5" step="1" min="1" max="10" oninput="syncVal('carLoanYears', this.value)">
               <input type="range" id="carLoanYears_range" value="5" step="1" min="1" max="7" oninput="syncVal('carLoanYears_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="carLoanRate">ローン金利 (%)</label>
+            <label for="carLoanRate">マイカーローンの金利 (%)</label>
             <div class="dual-input">
               <input type="number" id="carLoanRate" value="2.0" step="0.1" min="0" max="10" oninput="syncVal('carLoanRate', this.value)">
               <input type="range" id="carLoanRate_range" value="2.0" step="0.5" min="0" max="6" oninput="syncVal('carLoanRate_range', this.value)">
@@ -511,24 +515,24 @@
           </div>
         </div>
 
-        <div class="sub-title">自動車の買い替え時期 (最大3回)</div>
+        <div class="sub-title">マイカーの買い替えサイクル (最大3回)</div>
         <div class="input-grid">
           <div class="input-group">
-            <label for="car1Year">車 1回目 (年後)</label>
+            <label for="car1Year">車 1回目の買い替え (年後)</label>
             <div class="dual-input">
               <input type="number" id="car1Year" value="5" step="1" min="1" max="35" oninput="syncVal('car1Year', this.value)">
               <input type="range" id="car1Year_range" value="5" step="1" min="1" max="25" oninput="syncVal('car1Year_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="car2Year">車 2回目 (年後)</label>
+            <label for="car2Year">車 2回目の買い替え (年後)</label>
             <div class="dual-input">
               <input type="number" id="car2Year" value="12" step="1" min="1" max="35" oninput="syncVal('car2Year', this.value)">
               <input type="range" id="car2Year_range" value="12" step="1" min="1" max="30" oninput="syncVal('car2Year_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="car3Year">車 3回目 (年後)</label>
+            <label for="car3Year">車 3回目の買い替え (年後)</label>
             <div class="dual-input">
               <input type="number" id="car3Year" value="20" step="1" min="1" max="35" oninput="syncVal('car3Year', this.value)">
               <input type="range" id="car3Year_range" value="20" step="1" min="1" max="35" oninput="syncVal('car3Year_range', this.value)">
@@ -536,38 +540,38 @@
           </div>
         </div>
 
-        <div class="sub-title">旅行・レジャー＆大型イベント</div>
+        <div class="sub-title">家族旅行・レジャー＆大型イベント</div>
         <div class="input-grid">
           <div class="input-group">
-            <label for="travelAnnual">毎年の旅行予算 (万円/年)</label>
+            <label for="travelAnnual">毎年の家族旅行予算 (万円/年)</label>
             <div class="dual-input">
               <input type="number" id="travelAnnual" value="20" step="5" min="0" max="100" oninput="syncVal('travelAnnual', this.value)">
               <input type="range" id="travelAnnual_range" value="20" step="5" min="0" max="50" oninput="syncVal('travelAnnual_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="specialTravelYear">特別記念旅行 (年後)</label>
+            <label for="specialTravelYear">特別記念旅行の予定 (年後)</label>
             <div class="dual-input">
               <input type="number" id="specialTravelYear" value="10" step="1" min="1" max="40" oninput="syncVal('specialTravelYear', this.value)">
               <input type="range" id="specialTravelYear_range" value="10" step="1" min="1" max="30" oninput="syncVal('specialTravelYear_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="specialTravelCost">特別旅行 予算 (万円)</label>
+            <label for="specialTravelCost">特別旅行の予算 (万円)</label>
             <div class="dual-input">
               <input type="number" id="specialTravelCost" value="100" step="10" min="0" max="500" oninput="syncVal('specialTravelCost', this.value)">
               <input type="range" id="specialTravelCost_range" value="100" step="10" min="0" max="300" oninput="syncVal('specialTravelCost_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="reformYear">大規模リフォーム (年後)</label>
+            <label for="reformYear">自宅の大規模リフォーム予定 (年後)</label>
             <div class="dual-input">
               <input type="number" id="reformYear" value="20" step="1" min="1" max="40" oninput="syncVal('reformYear', this.value)">
               <input type="range" id="reformYear_range" value="20" step="1" min="5" max="35" oninput="syncVal('reformYear_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="reformCost">リフォーム 予算 (万円)</label>
+            <label for="reformCost">リフォーム費用予算 (万円)</label>
             <div class="dual-input">
               <input type="number" id="reformCost" value="250" step="10" min="0" max="1000" oninput="syncVal('reformCost', this.value)">
               <input type="range" id="reformCost_range" value="250" step="50" min="50" max="600" oninput="syncVal('reformCost_range', this.value)">
@@ -578,7 +582,7 @@
 
       <div class="card">
         <div class="card-title">
-          3. 40年間の資産推移グラフ (複利運用対応)
+          3. 40年間の資産推移シミュレーション (複利運用・控除考慮)
         </div>
         <div style="font-size: 0.78rem; opacity: 0.7; margin-bottom: 6px;">
           ※ 緑：月収ベース ｜ 青：源泉徴収ベース ｜ 紫：運用利回り込資産推移（設定した現在の貯蓄額からスタート）
@@ -587,7 +591,7 @@
       </div>
 
       <div class="card">
-        <div class="card-title">4. 1年ごとの詳細キャッシュフロー年表 (ローン控除反映)</div>
+        <div class="card-title">4. 1年ごとの詳細キャッシュフロー年表 (住宅ローン減税反映)</div>
         <div class="table-wrapper">
           <table>
             <thead>
@@ -720,7 +724,7 @@
 
     function restoreInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        const val = localStorage.getItem('loan_sim_v15_' + input.id);
+        const val = localStorage.getItem('loan_sim_v16_' + input.id);
         if (val !== null) {
           input.value = val;
           let rangeInput = document.getElementById(input.id + '_range');
@@ -731,7 +735,7 @@
 
     function saveInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        localStorage.setItem('loan_sim_v15_' + input.id, input.value);
+        localStorage.setItem('loan_sim_v16_' + input.id, input.value);
       });
     }
 
@@ -801,9 +805,10 @@
       
       const adviceTextElem = document.getElementById('strategyAdviceText');
       if (investYield > initialRate) {
-        adviceTextElem.innerHTML = `住宅ローン金利（<b>${initialRate}%</b>）より想定投資利回り（<b>${investYield}%</b>）が高いため、繰り上げよりも投資に回す方が約<b>${Math.round(expectedInvestmentGain - savedInterestWan)}万円</b>有利になる可能性が高いです！`;
+        const diffGain = Math.round(expectedInvestmentGain - savedInterestWan);
+        adviceTextElem.innerHTML = `現在の想定運用利回り（<b>${investYield}%</b>）は、ローン金利（<b>${initialRate}%</b>）を上回っています。<br>繰り上げ返済に<sup>${prepayAmountWan}万円</sup>使うよりも、投資に回す方が【約<b>${diffGain}万円</b>】有利になる計算です！手元の流動性資金を確保できるメリットもあります。`;
       } else {
-        adviceTextElem.innerHTML = `住宅ローン金利（<b>${initialRate}%</b>）が上回っているため、「期間短縮型の繰り上げ返済」を行う方が確実にお得です。`;
+        adviceTextElem.innerHTML = `住宅ローン金利（<b>${initialRate}%</b>）が想定運用利回り（<b>${investYield}%</b>）を上回っています。<br>リスクを取って運用するよりも、「① 期間短縮型の繰り上げ返済」で確実にお利息をカット（約<b>${Math.round(savedInterestWan)}万円軽減</b>）する戦略が安全かつ確実です。`;
       }
 
       const hGross = parseFloat(document.getElementById('inc_husband_gross').value) || 0;
@@ -829,6 +834,19 @@
       document.getElementById('totalLivingCost').innerText = livingTotal.toFixed(1) + ' 万円/月';
       const netSavingsWan = handInc - livingTotal - (normalPMT / 10000);
       document.getElementById('netMonthlySavings').innerText = netSavingsWan.toFixed(1) + ' 万円/月';
+
+      // 家計診断アドバイス
+      const healthElem = document.getElementById('cashflowHealthAdvice');
+      if (netSavingsWan >= 5) {
+        healthElem.innerHTML = `🟢 <b>良好な家計環境:</b> 毎月約${netSavingsWan.toFixed(1)}万円の余剰金が出ており、理想的な貯蓄・積立ペースを維持できます！`;
+        healthElem.style.color = "var(--secondary-color)";
+      } else if (netSavingsWan > 0) {
+        healthElem.innerHTML = `🟡 <b>注意水準:</b> 毎月の手残りは${netSavingsWan.toFixed(1)}万円です。急な出費に備え、固定費の見直しや予備費の確保を推奨します。`;
+        healthElem.style.color = "var(--orange-color)";
+      } else {
+        healthElem.innerHTML = `🔴 <b>家計見直し推奨:</b> 毎月の収支がマイナス（${netSavingsWan.toFixed(1)}万円）になっています。生活費またはローン条件を見直す必要があります。`;
+        healthElem.style.color = "var(--danger-color)";
+      }
 
       const carPrice = parseFloat(document.getElementById('carPrice').value) || 0;
       const carDown = parseFloat(document.getElementById('carDownPayment').value) || 0;
@@ -897,7 +915,7 @@
         let mortgageDeduction = 0;
         if (y >= 1 && y <= 13 && yearlyLoanBalances[y] > 0) {
           mortgageDeduction = Math.min(35, Math.round(yearlyLoanBalances[y] * 0.007 / 10000));
-          if (y === 1) events.push(`住宅ローン控除開始`);
+          if (y === 1) events.push(`住宅ローン控除適用`);
         }
 
         let annualExp = (livingTotal * 12) + (y < years ? (normalPMT / 10000 * 12) : 0) + houseTax + houseRepair + travelAnnual;
@@ -937,7 +955,7 @@
         const safetyBuffer = (livingTotal * 6) + (y < years ? (normalPMT / 10000 * 6) : 0);
         if (y > 0 && currentAssetYielded < safetyBuffer && !hasRisk) {
           hasRisk = true;
-          riskMessage = `${y}年後（${currentAge}歳頃）に金融資産が安全圏（生活防衛資金）を下回る危険があります。`;
+          riskMessage = `${y}年後（ご本人${currentAge}歳頃）に資産残高が生活防衛資金（約${Math.round(safetyBuffer)}万円）を下回るリスクがあります！予定支出の調整をおすすめします。`;
         }
 
         assetLabels.push(y + '年後');
@@ -1014,8 +1032,8 @@
           labels: labels,
           datasets: [
             { label: '繰り上げなし', data: norm, borderColor: '#8e8e93', borderDash: [5,5], fill: false, pointRadius: 0 },
-            { label: '① 期間短縮型', data: short, borderColor: '#007aff', fill: false, borderWidth: 2.5, pointRadius: 0 },
-            { label: '② 返済額軽減型', data: reduce, borderColor: '#af52de', fill: false, borderWidth: 2.5, pointRadius: 0 }
+            { label: '① 期間短縮コース', data: short, borderColor: '#007aff', fill: false, borderWidth: 2.5, pointRadius: 0 },
+            { label: '② 返済額軽減コース', data: reduce, borderColor: '#af52de', fill: false, borderWidth: 2.5, pointRadius: 0 }
           ]
         },
         options: { 
