@@ -18,7 +18,6 @@
       --card-bg: #ffffff;
       --text-color: #1c1c1e;
       --border-color: #e5e5ea;
-      --header-bg: #ffffff;
     }
     [data-theme="dark"] {
       --primary-color: #0a84ff;
@@ -30,7 +29,6 @@
       --card-bg: #2c2c2e;
       --text-color: #f2f2f7;
       --border-color: #3a3a3c;
-      --header-bg: #2c2c2e;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -627,12 +625,14 @@
       localStorage.setItem('loan_sim_theme', next);
       const btn = document.querySelector('.theme-btn');
       btn.innerText = next === 'dark' ? '☀️ ライトモード切替' : '🌙 ダークモード切替';
+      calculate(); // テーマ変更後にグラフの色を即時再描画
     }
 
     const savedTheme = localStorage.getItem('loan_sim_theme');
     if (savedTheme) {
       document.body.setAttribute('data-theme', savedTheme);
-      document.querySelector('.theme-btn').innerText = savedTheme === 'dark' ? '☀️ ライトモード切替' : '🌙 ダークモード切替';
+      const btn = document.querySelector('.theme-btn');
+      if(btn) btn.innerText = savedTheme === 'dark' ? '☀️ ライトモード切替' : '🌙 ダークモード切替';
     }
 
     const scenarios = {
@@ -709,7 +709,7 @@
 
     function restoreInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        const val = localStorage.getItem('loan_sim_v10_' + input.id);
+        const val = localStorage.getItem('loan_sim_v11_' + input.id);
         if (val !== null) {
           input.value = val;
           let rangeInput = document.getElementById(input.id + '_range');
@@ -720,7 +720,7 @@
 
     function saveInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        localStorage.setItem('loan_sim_v10_' + input.id, input.value);
+        localStorage.setItem('loan_sim_v11_' + input.id, input.value);
       });
     }
 
@@ -857,7 +857,6 @@
       let hasRisk = false;
       let riskMessage = "";
 
-      // ローン残高シミュレーション用配列（控除計算用）
       let yearlyLoanBalances = [];
       let tempLoanBal = principal;
       for (let y = 1; y <= 35; y++) {
@@ -884,7 +883,6 @@
 
         const currentYearlyNet = currentHNet + currentWNet;
 
-        // 住宅ローン控除の計算（1年目〜13年間、年末残高の0.7%を還付・プラスとして加算、上限あり例:最大35万円等）
         let mortgageDeduction = 0;
         if (y >= 1 && y <= 13 && yearlyLoanBalances[y] > 0) {
           mortgageDeduction = Math.min(35, Math.round(yearlyLoanBalances[y] * 0.007 / 10000));
@@ -911,7 +909,6 @@
         if (y === prepayYear && prepayYear > 0) { annualExp += prepayAmountWan; events.push(`繰り上げ返済(-${prepayAmountWan}万)`); }
         if (y === years) { events.push("住宅ローン完済！"); }
 
-        // 実効手取り年収（源泉徴収ベース手取り ＋ ローン控除還付金）
         const effectiveNetIncome = currentYearlyNet + mortgageDeduction;
 
         if (y === 0) {
@@ -988,7 +985,7 @@
             if (bS > 0) bS = Math.max(0, bS - (normalPMT - bS*monthlyRate));
             if (bR > 0) bR = Math.max(0, bR - (newReducePMT - bR*monthlyRate));
           } else {
-            if (bS > 0) bS = Math.max(0, bS - (normalPTM - bS*monthlyRate) || 0);
+            if (bS > 0) bS = Math.max(0, bS - (normalPMT - bS*monthlyRate));
             if (bR > 0) bR = Math.max(0, bR - (normalPMT - bR*monthlyRate));
           }
         }
