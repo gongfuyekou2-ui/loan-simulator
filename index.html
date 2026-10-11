@@ -18,6 +18,19 @@
       --card-bg: #ffffff;
       --text-color: #1c1c1e;
       --border-color: #e5e5ea;
+      --header-bg: #ffffff;
+    }
+    [data-theme="dark"] {
+      --primary-color: #0a84ff;
+      --secondary-color: #32d74b;
+      --danger-color: #ff453a;
+      --purple-color: #bf5af2;
+      --orange-color: #ff9f0a;
+      --bg-color: #1c1c1e;
+      --card-bg: #2c2c2e;
+      --text-color: #f2f2f7;
+      --border-color: #3a3a3c;
+      --header-bg: #2c2c2e;
     }
     body {
       font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -27,10 +40,27 @@
       padding: 12px;
       display: flex;
       justify-content: center;
+      transition: background-color 0.3s, color 0.3s;
     }
     .container { width: 100%; max-width: 720px; }
-    h1 { font-size: 1.2rem; text-align: center; margin-bottom: 10px; }
     
+    .top-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 10px;
+    }
+    h1 { font-size: 1.1rem; margin: 0; }
+    .theme-btn {
+      background: none;
+      border: 1px solid var(--border-color);
+      color: var(--text-color);
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 0.75rem;
+      cursor: pointer;
+    }
+
     /* シナリオ切替バー */
     .scenario-bar {
       display: flex;
@@ -43,10 +73,10 @@
       font-size: 0.75rem;
       font-weight: bold;
       border: 1px solid var(--border-color);
-      background-color: #fff;
+      background-color: var(--card-bg);
       border-radius: 6px;
       cursor: pointer;
-      color: #555;
+      color: var(--text-color);
     }
     .scenario-btn.active {
       background-color: var(--primary-color);
@@ -56,7 +86,7 @@
 
     .tab-container {
       display: flex;
-      background-color: #e3e3e8;
+      background-color: var(--border-color);
       border-radius: 10px;
       padding: 2px;
       margin-bottom: 14px;
@@ -71,10 +101,10 @@
       background: none;
       border-radius: 8px;
       cursor: pointer;
-      color: #666;
+      color: #888;
     }
     .tab-button.active {
-      background-color: #fff;
+      background-color: var(--card-bg);
       color: var(--primary-color);
       box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
@@ -87,6 +117,7 @@
       padding: 16px;
       margin-bottom: 14px;
       box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      transition: background-color 0.3s;
     }
     .card-title {
       font-size: 1rem;
@@ -108,7 +139,7 @@
     }
     .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .input-group { margin-bottom: 10px; }
-    label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 3px; color: #555; }
+    label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 3px; opacity: 0.8; }
     
     .dual-input {
       display: flex;
@@ -118,7 +149,7 @@
     .dual-input input[type="number"] {
       width: 100%; padding: 7px 8px; font-size: 0.9rem;
       border: 1px solid var(--border-color); border-radius: 6px;
-      box-sizing: border-box; background-color: #fff;
+      box-sizing: border-box; background-color: var(--bg-color); color: var(--text-color);
     }
     .dual-input input[type="range"] {
       width: 100%;
@@ -127,16 +158,15 @@
       margin: 2px 0;
     }
 
-    .result-box { background-color: #f8f9fa; border-radius: 8px; padding: 12px; margin-top: 10px; }
+    .result-box { background-color: var(--bg-color); border-radius: 8px; padding: 12px; margin-top: 10px; }
     .result-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.85rem; }
     .result-value { font-weight: bold; font-size: 0.95rem; }
     .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
-    .comp-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background-color: #fff; }
+    .comp-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background-color: var(--card-bg); }
     .comp-title { font-size: 0.8rem; font-weight: bold; margin-bottom: 6px; text-align: center; padding-bottom: 4px; border-bottom: 1px solid var(--border-color); }
     .chart-container { position: relative; height: 280px; width: 100%; margin-top: 10px; }
     .save-badge { font-size: 0.65rem; background-color: #e5f5e0; color: #2e7d32; padding: 2px 6px; border-radius: 10px; }
     
-    /* アラートバッジ */
     .alert-banner {
       background-color: #fff3cd;
       border: 1px solid #ffeeba;
@@ -168,21 +198,23 @@
       border-bottom: 1px solid var(--border-color);
     }
     th {
-      background-color: #f8f9fa;
+      background-color: var(--bg-color);
       position: sticky;
       top: 0;
       font-weight: bold;
-      color: #333;
       text-align: center;
     }
-    tr:nth-child(even) { background-color: #fafafa; }
+    tr:nth-child(even) { background-color: rgba(128,128,128,0.03); }
     .event-text { text-align: left; color: var(--primary-color); font-weight: bold; }
     .minus-val { color: var(--danger-color); font-weight: bold; }
   </style>
 </head>
-<body>
+<body data-theme="light">
   <div class="container">
-    <h1>住宅ローン＆ライフプラン統合シミュレーター</h1>
+    <div class="top-header">
+      <h1>住宅ローン＆ライフプラン統合シミュレーター</h1>
+      <button class="theme-btn" onclick="toggleTheme()">🌙 ダークモード切替</button>
+    </div>
 
     <!-- シナリオ切替バー -->
     <div class="scenario-bar">
@@ -230,9 +262,9 @@
             </div>
           </div>
         </div>
-        <div class="result-box" style="margin-top: 12px; background-color: #f0f6ff; border: 1px solid #cce0ff;">
+        <div class="result-box" style="margin-top: 12px; border: 1px solid var(--border-color);">
           <div class="result-row">
-            <span style="font-weight: bold; color: #0056b3;">算出される毎月の返済金額:</span>
+            <span style="font-weight: bold;">算出される毎月の返済金額:</span>
             <span class="result-value" id="cardMonthlyPayment" style="color: var(--primary-color); font-size: 1.1rem;">0 円</span>
           </div>
         </div>
@@ -264,12 +296,11 @@
           </div>
         </div>
 
-        <!-- 損益分岐点のアドバイスボックス -->
-        <div class="result-box" id="strategyAdviceBox" style="background-color: #e8f8f0; border: 1px solid #c3e6cb; margin-top: 10px;">
+        <div class="result-box" id="strategyAdviceBox" style="border: 1px solid var(--border-color); margin-top: 10px;">
           <div class="result-row">
-            <span style="font-weight: bold; color: #155724;">💡 専門家のアドバイス（損益分岐点）:</span>
+            <span style="font-weight: bold;">💡 専門家のアドバイス（損益分岐点）:</span>
           </div>
-          <div id="strategyAdviceText" style="font-size: 0.85rem; color: #155724; margin-top: 4px;">
+          <div id="strategyAdviceText" style="font-size: 0.85rem; margin-top: 4px;">
             判定中...
           </div>
         </div>
@@ -298,9 +329,8 @@
 
     <!-- ===== TAB 2: 詳細家計簿＆ライフプラン ===== -->
     <div id="tab-life" class="tab-content">
-      <!-- 資金ショート・リスク警告バナー -->
       <div id="riskAlertBanner" class="alert-banner">
-        ⚠️ <b>リスク警告:</b> <span id="riskAlertText">シミュレーション期間中に資金ショートまたは生活防衛資金を下回るタイミングがあります。プランを見直してください。</span>
+        ⚠️ <b>リスク警告:</b> <span id="riskAlertText">シミュレーション期間中に資金ショートまたは生活防衛資金を下回るタイミングがあります。</span>
       </div>
 
       <div class="card">
@@ -398,10 +428,10 @@
           </div>
         </div>
         <div class="result-box">
-          <div class="result-row"><span>世帯 額面年収 合計 (源泉徴収):</span><span id="totalGrossIncome" class="result-value">0 万円</span></div>
-          <div class="result-row"><span>世帯 手取り年収 合計 (源泉徴収):</span><span id="totalNetIncome" class="result-value" style="color:var(--primary-color);">0 万円</span></div>
+          <div class="result-row"><span>世帯 額面年収 合計 (源泉):</span><span id="totalGrossIncome" class="result-value">0 万円</span></div>
+          <div class="result-row"><span>世帯 手取り年収 合計 (源泉):</span><span id="totalNetIncome" class="result-value" style="color:var(--primary-color);">0 万円</span></div>
           <div class="result-row"><span>生活費 合計 (月額):</span><span id="totalLivingCost" class="result-value">0 万円</span></div>
-          <div class="result-row"><span>ローン返済後の毎月手残り (月収ベース):</span><span id="netMonthlySavings" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
+          <div class="result-row"><span>ローン返済後の毎月手残り:</span><span id="netMonthlySavings" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
         </div>
       </div>
 
@@ -555,14 +585,14 @@
         <div class="card-title">
           3. 40年間の資産推移グラフ (複利運用対応)
         </div>
-        <div style="font-size: 0.78rem; color: #666; margin-bottom: 6px;">
+        <div style="font-size: 0.78rem; opacity: 0.7; margin-bottom: 6px;">
           ※ 緑：月収ベース ｜ 青：源泉徴収ベース ｜ 紫：運用利回り込資産推移
         </div>
         <div class="chart-container"><canvas id="assetChart"></canvas></div>
       </div>
 
       <div class="card">
-        <div class="card-title">4. 1年ごとの詳細キャッシュフロー年表</div>
+        <div class="card-title">4. 1年ごとの詳細キャッシュフロー年表 (ローン控除反映)</div>
         <div class="table-wrapper">
           <table>
             <thead>
@@ -570,7 +600,7 @@
                 <th>経過年</th>
                 <th>年齢</th>
                 <th>主なイベント</th>
-                <th>世帯手取り年収</th>
+                <th>手取り年収(+控除)</th>
                 <th>年間支出(総額)</th>
                 <th>年間収支</th>
                 <th>運用込資産残高</th>
@@ -589,7 +619,22 @@
     let loanChart = null;
     let assetChart = null;
 
-    // シナリオプリセット定義
+    function toggleTheme() {
+      const body = document.body;
+      const current = body.getAttribute('data-theme');
+      const next = current === 'dark' ? 'light' : 'dark';
+      body.setAttribute('data-theme', next);
+      localStorage.setItem('loan_sim_theme', next);
+      const btn = document.querySelector('.theme-btn');
+      btn.innerText = next === 'dark' ? '☀️ ライトモード切替' : '🌙 ダークモード切替';
+    }
+
+    const savedTheme = localStorage.getItem('loan_sim_theme');
+    if (savedTheme) {
+      document.body.setAttribute('data-theme', savedTheme);
+      document.querySelector('.theme-btn').innerText = savedTheme === 'dark' ? '☀️ ライトモード切替' : '🌙 ダークモード切替';
+    }
+
     const scenarios = {
       standard: { amount: 3500, rate: 0.5, years: 35, h_gross: 500, h_net: 390, w_gross: 200, w_net: 150, hand: 45, asset: 500, yield: 3.0, wife_retire: 10 },
       conservative: { amount: 3800, rate: 0.7, years: 35, h_gross: 480, h_net: 380, w_gross: 150, w_net: 110, hand: 40, asset: 400, yield: 1.5, wife_retire: 5 },
@@ -664,7 +709,7 @@
 
     function restoreInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        const val = localStorage.getItem('loan_sim_v9_' + input.id);
+        const val = localStorage.getItem('loan_sim_v10_' + input.id);
         if (val !== null) {
           input.value = val;
           let rangeInput = document.getElementById(input.id + '_range');
@@ -675,7 +720,7 @@
 
     function saveInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        localStorage.setItem('loan_sim_v9_' + input.id, input.value);
+        localStorage.setItem('loan_sim_v10_' + input.id, input.value);
       });
     }
 
@@ -739,17 +784,15 @@
       document.getElementById('reduceMonthlyDiff').innerText = '-' + Math.round(normalPMT - newReducePMT).toLocaleString() + ' 円';
       document.getElementById('reduceSavedInterest').innerText = Math.round((normRemInt - redRemInt)/10000).toLocaleString() + ' 万円';
 
-      // 繰り上げ返済 vs 投資の損益分岐点判定
       const savedInterestWan = (normRemInt - shortRemInt) / 10000;
-      // 繰り上げ額をその利回りで期間短縮年数(または残存期間)運用した場合の期待値
       const approxYearsLeft = Math.max(1, (years - prepayYear));
       const expectedInvestmentGain = prepayAmountWan * (Math.pow(1 + (investYield / 100), approxYearsLeft) - 1);
       
       const adviceTextElem = document.getElementById('strategyAdviceText');
       if (investYield > initialRate) {
-        adviceTextElem.innerHTML = `現在設定中の住宅ローン金利（<b>${initialRate}%</b>）より想定投資利回り（<b>${investYield}%</b>）の方が高いため、繰り上げ返済に回すよりも投資に回した方が、期間トータルで約<b>${Math.round(expectedInvestmentGain - savedInterestWan)}万円</b>ほど資産が多くなる可能性が高いです！`;
+        adviceTextElem.innerHTML = `住宅ローン金利（<b>${initialRate}%</b>）より想定投資利回り（<b>${investYield}%</b>）が高いため、投資に回す方が約<b>${Math.round(expectedInvestmentGain - savedInterestWan)}万円</b>有利になる可能性が高いです！`;
       } else {
-        adviceTextElem.innerHTML = `住宅ローン金利（<b>${initialRate}%</b>）が投資利回り（<b>${investYield}%</b>）を上回っているため、確実に利息を削れる「期間短縮型の繰り上げ返済」を行う方が確実にお得です。`;
+        adviceTextElem.innerHTML = `住宅ローン金利（<b>${initialRate}%</b>）が上回っているため、「期間短縮型の繰り上げ返済」を行う方が確実にお得です。`;
       }
 
       const hGross = parseFloat(document.getElementById('inc_husband_gross').value) || 0;
@@ -803,7 +846,7 @@
 
       let currentAssetNet = initAsset;
       let currentAssetGross = initAsset;
-      let currentAssetYielded = initAsset; // 複利運用込み資産
+      let currentAssetYielded = initAsset;
 
       const assetLabels = [];
       const assetDataNet = [];
@@ -813,6 +856,16 @@
 
       let hasRisk = false;
       let riskMessage = "";
+
+      // ローン残高シミュレーション用配列（控除計算用）
+      let yearlyLoanBalances = [];
+      let tempLoanBal = principal;
+      for (let y = 1; y <= 35; y++) {
+        for (let m = 1; m <= 12; m++) {
+          if (tempLoanBal > 0) tempLoanBal = Math.max(0, tempLoanBal - (normalPMT - tempLoanBal * monthlyRate));
+        }
+        yearlyLoanBalances[y] = tempLoanBal;
+      }
 
       for (let y = 0; y <= 40; y++) {
         const currentAge = startAge + y;
@@ -829,8 +882,14 @@
           if (y === wifeRetireYear) events.push("奥様退職");
         }
 
-        const currentYearlyGross = currentHGross + currentWGross;
         const currentYearlyNet = currentHNet + currentWNet;
+
+        // 住宅ローン控除の計算（1年目〜13年間、年末残高の0.7%を還付・プラスとして加算、上限あり例:最大35万円等）
+        let mortgageDeduction = 0;
+        if (y >= 1 && y <= 13 && yearlyLoanBalances[y] > 0) {
+          mortgageDeduction = Math.min(35, Math.round(yearlyLoanBalances[y] * 0.007 / 10000));
+          if (y === 1) events.push(`住宅ローン控除開始`);
+        }
 
         let annualExp = (livingTotal * 12) + (y < years ? (normalPMT / 10000 * 12) : 0) + houseTax + houseRepair + travelAnnual;
 
@@ -852,25 +911,25 @@
         if (y === prepayYear && prepayYear > 0) { annualExp += prepayAmountWan; events.push(`繰り上げ返済(-${prepayAmountWan}万)`); }
         if (y === years) { events.push("住宅ローン完済！"); }
 
+        // 実効手取り年収（源泉徴収ベース手取り ＋ ローン控除還付金）
+        const effectiveNetIncome = currentYearlyNet + mortgageDeduction;
+
         if (y === 0) {
           events.push("スタート");
         } else {
-          const netMonthlyAnnualIncome = handInc * 12;
-          const annualNetDiffNet = netMonthlyAnnualIncome - annualExp;
+          const annualNetDiffNet = (handInc * 12) - annualExp;
           currentAssetNet += annualNetDiffNet;
 
-          const annualNetDiffGross = currentYearlyNet - annualExp;
+          const annualNetDiffGross = effectiveNetIncome - annualExp;
           currentAssetGross += annualNetDiffGross;
 
-          // 複利運用計算（前年の資産に残高利回りをかけ、今年の収支差分を加算）
           currentAssetYielded = (currentAssetYielded * (1 + assetYield)) + annualNetDiffGross;
         }
 
-        // リスク判定（資産が生活費の半年分＝約6ヶ月分の生活費＋ローン返済を下回るか、マイナスになった場合）
         const safetyBuffer = (livingTotal * 6) + (y < years ? (normalPMT / 10000 * 6) : 0);
         if (y > 0 && currentAssetYielded < safetyBuffer && !hasRisk) {
           hasRisk = true;
-          riskMessage = `${y}年後（${currentAge}歳頃）に金融資産が安全圏（生活防衛資金）を下回るか、資金ショートの危険があります。`;
+          riskMessage = `${y}年後（${currentAge}歳頃）に金融資産が安全圏（生活防衛資金）を下回る危険があります。`;
         }
 
         assetLabels.push(y + '年後');
@@ -878,7 +937,7 @@
         assetDataGross.push(Math.round(currentAssetGross));
         assetDataYielded.push(Math.round(currentAssetYielded));
 
-        const netVal = y === 0 ? 0 : (currentYearlyNet - annualExp);
+        const netVal = y === 0 ? 0 : (effectiveNetIncome - annualExp);
         const netClass = netVal < 0 ? 'minus-val' : '';
         const assetClass = currentAssetYielded < 0 ? 'minus-val' : '';
 
@@ -887,7 +946,7 @@
             <td style="text-align:center;">${y === 0 ? '現在' : y + '年後'}</td>
             <td style="text-align:center;">${currentAge}歳</td>
             <td class="event-text">${events.join(', ')}</td>
-            <td>${Math.round(currentYearlyNet)} 万円</td>
+            <td>${Math.round(effectiveNetIncome)} 万円 ${mortgageDeduction > 0 ? '(+控除)' : ''}</td>
             <td>${Math.round(annualExp)} 万円</td>
             <td class="${netClass}">${y === 0 ? '-' : Math.round(netVal) + ' 万円'}</td>
             <td class="${assetClass}">${Math.round(currentAssetYielded)} 万円</td>
@@ -895,7 +954,6 @@
         `);
       }
 
-      // 警告バナーの表示制御
       const banner = document.getElementById('riskAlertBanner');
       const bannerText = document.getElementById('riskAlertText');
       if (hasRisk) {
@@ -930,11 +988,15 @@
             if (bS > 0) bS = Math.max(0, bS - (normalPMT - bS*monthlyRate));
             if (bR > 0) bR = Math.max(0, bR - (newReducePMT - bR*monthlyRate));
           } else {
-            if (bS > 0) bS = Math.max(0, bS - (normalPMT - bS*monthlyRate));
+            if (bS > 0) bS = Math.max(0, bS - (normalPTM - bS*monthlyRate) || 0);
             if (bR > 0) bR = Math.max(0, bR - (normalPMT - bR*monthlyRate));
           }
         }
       }
+
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
+      const gridColor = isDark ? '#3a3a3c' : '#e5e5ea';
+      const textColor = isDark ? '#f2f2f7' : '#1c1c1e';
 
       const ctx = document.getElementById('loanChart').getContext('2d');
       if (loanChart) loanChart.destroy();
@@ -948,11 +1010,22 @@
             { label: '② 返済額軽減型', data: reduce, borderColor: '#af52de', fill: false }
           ]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        options: { 
+          responsive: true, maintainAspectRatio: false, 
+          plugins: { legend: { position: 'bottom', labels: { color: textColor } } },
+          scales: {
+            x: { grid: { color: gridColor }, ticks: { color: textColor } },
+            y: { grid: { color: gridColor }, ticks: { color: textColor } }
+          }
+        }
       });
     }
 
     function updateAssetChart(labels, dataNet, dataGross, dataYielded) {
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
+      const gridColor = isDark ? '#3a3a3c' : '#e5e5ea';
+      const textColor = isDark ? '#f2f2f7' : '#1c1c1e';
+
       const ctx = document.getElementById('assetChart').getContext('2d');
       if (assetChart) assetChart.destroy();
       assetChart = new Chart(ctx, {
@@ -977,7 +1050,7 @@
               tension: 0.2
             },
             {
-              label: '複利運用込み資産 (紫・推奨)',
+              label: '運用利回り込資産 (紫)',
               data: dataYielded,
               borderColor: '#af52de',
               backgroundColor: 'rgba(175, 82, 222, 0.08)',
@@ -986,7 +1059,14 @@
             }
           ]
         },
-        options: { responsive: true, maintainAspectRatio: false, plugins: { legend: { position: 'bottom' } } }
+        options: { 
+          responsive: true, maintainAspectRatio: false, 
+          plugins: { legend: { position: 'bottom', labels: { color: textColor } } },
+          scales: {
+            x: { grid: { color: gridColor }, ticks: { color: textColor } },
+            y: { grid: { color: gridColor }, ticks: { color: textColor } }
+          }
+        }
       });
     }
 
