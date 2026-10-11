@@ -29,8 +29,31 @@
       justify-content: center;
     }
     .container { width: 100%; max-width: 720px; }
-    h1 { font-size: 1.2rem; text-align: center; margin-bottom: 12px; }
+    h1 { font-size: 1.2rem; text-align: center; margin-bottom: 10px; }
     
+    /* シナリオ切替バー */
+    .scenario-bar {
+      display: flex;
+      gap: 6px;
+      margin-bottom: 10px;
+    }
+    .scenario-btn {
+      flex: 1;
+      padding: 6px;
+      font-size: 0.75rem;
+      font-weight: bold;
+      border: 1px solid var(--border-color);
+      background-color: #fff;
+      border-radius: 6px;
+      cursor: pointer;
+      color: #555;
+    }
+    .scenario-btn.active {
+      background-color: var(--primary-color);
+      color: #fff;
+      border-color: var(--primary-color);
+    }
+
     .tab-container {
       display: flex;
       background-color: #e3e3e8;
@@ -113,6 +136,19 @@
     .chart-container { position: relative; height: 280px; width: 100%; margin-top: 10px; }
     .save-badge { font-size: 0.65rem; background-color: #e5f5e0; color: #2e7d32; padding: 2px 6px; border-radius: 10px; }
     
+    /* アラートバッジ */
+    .alert-banner {
+      background-color: #fff3cd;
+      border: 1px solid #ffeeba;
+      color: #856404;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      margin-bottom: 12px;
+      display: none;
+    }
+    .alert-banner.show { display: block; }
+
     .table-wrapper {
       overflow-x: auto;
       max-height: 400px;
@@ -146,7 +182,14 @@
 </head>
 <body>
   <div class="container">
-    <h1>住宅ローン＆家計ライフプラン統合シミュレーター</h1>
+    <h1>住宅ローン＆ライフプラン統合シミュレーター</h1>
+
+    <!-- シナリオ切替バー -->
+    <div class="scenario-bar">
+      <button class="scenario-btn active" onclick="loadScenario('standard')">📁 標準プラン</button>
+      <button class="scenario-btn" onclick="loadScenario('conservative')">📁 妻早めリタイア型</button>
+      <button class="scenario-btn" onclick="loadScenario('aggressive')">📁 積極投資型(年利4%)</button>
+    </div>
 
     <div class="tab-container">
       <button class="tab-button active" onclick="switchTab('loan')">住宅ローン＆繰り上げ</button>
@@ -196,7 +239,7 @@
       </div>
 
       <div class="card">
-        <div class="card-title">2. 繰り上げ返済比較</div>
+        <div class="card-title">2. 繰り上げ返済 vs 投資（損益分岐点判定）</div>
         <div class="input-grid">
           <div class="input-group">
             <label for="prepayYear">繰り上げ時期 (経過年数)</label>
@@ -212,7 +255,25 @@
               <input type="range" id="prepayAmount_range" value="300" step="50" min="50" max="1500" oninput="syncVal('prepayAmount_range', this.value)">
             </div>
           </div>
+          <div class="input-group">
+            <label for="investYield">比較する想定投資利回り (%)</label>
+            <div class="dual-input">
+              <input type="number" id="investYield" value="4.0" step="0.5" min="0" max="15" oninput="syncVal('investYield', this.value)">
+              <input type="range" id="investYield_range" value="4.0" step="0.5" min="1.0" max="10.0" oninput="syncVal('investYield_range', this.value)">
+            </div>
+          </div>
         </div>
+
+        <!-- 損益分岐点のアドバイスボックス -->
+        <div class="result-box" id="strategyAdviceBox" style="background-color: #e8f8f0; border: 1px solid #c3e6cb; margin-top: 10px;">
+          <div class="result-row">
+            <span style="font-weight: bold; color: #155724;">💡 専門家のアドバイス（損益分岐点）:</span>
+          </div>
+          <div id="strategyAdviceText" style="font-size: 0.85rem; color: #155724; margin-top: 4px;">
+            判定中...
+          </div>
+        </div>
+
         <div class="comparison-grid">
           <div class="comp-card" style="border-top: 3px solid var(--primary-color);">
             <div class="comp-title" style="color: var(--primary-color);">① 期間短縮型</div>
@@ -237,6 +298,11 @@
 
     <!-- ===== TAB 2: 詳細家計簿＆ライフプラン ===== -->
     <div id="tab-life" class="tab-content">
+      <!-- 資金ショート・リスク警告バナー -->
+      <div id="riskAlertBanner" class="alert-banner">
+        ⚠️ <b>リスク警告:</b> <span id="riskAlertText">シミュレーション期間中に資金ショートまたは生活防衛資金を下回るタイミングがあります。プランを見直してください。</span>
+      </div>
+
       <div class="card">
         <div class="card-title">1. 世帯収入＆詳細月間家計簿 <span class="save-badge">自動保存中</span></div>
         
@@ -340,9 +406,9 @@
       </div>
 
       <div class="card">
-        <div class="card-title">2. ライフイベント＆特別支出設定</div>
+        <div class="card-title">2. ライフイベント＆運用前提設定</div>
         
-        <div class="sub-title">基本前提・退職・住居維持費</div>
+        <div class="sub-title">基本前提・退職・住居維持費・運用利回り</div>
         <div class="input-grid">
           <div class="input-group">
             <label for="myAge">現在のご年齢 (歳)</label>
@@ -356,6 +422,13 @@
             <div class="dual-input">
               <input type="number" id="initAsset" value="500" step="50" min="0" max="10000" oninput="syncVal('initAsset', this.value)">
               <input type="range" id="initAsset_range" value="500" step="50" min="0" max="3000" oninput="syncVal('initAsset_range', this.value)">
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="assetYield">余剰資金の想定運用利回り (%)</label>
+            <div class="dual-input">
+              <input type="number" id="assetYield" value="3.0" step="0.5" min="0" max="10" oninput="syncVal('assetYield', this.value)">
+              <input type="range" id="assetYield_range" value="3.0" step="0.5" min="0" max="7" oninput="syncVal('assetYield_range', this.value)">
             </div>
           </div>
           <div class="input-group">
@@ -480,16 +553,16 @@
 
       <div class="card">
         <div class="card-title">
-          3. 40年間の資産推移グラフ (2本線比較)
+          3. 40年間の資産推移グラフ (複利運用対応)
         </div>
         <div style="font-size: 0.78rem; color: #666; margin-bottom: 6px;">
-          ※ 緑線：月収ベース予測 ｜ 青線：源泉徴収(年収)ベース予測
+          ※ 緑：月収ベース ｜ 青：源泉徴収ベース ｜ 紫：運用利回り込資産推移
         </div>
         <div class="chart-container"><canvas id="assetChart"></canvas></div>
       </div>
 
       <div class="card">
-        <div class="card-title">4. 1年ごとの詳細キャッシュフロー年表 (源泉徴収ベース)</div>
+        <div class="card-title">4. 1年ごとの詳細キャッシュフロー年表</div>
         <div class="table-wrapper">
           <table>
             <thead>
@@ -497,11 +570,10 @@
                 <th>経過年</th>
                 <th>年齢</th>
                 <th>主なイベント</th>
-                <th>世帯額面年収</th>
                 <th>世帯手取り年収</th>
                 <th>年間支出(総額)</th>
                 <th>年間収支</th>
-                <th>貯蓄残高</th>
+                <th>運用込資産残高</th>
               </tr>
             </thead>
             <tbody id="cashflowTableBody">
@@ -516,6 +588,41 @@
   <script>
     let loanChart = null;
     let assetChart = null;
+
+    // シナリオプリセット定義
+    const scenarios = {
+      standard: { amount: 3500, rate: 0.5, years: 35, h_gross: 500, h_net: 390, w_gross: 200, w_net: 150, hand: 45, asset: 500, yield: 3.0, wife_retire: 10 },
+      conservative: { amount: 3800, rate: 0.7, years: 35, h_gross: 480, h_net: 380, w_gross: 150, w_net: 110, hand: 40, asset: 400, yield: 1.5, wife_retire: 5 },
+      aggressive: { amount: 3500, rate: 0.5, years: 30, h_gross: 550, h_net: 420, w_gross: 250, w_net: 180, hand: 50, asset: 700, yield: 5.0, wife_retire: 15 }
+    };
+
+    function loadScenario(key) {
+      document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
+      event.target.classList.add('active');
+      const s = scenarios[key];
+      if (!s) return;
+
+      setValAndRange('amount', s.amount);
+      setValAndRange('rate', s.rate);
+      setValAndRange('years', s.years);
+      setValAndRange('inc_husband_gross', s.h_gross);
+      setValAndRange('inc_husband_net', s.h_net);
+      setValAndRange('inc_wife_gross', s.w_gross);
+      setValAndRange('inc_wife_net', s.w_net);
+      setValAndRange('inc_hand', s.hand);
+      setValAndRange('initAsset', s.asset);
+      setValAndRange('assetYield', s.yield);
+      setValAndRange('wifeRetireYear', s.wife_retire);
+
+      calculate();
+    }
+
+    function setValAndRange(id, val) {
+      const num = document.getElementById(id);
+      const rng = document.getElementById(id + '_range');
+      if (num) num.value = val;
+      if (rng) rng.value = val;
+    }
 
     function syncVal(sourceId, val) {
       let baseId = sourceId.replace('_range', '');
@@ -557,7 +664,7 @@
 
     function restoreInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        const val = localStorage.getItem('loan_sim_v8_' + input.id);
+        const val = localStorage.getItem('loan_sim_v9_' + input.id);
         if (val !== null) {
           input.value = val;
           let rangeInput = document.getElementById(input.id + '_range');
@@ -568,7 +675,7 @@
 
     function saveInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        localStorage.setItem('loan_sim_v8_' + input.id, input.value);
+        localStorage.setItem('loan_sim_v9_' + input.id, input.value);
       });
     }
 
@@ -580,6 +687,8 @@
       const years = parseInt(document.getElementById('years').value) || 0;
       const prepayYear = parseInt(document.getElementById('prepayYear').value) || 0;
       const prepayAmountWan = parseFloat(document.getElementById('prepayAmount').value) || 0;
+      const investYield = parseFloat(document.getElementById('investYield').value) || 4.0;
+      const assetYield = (parseFloat(document.getElementById('assetYield').value) || 3.0) / 100;
 
       const totalMonths = years * 12;
       const monthlyRate = (initialRate / 100) / 12;
@@ -630,6 +739,19 @@
       document.getElementById('reduceMonthlyDiff').innerText = '-' + Math.round(normalPMT - newReducePMT).toLocaleString() + ' 円';
       document.getElementById('reduceSavedInterest').innerText = Math.round((normRemInt - redRemInt)/10000).toLocaleString() + ' 万円';
 
+      // 繰り上げ返済 vs 投資の損益分岐点判定
+      const savedInterestWan = (normRemInt - shortRemInt) / 10000;
+      // 繰り上げ額をその利回りで期間短縮年数(または残存期間)運用した場合の期待値
+      const approxYearsLeft = Math.max(1, (years - prepayYear));
+      const expectedInvestmentGain = prepayAmountWan * (Math.pow(1 + (investYield / 100), approxYearsLeft) - 1);
+      
+      const adviceTextElem = document.getElementById('strategyAdviceText');
+      if (investYield > initialRate) {
+        adviceTextElem.innerHTML = `現在設定中の住宅ローン金利（<b>${initialRate}%</b>）より想定投資利回り（<b>${investYield}%</b>）の方が高いため、繰り上げ返済に回すよりも投資に回した方が、期間トータルで約<b>${Math.round(expectedInvestmentGain - savedInterestWan)}万円</b>ほど資産が多くなる可能性が高いです！`;
+      } else {
+        adviceTextElem.innerHTML = `住宅ローン金利（<b>${initialRate}%</b>）が投資利回り（<b>${investYield}%</b>）を上回っているため、確実に利息を削れる「期間短縮型の繰り上げ返済」を行う方が確実にお得です。`;
+      }
+
       const hGross = parseFloat(document.getElementById('inc_husband_gross').value) || 0;
       const hNet = parseFloat(document.getElementById('inc_husband_net').value) || 0;
       const wGross = parseFloat(document.getElementById('inc_wife_gross').value) || 0;
@@ -679,13 +801,18 @@
       const spTravelY = parseInt(document.getElementById('specialTravelYear').value) || 0, spTravelC = parseFloat(document.getElementById('specialTravelCost').value) || 0;
       const reformY = parseInt(document.getElementById('reformYear').value) || 0, reformC = parseFloat(document.getElementById('reformCost').value) || 0;
 
-      let currentAssetNet = initAsset; // 月収ベース資産
-      let currentAssetGross = initAsset; // 源泉徴収ベース資産
+      let currentAssetNet = initAsset;
+      let currentAssetGross = initAsset;
+      let currentAssetYielded = initAsset; // 複利運用込み資産
 
       const assetLabels = [];
       const assetDataNet = [];
       const assetDataGross = [];
+      const assetDataYielded = [];
       const tableRowsHtml = [];
+
+      let hasRisk = false;
+      let riskMessage = "";
 
       for (let y = 0; y <= 40; y++) {
         const currentAge = startAge + y;
@@ -705,7 +832,6 @@
         const currentYearlyGross = currentHGross + currentWGross;
         const currentYearlyNet = currentHNet + currentWNet;
 
-        // 年間支出の基本（生活費12ヶ月 ＋ 住宅ローン年間返済 ＋ 維持費 ＋ 税金 ＋ 旅行）
         let annualExp = (livingTotal * 12) + (y < years ? (normalPMT / 10000 * 12) : 0) + houseTax + houseRepair + travelAnnual;
 
         let carLoanActiveYears = [car1Y, car2Y, car3Y];
@@ -729,42 +855,60 @@
         if (y === 0) {
           events.push("スタート");
         } else {
-          // 1. 月収ベースの年間収支差分（世帯手取り月収×12 - 年間支出）
           const netMonthlyAnnualIncome = handInc * 12;
           const annualNetDiffNet = netMonthlyAnnualIncome - annualExp;
           currentAssetNet += annualNetDiffNet;
 
-          // 2. 源泉徴収(年収)ベースの年間収支差分（世帯手取り年収 - 年間支出）
           const annualNetDiffGross = currentYearlyNet - annualExp;
           currentAssetGross += annualNetDiffGross;
+
+          // 複利運用計算（前年の資産に残高利回りをかけ、今年の収支差分を加算）
+          currentAssetYielded = (currentAssetYielded * (1 + assetYield)) + annualNetDiffGross;
+        }
+
+        // リスク判定（資産が生活費の半年分＝約6ヶ月分の生活費＋ローン返済を下回るか、マイナスになった場合）
+        const safetyBuffer = (livingTotal * 6) + (y < years ? (normalPMT / 10000 * 6) : 0);
+        if (y > 0 && currentAssetYielded < safetyBuffer && !hasRisk) {
+          hasRisk = true;
+          riskMessage = `${y}年後（${currentAge}歳頃）に金融資産が安全圏（生活防衛資金）を下回るか、資金ショートの危険があります。`;
         }
 
         assetLabels.push(y + '年後');
         assetDataNet.push(Math.round(currentAssetNet));
         assetDataGross.push(Math.round(currentAssetGross));
+        assetDataYielded.push(Math.round(currentAssetYielded));
 
         const netVal = y === 0 ? 0 : (currentYearlyNet - annualExp);
         const netClass = netVal < 0 ? 'minus-val' : '';
-        const assetClass = currentAssetGross < 0 ? 'minus-val' : '';
+        const assetClass = currentAssetYielded < 0 ? 'minus-val' : '';
 
         tableRowsHtml.push(`
           <tr>
             <td style="text-align:center;">${y === 0 ? '現在' : y + '年後'}</td>
             <td style="text-align:center;">${currentAge}歳</td>
             <td class="event-text">${events.join(', ')}</td>
-            <td>${Math.round(currentYearlyGross)} 万円</td>
             <td>${Math.round(currentYearlyNet)} 万円</td>
             <td>${Math.round(annualExp)} 万円</td>
             <td class="${netClass}">${y === 0 ? '-' : Math.round(netVal) + ' 万円'}</td>
-            <td class="${assetClass}">${Math.round(currentAssetGross)} 万円</td>
+            <td class="${assetClass}">${Math.round(currentAssetYielded)} 万円</td>
           </tr>
         `);
+      }
+
+      // 警告バナーの表示制御
+      const banner = document.getElementById('riskAlertBanner');
+      const bannerText = document.getElementById('riskAlertText');
+      if (hasRisk) {
+        bannerText.innerText = riskMessage;
+        banner.classList.add('show');
+      } else {
+        banner.classList.remove('show');
       }
 
       document.getElementById('cashflowTableBody').innerHTML = tableRowsHtml.join('');
 
       updateLoanChart(years, principal, normalPMT, monthlyRate, prepayMonth, prepayVal, newReducePMT);
-      updateAssetChart(assetLabels, assetDataNet, assetDataGross);
+      updateAssetChart(assetLabels, assetDataNet, assetDataGross, assetDataYielded);
     }
 
     function calcPMT(pv, rate, nper) {
@@ -808,7 +952,7 @@
       });
     }
 
-    function updateAssetChart(labels, dataNet, dataGross) {
+    function updateAssetChart(labels, dataNet, dataGross, dataYielded) {
       const ctx = document.getElementById('assetChart').getContext('2d');
       if (assetChart) assetChart.destroy();
       assetChart = new Chart(ctx, {
@@ -817,19 +961,27 @@
           labels: labels,
           datasets: [
             {
-              label: '月収ベース予測 (緑)',
+              label: '月収ベース (緑)',
               data: dataNet,
               borderColor: '#34c759',
-              backgroundColor: 'rgba(52, 199, 89, 0.05)',
+              borderDash: [3,3],
               fill: false,
               tension: 0.2
             },
             {
-              label: '源泉徴収ベース予測 (青)',
+              label: '源泉徴収ベース (青)',
               data: dataGross,
               borderColor: '#007aff',
-              backgroundColor: 'rgba(0, 122, 255, 0.05)',
+              borderDash: [3,3],
               fill: false,
+              tension: 0.2
+            },
+            {
+              label: '複利運用込み資産 (紫・推奨)',
+              data: dataYielded,
+              borderColor: '#af52de',
+              backgroundColor: 'rgba(175, 82, 222, 0.08)',
+              fill: true,
               tension: 0.2
             }
           ]
