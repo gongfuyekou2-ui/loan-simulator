@@ -5,11 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>統合住宅ローン＆ライフプランシミュレーター</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- アプリアイコンの設定（ミニマルグラデーションタイプ） -->
   <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/180/000000/real-estate.png">
   <style>
     :root {
       --primary-color: #007aff;
-      --primary-gradient: linear-gradient(135deg, #007aff, #0051a8);
       --secondary-color: #34c759;
       --danger-color: #ff3b30;
       --purple-color: #af52de;
@@ -18,160 +18,112 @@
       --card-bg: #ffffff;
       --text-color: #1c1c1e;
       --border-color: #e5e5ea;
-      --shadow-sm: 0 4px 12px rgba(0,0,0,0.05);
-      --shadow-hover: 0 8px 24px rgba(0,0,0,0.12);
+      --header-bg: #ffffff;
     }
     [data-theme="dark"] {
       --primary-color: #0a84ff;
-      --primary-gradient: linear-gradient(135deg, #0a84ff, #0056b3);
       --secondary-color: #32d74b;
       --danger-color: #ff453a;
       --purple-color: #bf5af2;
       --orange-color: #ff9f0a;
-      --bg-color: #121214;
-      --card-bg: #1c1c1e;
+      --bg-color: #1c1c1e;
+      --card-bg: #2c2c2e;
       --text-color: #f2f2f7;
-      --border-color: #2c2c2e;
-      --shadow-sm: 0 4px 12px rgba(0,0,0,0.3);
-      --shadow-hover: 0 8px 24px rgba(0,0,0,0.5);
+      --border-color: #3a3a3c;
+      --header-bg: #2c2c2e;
     }
-
-    * {
-      box-sizing: border-box;
-      transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
-    }
-
     body {
-      font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
       background-color: var(--bg-color);
       color: var(--text-color);
       margin: 0;
       padding: 12px;
       display: flex;
       justify-content: center;
-      -webkit-font-smoothing: antialiased;
+      transition: background-color 0.3s, color 0.3s;
     }
     .container { width: 100%; max-width: 720px; }
-
-    /* ヘッダーデザイン */
+    
     .top-header {
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
-      padding: 4px 2px;
+      margin-bottom: 10px;
     }
-    h1 {
-      font-size: 1.15rem;
-      font-weight: 700;
-      margin: 0;
-      background: var(--primary-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+    h1 { font-size: 1.1rem; margin: 0; }
     .theme-btn {
-      background: var(--card-bg);
+      background: none;
       border: 1px solid var(--border-color);
       color: var(--text-color);
-      padding: 6px 12px;
+      padding: 4px 10px;
       border-radius: 20px;
-      font-size: 0.78rem;
-      font-weight: 600;
+      font-size: 0.75rem;
       cursor: pointer;
-      box-shadow: var(--shadow-sm);
-      transition: transform 0.2s ease, box-shadow 0.2s ease;
-    }
-    .theme-btn:active {
-      transform: scale(0.95);
     }
 
     /* シナリオ切替バー */
     .scenario-bar {
       display: flex;
-      gap: 8px;
-      margin-bottom: 12px;
+      gap: 6px;
+      margin-bottom: 10px;
     }
     .scenario-btn {
       flex: 1;
-      padding: 8px;
+      padding: 6px;
       font-size: 0.75rem;
-      font-weight: 700;
+      font-weight: bold;
       border: 1px solid var(--border-color);
       background-color: var(--card-bg);
-      border-radius: 10px;
+      border-radius: 6px;
       cursor: pointer;
       color: var(--text-color);
-      box-shadow: var(--shadow-sm);
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
-    }
-    .scenario-btn:hover {
-      transform: translateY(-1px);
     }
     .scenario-btn.active {
-      background: var(--primary-gradient);
+      background-color: var(--primary-color);
       color: #fff;
-      border-color: transparent;
-      box-shadow: 0 4px 14px rgba(0, 122, 255, 0.35);
+      border-color: var(--primary-color);
     }
 
-    /* タブバー */
     .tab-container {
       display: flex;
       background-color: var(--border-color);
-      border-radius: 12px;
-      padding: 3px;
-      margin-bottom: 16px;
+      border-radius: 10px;
+      padding: 2px;
+      margin-bottom: 14px;
     }
     .tab-button {
       flex: 1;
       padding: 10px 0;
       text-align: center;
       font-size: 0.85rem;
-      font-weight: 700;
+      font-weight: bold;
       border: none;
       background: none;
-      border-radius: 9px;
+      border-radius: 8px;
       cursor: pointer;
-      color: #8e8e93;
-      transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+      color: #888;
     }
     .tab-button.active {
       background-color: var(--card-bg);
       color: var(--primary-color);
-      box-shadow: var(--shadow-sm);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
 
-    /* コンテンツフェードアニメーション */
-    .tab-content {
-      display: none;
-      opacity: 0;
-      transform: translateY(6px);
-      transition: opacity 0.35s ease, transform 0.35s ease;
-    }
-    .tab-content.active {
-      display: block;
-      opacity: 1;
-      transform: translateY(0);
-    }
-
-    /* カード要素 */
     .card {
       background-color: var(--card-bg);
-      border-radius: 16px;
-      padding: 18px;
-      margin-bottom: 16px;
-      box-shadow: var(--shadow-sm);
-      border: 1px solid var(--border-color);
-      transition: transform 0.25s ease, box-shadow 0.25s ease;
-    }
-    .card:hover {
-      box-shadow: var(--shadow-hover);
+      border-radius: 12px;
+      padding: 16px;
+      margin-bottom: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+      transition: background-color 0.3s;
     }
     .card-title {
-      font-size: 0.98rem;
-      font-weight: 700;
-      margin-bottom: 14px;
-      padding-bottom: 8px;
+      font-size: 1rem;
+      font-weight: bold;
+      margin-bottom: 12px;
+      padding-bottom: 6px;
       border-bottom: 2px solid var(--primary-color);
       display: flex;
       justify-content: space-between;
@@ -179,118 +131,60 @@
     }
     .sub-title {
       font-size: 0.85rem;
-      font-weight: 700;
+      font-weight: bold;
       color: var(--primary-color);
-      margin: 14px 0 10px 0;
+      margin: 12px 0 8px 0;
       border-left: 3px solid var(--primary-color);
-      padding-left: 8px;
+      padding-left: 6px;
     }
-
-    /* 入力フォーム＆スライダー */
     .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-    .input-group { margin-bottom: 8px; }
-    label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; opacity: 0.85; }
+    .input-group { margin-bottom: 10px; }
+    label { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 3px; opacity: 0.8; }
     
     .dual-input {
       display: flex;
       flex-direction: column;
-      gap: 6px;
+      gap: 4px;
     }
     .dual-input input[type="number"] {
-      width: 100%; padding: 8px 10px; font-size: 0.92rem; font-weight: 600;
-      border: 1px solid var(--border-color); border-radius: 8px;
+      width: 100%; padding: 7px 8px; font-size: 0.9rem;
+      border: 1px solid var(--border-color); border-radius: 6px;
       box-sizing: border-box; background-color: var(--bg-color); color: var(--text-color);
-      transition: border-color 0.2s ease, box-shadow 0.2s ease;
-    }
-    .dual-input input[type="number"]:focus {
-      border-color: var(--primary-color);
-      outline: none;
-      box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15);
     }
     .dual-input input[type="range"] {
       width: 100%;
       accent-color: var(--primary-color);
       cursor: pointer;
       margin: 2px 0;
-      height: 6px;
-      border-radius: 3px;
     }
 
-    /* 計算結果ボックス */
-    .result-box {
-      background-color: var(--bg-color);
-      border-radius: 12px;
-      padding: 14px;
-      margin-top: 12px;
-      border: 1px solid var(--border-color);
-    }
+    .result-box { background-color: var(--bg-color); border-radius: 8px; padding: 12px; margin-top: 10px; }
     .result-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.85rem; }
-    .result-value {
-      font-weight: 700;
-      font-size: 0.98rem;
-      transition: transform 0.2s ease, color 0.2s ease;
-    }
-    .pulse-anim {
-      animation: pulse 0.3s ease-in-out;
-    }
-    @keyframes pulse {
-      0% { transform: scale(1); }
-      50% { transform: scale(1.12); color: var(--primary-color); }
-      100% { transform: scale(1); }
-    }
-
-    .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
-    .comp-card {
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 12px;
-      background-color: var(--card-bg);
-      box-shadow: var(--shadow-sm);
-    }
-    .comp-title {
-      font-size: 0.82rem;
-      font-weight: 700;
-      margin-bottom: 8px;
-      text-align: center;
-      padding-bottom: 4px;
-      border-bottom: 1px solid var(--border-color);
-    }
-
+    .result-value { font-weight: bold; font-size: 0.95rem; }
+    .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 8px; }
+    .comp-card { border: 1px solid var(--border-color); border-radius: 8px; padding: 10px; background-color: var(--card-bg); }
+    .comp-title { font-size: 0.8rem; font-weight: bold; margin-bottom: 6px; text-align: center; padding-bottom: 4px; border-bottom: 1px solid var(--border-color); }
     .chart-container { position: relative; height: 280px; width: 100%; margin-top: 10px; }
-    .save-badge {
-      font-size: 0.65rem;
-      background-color: rgba(52, 199, 89, 0.15);
-      color: var(--secondary-color);
-      padding: 3px 8px;
-      border-radius: 12px;
-      font-weight: 700;
-    }
+    .save-badge { font-size: 0.65rem; background-color: #e5f5e0; color: #2e7d32; padding: 2px 6px; border-radius: 10px; }
     
-    /* アラートバナー */
     .alert-banner {
-      background-color: rgba(255, 149, 0, 0.12);
-      border: 1px solid var(--orange-color);
-      color: var(--orange-color);
-      padding: 12px 14px;
-      border-radius: 12px;
-      font-size: 0.82rem;
-      margin-bottom: 14px;
+      background-color: #fff3cd;
+      border: 1px solid #ffeeba;
+      color: #856404;
+      padding: 10px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      margin-bottom: 12px;
       display: none;
-      animation: slideDown 0.35s cubic-bezier(0.4, 0, 0.2, 1);
     }
     .alert-banner.show { display: block; }
-    @keyframes slideDown {
-      from { opacity: 0; transform: translateY(-8px); }
-      to { opacity: 1; transform: translateY(0); }
-    }
 
-    /* テーブルデザイン */
     .table-wrapper {
       overflow-x: auto;
       max-height: 400px;
       margin-top: 10px;
       border: 1px solid var(--border-color);
-      border-radius: 12px;
+      border-radius: 8px;
     }
     table {
       width: 100%;
@@ -300,20 +194,19 @@
       white-space: nowrap;
     }
     th, td {
-      padding: 10px 12px;
+      padding: 8px 10px;
       border-bottom: 1px solid var(--border-color);
     }
     th {
       background-color: var(--bg-color);
       position: sticky;
       top: 0;
-      font-weight: 700;
+      font-weight: bold;
       text-align: center;
-      z-index: 2;
     }
     tr:nth-child(even) { background-color: rgba(128,128,128,0.03); }
-    .event-text { text-align: left; color: var(--primary-color); font-weight: 700; }
-    .minus-val { color: var(--danger-color); font-weight: 700; }
+    .event-text { text-align: left; color: var(--primary-color); font-weight: bold; }
+    .minus-val { color: var(--danger-color); font-weight: bold; }
   </style>
 </head>
 <body data-theme="light">
@@ -338,7 +231,7 @@
     <!-- ===== TAB 1: 住宅ローン＆繰り上げ返済 ===== -->
     <div id="tab-loan" class="tab-content active">
       <div class="card">
-        <div class="card-title">1. ローン基本条件 <span class="save-badge">● 自動保存中</span></div>
+        <div class="card-title">1. ローン基本条件 <span class="save-badge">自動保存中</span></div>
         <div class="input-grid">
           <div class="input-group">
             <label for="amount">借入金額 (万円)</label>
@@ -369,10 +262,10 @@
             </div>
           </div>
         </div>
-        <div class="result-box" style="margin-top: 12px;">
+        <div class="result-box" style="margin-top: 12px; border: 1px solid var(--border-color);">
           <div class="result-row">
-            <span style="font-weight: 700;">毎月の返済額目安:</span>
-            <span class="result-value" id="cardMonthlyPayment" style="color: var(--primary-color); font-size: 1.15rem;">0 円</span>
+            <span style="font-weight: bold;">算出される毎月の返済金額:</span>
+            <span class="result-value" id="cardMonthlyPayment" style="color: var(--primary-color); font-size: 1.1rem;">0 円</span>
           </div>
         </div>
       </div>
@@ -403,11 +296,11 @@
           </div>
         </div>
 
-        <div class="result-box" id="strategyAdviceBox">
+        <div class="result-box" id="strategyAdviceBox" style="border: 1px solid var(--border-color); margin-top: 10px;">
           <div class="result-row">
-            <span style="font-weight: 700;">💡 戦略アドバイス:</span>
+            <span style="font-weight: bold;">💡 専門家のアドバイス（損益分岐点）:</span>
           </div>
-          <div id="strategyAdviceText" style="font-size: 0.85rem; margin-top: 4px; line-height: 1.4;">
+          <div id="strategyAdviceText" style="font-size: 0.85rem; margin-top: 4px;">
             判定中...
           </div>
         </div>
@@ -441,7 +334,7 @@
       </div>
 
       <div class="card">
-        <div class="card-title">1. 世帯収入＆詳細月間家計簿 <span class="save-badge">● 自動保存中</span></div>
+        <div class="card-title">1. 世帯収入＆詳細月間家計簿 <span class="save-badge">自動保存中</span></div>
         
         <div class="sub-title">夫婦の年収設定 (源泉徴収ベース)</div>
         <div class="input-grid">
@@ -535,10 +428,10 @@
           </div>
         </div>
         <div class="result-box">
-          <div class="result-row"><span>世帯 額面年収 合計:</span><span id="totalGrossIncome" class="result-value">0 万円</span></div>
-          <div class="result-row"><span>世帯 手取り年収 合計:</span><span id="totalNetIncome" class="result-value" style="color:var(--primary-color);">0 万円</span></div>
+          <div class="result-row"><span>世帯 額面年収 合計 (源泉):</span><span id="totalGrossIncome" class="result-value">0 万円</span></div>
+          <div class="result-row"><span>世帯 手取り年収 合計 (源泉):</span><span id="totalNetIncome" class="result-value" style="color:var(--primary-color);">0 万円</span></div>
           <div class="result-row"><span>生活費 合計 (月額):</span><span id="totalLivingCost" class="result-value">0 万円</span></div>
-          <div class="result-row"><span>ローン返済後の毎月余剰金:</span><span id="netMonthlySavings" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
+          <div class="result-row"><span>ローン返済後の毎月手残り:</span><span id="netMonthlySavings" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
         </div>
       </div>
 
@@ -733,15 +626,13 @@
       body.setAttribute('data-theme', next);
       localStorage.setItem('loan_sim_theme', next);
       const btn = document.querySelector('.theme-btn');
-      if(btn) btn.innerText = next === 'dark' ? '☀️ ライトモード切替' : '🌙 ダークモード切替';
-      calculate();
+      btn.innerText = next === 'dark' ? '☀️ ライトモード切替' : '🌙 ダークモード切替';
     }
 
     const savedTheme = localStorage.getItem('loan_sim_theme');
     if (savedTheme) {
       document.body.setAttribute('data-theme', savedTheme);
-      const btn = document.querySelector('.theme-btn');
-      if(btn) btn.innerText = savedTheme === 'dark' ? '☀️ ライトモード切替' : '🌙 ダークモード切替';
+      document.querySelector('.theme-btn').innerText = savedTheme === 'dark' ? '☀️ ライトモード切替' : '🌙 ダークモード切替';
     }
 
     const scenarios = {
@@ -752,7 +643,7 @@
 
     function loadScenario(key) {
       document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
-      if(event && event.target) event.target.classList.add('active');
+      event.target.classList.add('active');
       const s = scenarios[key];
       if (!s) return;
 
@@ -801,17 +692,7 @@
         if (handRange) handRange.value = monthlyComputed.toFixed(1);
       }
 
-      triggerPulse();
       calculate();
-    }
-
-    function triggerPulse() {
-      const vals = document.querySelectorAll('.result-value');
-      vals.forEach(v => {
-        v.classList.remove('pulse-anim');
-        void v.offsetWidth;
-        v.classList.add('pulse-anim');
-      });
     }
 
     function switchTab(tabName) {
@@ -824,15 +705,11 @@
         document.querySelectorAll('.tab-button')[1].classList.add('active');
         document.getElementById('tab-life').classList.add('active');
       }
-      setTimeout(() => {
-        if (loanChart) loanChart.resize();
-        if (assetChart) assetChart.resize();
-      }, 50);
     }
 
     function restoreInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        const val = localStorage.getItem('loan_sim_v13_' + input.id);
+        const val = localStorage.getItem('loan_sim_v10_' + input.id);
         if (val !== null) {
           input.value = val;
           let rangeInput = document.getElementById(input.id + '_range');
@@ -843,7 +720,7 @@
 
     function saveInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        localStorage.setItem('loan_sim_v13_' + input.id, input.value);
+        localStorage.setItem('loan_sim_v10_' + input.id, input.value);
       });
     }
 
@@ -980,6 +857,7 @@
       let hasRisk = false;
       let riskMessage = "";
 
+      // ローン残高シミュレーション用配列（控除計算用）
       let yearlyLoanBalances = [];
       let tempLoanBal = principal;
       for (let y = 1; y <= 35; y++) {
@@ -1006,6 +884,7 @@
 
         const currentYearlyNet = currentHNet + currentWNet;
 
+        // 住宅ローン控除の計算（1年目〜13年間、年末残高の0.7%を還付・プラスとして加算、上限あり例:最大35万円等）
         let mortgageDeduction = 0;
         if (y >= 1 && y <= 13 && yearlyLoanBalances[y] > 0) {
           mortgageDeduction = Math.min(35, Math.round(yearlyLoanBalances[y] * 0.007 / 10000));
@@ -1032,6 +911,7 @@
         if (y === prepayYear && prepayYear > 0) { annualExp += prepayAmountWan; events.push(`繰り上げ返済(-${prepayAmountWan}万)`); }
         if (y === years) { events.push("住宅ローン完済！"); }
 
+        // 実効手取り年収（源泉徴収ベース手取り ＋ ローン控除還付金）
         const effectiveNetIncome = currentYearlyNet + mortgageDeduction;
 
         if (y === 0) {
@@ -1108,14 +988,14 @@
             if (bS > 0) bS = Math.max(0, bS - (normalPMT - bS*monthlyRate));
             if (bR > 0) bR = Math.max(0, bR - (newReducePMT - bR*monthlyRate));
           } else {
-            if (bS > 0) bS = Math.max(0, bS - (normalPMT - bS*monthlyRate));
+            if (bS > 0) bS = Math.max(0, bS - (normalPTM - bS*monthlyRate) || 0);
             if (bR > 0) bR = Math.max(0, bR - (normalPMT - bR*monthlyRate));
           }
         }
       }
 
       const isDark = document.body.getAttribute('data-theme') === 'dark';
-      const gridColor = isDark ? '#2c2c2e' : '#e5e5ea';
+      const gridColor = isDark ? '#3a3a3c' : '#e5e5ea';
       const textColor = isDark ? '#f2f2f7' : '#1c1c1e';
 
       const ctx = document.getElementById('loanChart').getContext('2d');
@@ -1125,15 +1005,14 @@
         data: {
           labels: labels,
           datasets: [
-            { label: '繰り上げなし', data: norm, borderColor: '#8e8e93', borderDash: [5,5], fill: false, pointRadius: 0 },
-            { label: '① 期間短縮型', data: short, borderColor: '#007aff', fill: false, borderWidth: 2.5, pointRadius: 0 },
-            { label: '② 返済額軽減型', data: reduce, borderColor: '#af52de', fill: false, borderWidth: 2.5, pointRadius: 0 }
+            { label: '繰り上げなし', data: norm, borderColor: '#8e8e93', borderDash: [5,5], fill: false },
+            { label: '① 期間短縮型', data: short, borderColor: '#007aff', fill: false },
+            { label: '② 返済額軽減型', data: reduce, borderColor: '#af52de', fill: false }
           ]
         },
         options: { 
-          responsive: true, maintainAspectRatio: false,
-          animation: { duration: 400, easing: 'easeOutQuart' },
-          plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { weight: '600' } } } },
+          responsive: true, maintainAspectRatio: false, 
+          plugins: { legend: { position: 'bottom', labels: { color: textColor } } },
           scales: {
             x: { grid: { color: gridColor }, ticks: { color: textColor } },
             y: { grid: { color: gridColor }, ticks: { color: textColor } }
@@ -1144,7 +1023,7 @@
 
     function updateAssetChart(labels, dataNet, dataGross, dataYielded) {
       const isDark = document.body.getAttribute('data-theme') === 'dark';
-      const gridColor = isDark ? '#2c2c2e' : '#e5e5ea';
+      const gridColor = isDark ? '#3a3a3c' : '#e5e5ea';
       const textColor = isDark ? '#f2f2f7' : '#1c1c1e';
 
       const ctx = document.getElementById('assetChart').getContext('2d');
@@ -1160,8 +1039,7 @@
               borderColor: '#34c759',
               borderDash: [3,3],
               fill: false,
-              tension: 0.25,
-              pointRadius: 0
+              tension: 0.2
             },
             {
               label: '源泉徴収ベース (青)',
@@ -1169,25 +1047,21 @@
               borderColor: '#007aff',
               borderDash: [3,3],
               fill: false,
-              tension: 0.25,
-              pointRadius: 0
+              tension: 0.2
             },
             {
               label: '運用利回り込資産 (紫)',
               data: dataYielded,
               borderColor: '#af52de',
-              backgroundColor: isDark ? 'rgba(191, 90, 242, 0.15)' : 'rgba(175, 82, 222, 0.08)',
+              backgroundColor: 'rgba(175, 82, 222, 0.08)',
               fill: true,
-              borderWidth: 2.5,
-              tension: 0.25,
-              pointRadius: 0
+              tension: 0.2
             }
           ]
         },
         options: { 
-          responsive: true, maintainAspectRatio: false,
-          animation: { duration: 400, easing: 'easeOutQuart' },
-          plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { weight: '600' } } } },
+          responsive: true, maintainAspectRatio: false, 
+          plugins: { legend: { position: 'bottom', labels: { color: textColor } } },
           scales: {
             x: { grid: { color: gridColor }, ticks: { color: textColor } },
             y: { grid: { color: gridColor }, ticks: { color: textColor } }
