@@ -624,8 +624,8 @@
       body.setAttribute('data-theme', next);
       localStorage.setItem('loan_sim_theme', next);
       const btn = document.querySelector('.theme-btn');
-      btn.innerText = next === 'dark' ? '☀️ ライトモード切替' : '🌙 ダークモード切替';
-      calculate(); // テーマ変更後にグラフの色を即時再描画
+      if(btn) btn.innerText = next === 'dark' ? '☀️ ライトモード切替' : '🌙 ダークモード切替';
+      calculate();
     }
 
     const savedTheme = localStorage.getItem('loan_sim_theme');
@@ -643,7 +643,7 @@
 
     function loadScenario(key) {
       document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
-      event.target.classList.add('active');
+      if(event && event.target) event.target.classList.add('active');
       const s = scenarios[key];
       if (!s) return;
 
@@ -705,11 +705,16 @@
         document.querySelectorAll('.tab-button')[1].classList.add('active');
         document.getElementById('tab-life').classList.add('active');
       }
+      // タブ切り替え時にグラフの表示サイズを再計算させる
+      setTimeout(() => {
+        if (loanChart) loanChart.resize();
+        if (assetChart) assetChart.resize();
+      }, 50);
     }
 
     function restoreInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        const val = localStorage.getItem('loan_sim_v11_' + input.id);
+        const val = localStorage.getItem('loan_sim_v12_' + input.id);
         if (val !== null) {
           input.value = val;
           let rangeInput = document.getElementById(input.id + '_range');
@@ -720,7 +725,7 @@
 
     function saveInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        localStorage.setItem('loan_sim_v11_' + input.id, input.value);
+        localStorage.setItem('loan_sim_v12_' + input.id, input.value);
       });
     }
 
@@ -1067,6 +1072,7 @@
       });
     }
 
+    // 初回実行
     restoreInputs();
     calculate();
   </script>
