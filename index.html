@@ -430,17 +430,43 @@
 
       <details class="accordion-section" open>
         <summary>
-          <span>📋 毎月の生活費内訳</span>
+          <span>📋 毎月の生活費内訳＆ボーナス設定</span>
           <span id="accordionLivingTotal" style="font-weight: bold; font-size: 0.85rem; color: var(--primary-color);">計 0 万円/月</span>
         </summary>
         
-        <div style="margin-bottom: 10px;">
+        <div style="margin-bottom: 12px;">
           <div class="input-group">
             <label for="inc_hand">世帯手取り月収 (万円)</label>
             <div class="dual-input">
               <input type="number" id="inc_hand" value="45" step="1" min="0" max="200" oninput="syncVal('inc_hand', this.value)">
               <input type="range" id="inc_hand_range" value="45" step="1" min="10" max="100" oninput="syncVal('inc_hand_range', this.value)">
             </div>
+          </div>
+        </div>
+
+        <!-- 夏・冬ボーナス入力欄 -->
+        <div style="background: var(--card-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 14px;">
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;">🎁 夏・冬ボーナス設定 (手取り額)</div>
+          <div class="input-grid">
+            <div class="input-group">
+              <label for="bonus_husband_summer">夫 夏ボーナス (万円)</label>
+              <div class="dual-input"><input type="number" id="bonus_husband_summer" value="40" step="5" min="0" max="500" oninput="syncVal('bonus_husband_summer', this.value)"></div>
+            </div>
+            <div class="input-group">
+              <label for="bonus_husband_winter">夫 冬ボーナス (万円)</label>
+              <div class="dual-input"><input type="number" id="bonus_husband_winter" value="40" step="5" min="0" max="500" oninput="syncVal('bonus_husband_winter', this.value)"></div>
+            </div>
+            <div class="input-group">
+              <label for="bonus_wife_summer">妻 夏ボーナス (万円)</label>
+              <div class="dual-input"><input type="number" id="bonus_wife_summer" value="10" step="5" min="0" max="500" oninput="syncVal('bonus_wife_summer', this.value)"></div>
+            </div>
+            <div class="input-group">
+              <label for="bonus_wife_winter">妻 冬ボーナス (万円)</label>
+              <div class="dual-input"><input type="number" id="bonus_wife_winter" value="10" step="5" min="0" max="500" oninput="syncVal('bonus_wife_winter', this.value)"></div>
+            </div>
+          </div>
+          <div style="font-size: 0.75rem; opacity: 0.75; text-align: right; margin-top: 4px;">
+            年間ボーナス合計: <span id="totalAnnualBonusDisplay" style="font-weight: bold; color: var(--primary-color);">0 万円</span>
           </div>
         </div>
 
@@ -455,6 +481,7 @@
           <div class="result-row"><span>世帯 手取り年収:</span><span id="totalNetIncome" class="result-value" style="color:var(--primary-color);">0 万円</span></div>
           <div class="result-row"><span>生活費合計 (月額):</span><span id="totalLivingCost" class="result-value">0 万円</span></div>
           <div class="result-row"><span>住宅ローン後の毎月余剰金:</span><span id="netMonthlySavings" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
+          <div class="result-row"><span>年間合計余剰金 (ボーナス込):</span><span id="netAnnualSavings" class="result-value" style="color:var(--primary-color);">0 万円/年</span></div>
           <div id="cashflowHealthAdvice" style="font-size: 0.82rem; margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border-color); color: var(--secondary-color); line-height: 1.4;">
             家計診断チェック中...
           </div>
@@ -879,13 +906,13 @@
       }
 
       if (!loadedFromHash) {
-        const savedItems = localStorage.getItem('loan_sim_v29_custom_items');
+        const savedItems = localStorage.getItem('loan_sim_v30_custom_items');
         if (savedItems) {
           try { customExpenseItems = JSON.parse(savedItems); } catch(e) {}
         }
 
         document.querySelectorAll('input[type="number"], select').forEach(input => {
-          const val = localStorage.getItem('loan_sim_v29_' + input.id);
+          const val = localStorage.getItem('loan_sim_v30_' + input.id);
           if (val !== null) {
             input.value = val;
             let rangeInput = document.getElementById(input.id + '_range');
@@ -901,10 +928,10 @@
       const obj = getAllDataObj();
       for (let key in obj) {
         if (key !== 'items') {
-          localStorage.setItem('loan_sim_v29_' + key, obj[key]);
+          localStorage.setItem('loan_sim_v30_' + key, obj[key]);
         }
       }
-      localStorage.setItem('loan_sim_v29_custom_items', JSON.stringify(customExpenseItems));
+      localStorage.setItem('loan_sim_v30_custom_items', JSON.stringify(customExpenseItems));
     }
 
     function shareConfigUrl() {
@@ -1030,7 +1057,7 @@
       document.getElementById('reduceMonthlyDiff').innerText = '-' + Math.round(normalPMT - newReducePMT).toLocaleString() + ' 円';
       document.getElementById('reduceSavedInterest').innerText = Math.round((normRemInt - redRemInt)/10000).toLocaleString() + ' 万円';
 
-      // 3パターン利回り積立シミュレーション計算（独立した investYears を使用）
+      // 3パターン利回り積立シミュレーション計算（独立 investYears）
       const yieldRates = [0.02, 0.04, 0.06];
       const investTotalMonths = investYears * 12;
       const resultsByYield = yieldRates.map(yRate => {
@@ -1065,6 +1092,16 @@
 
       const handInc = parseFloat(document.getElementById('inc_hand').value) || 0;
       
+      // 夏・冬ボーナス値取得
+      const bHS = parseFloat(document.getElementById('bonus_husband_summer').value) || 0;
+      const bHW = parseFloat(document.getElementById('bonus_husband_winter').value) || 0;
+      const bWS = parseFloat(document.getElementById('bonus_wife_summer').value) || 0;
+      const bWW = parseFloat(document.getElementById('bonus_wife_winter').value) || 0;
+      const totalBonusAnnual = bHS + bHW + bWS + bWW;
+
+      const bonusDisp = document.getElementById('totalAnnualBonusDisplay');
+      if (bonusDisp) bonusDisp.innerText = `${totalBonusAnnual.toFixed(0)} 万円`;
+
       let livingTotal = 0;
       customExpenseItems.forEach(item => {
         livingTotal += (parseFloat(item.val) || 0);
@@ -1072,12 +1109,18 @@
 
       document.getElementById('accordionLivingTotal').innerText = `計 ${livingTotal.toFixed(1)} 万円/月`;
       document.getElementById('totalLivingCost').innerText = livingTotal.toFixed(1) + ' 万円/月';
+      
       const netSavingsWan = handInc - livingTotal - (normalPMT / 10000);
       document.getElementById('netMonthlySavings').innerText = netSavingsWan.toFixed(1) + ' 万円/月';
 
+      // ボーナス込の年間手残り余剰金
+      const netAnnualSavingsWan = (netSavingsWan * 12) + totalBonusAnnual;
+      const netAnnualElem = document.getElementById('netAnnualSavings');
+      if (netAnnualElem) netAnnualElem.innerText = `${netAnnualSavingsWan.toFixed(1)} 万円/年`;
+
       const healthElem = document.getElementById('cashflowHealthAdvice');
       if (netSavingsWan >= 5) {
-        healthElem.innerHTML = `🟢 <b>良好な家計環境:</b> 毎月約${netSavingsWan.toFixed(1)}万円の余剰金が出ており、理想的な貯蓄・積立ペースを維持できます！`;
+        healthElem.innerHTML = `🟢 <b>良好な家計環境:</b> 毎月約${netSavingsWan.toFixed(1)}万円（年間ボーナス込で約${netAnnualSavingsWan.toFixed(0)}万円）の余剰金が出ており、理想的な貯蓄・積立ペースを維持できます！`;
         healthElem.style.color = "var(--secondary-color)";
       } else if (netSavingsWan > 0) {
         healthElem.innerHTML = `🟡 <b>注意水準:</b> 毎月の手残りは${netSavingsWan.toFixed(1)}万円です。予備費の確保を推奨します。`;
@@ -1143,11 +1186,15 @@
         let events = [];
 
         let currentWNet = wNet;
+        let currentWBonus = bWS + bWW;
+
         if (y >= wifeRetireYear && wifeRetireYear > 0) {
           currentWNet = (wifeMonthlyPension * 12);
+          currentWBonus = 0; // 退職後は妻ボーナス0
           if (y === wifeRetireYear) events.push("妻退職(年金受給開始)");
         }
 
+        const effectiveBonus = bHS + bHW + currentWBonus;
         const currentYearlyNet = hNet + currentWNet;
 
         let mortgageDeduction = 0;
@@ -1175,12 +1222,12 @@
         if (y === prepayYear && prepayYear > 0) { annualExp += prepayAmountWan; events.push(`繰り上げ返済(-${prepayAmountWan}万)`); }
         if (y === years) { events.push("ローン完済！"); }
 
-        const effectiveNetIncome = currentYearlyNet + mortgageDeduction;
+        const effectiveNetIncome = currentYearlyNet + effectiveBonus + mortgageDeduction;
 
         if (y === 0) {
           events.push("スタート(現在の貯蓄)");
         } else {
-          const annualNetDiffNet = (handInc * 12) - annualExp;
+          const annualNetDiffNet = (handInc * 12) + effectiveBonus - annualExp;
           currentAssetNet += annualNetDiffNet;
 
           const annualNetDiffGross = effectiveNetIncome - annualExp;
