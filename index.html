@@ -336,7 +336,7 @@
       </div>
 
       <div class="card">
-        <div class="card-title">繰り上げ返済シミュレーション (期間短縮 vs 返済額軽減)</div>
+        <div class="card-title">繰り上げ返済比較</div>
         <div class="input-grid">
           <div class="input-group">
             <label for="prepayYear">繰り上げ時期 (年後)</label>
@@ -380,7 +380,7 @@
     <div id="tab-income" class="tab-content">
       <div class="card" style="border: 2px solid var(--primary-color); background: rgba(0, 122, 255, 0.03);">
         <div class="card-title" style="border-bottom-color: var(--primary-color);">
-          <span>💰 現在の貯蓄・資産額 (シミュレーション起点)</span>
+          <span>💰 現在の保有資産</span>
           <span class="save-badge">● リアルタイム連動</span>
         </div>
         <div class="input-grid" style="grid-template-columns: 1fr;">
@@ -430,7 +430,7 @@
 
       <details class="accordion-section" open>
         <summary>
-          <span>📋 毎月の生活費の内訳 (自由編集・削除可)</span>
+          <span>📋 毎月の生活費内訳</span>
           <span id="accordionLivingTotal" style="font-weight: bold; font-size: 0.85rem; color: var(--primary-color);">計 0 万円/月</span>
         </summary>
         
@@ -657,7 +657,7 @@
 
       <div class="card">
         <div class="card-title">
-          40年間の資産推移シミュレーション (複利運用・控除考慮)
+          40年間の資産推移
         </div>
         <div style="font-size: 0.75rem; opacity: 0.7; margin-bottom: 6px;">
           ※ 緑：月収ベース ｜ 青：源泉徴収ベース ｜ 紫：運用利回り込資産推移（現在の貯蓄からスタート）
@@ -847,13 +847,13 @@
       }
 
       if (!loadedFromHash) {
-        const savedItems = localStorage.getItem('loan_sim_v25_custom_items');
+        const savedItems = localStorage.getItem('loan_sim_v26_custom_items');
         if (savedItems) {
           try { customExpenseItems = JSON.parse(savedItems); } catch(e) {}
         }
 
         document.querySelectorAll('input[type="number"]').forEach(input => {
-          const val = localStorage.getItem('loan_sim_v25_' + input.id);
+          const val = localStorage.getItem('loan_sim_v26_' + input.id);
           if (val !== null) {
             input.value = val;
             let rangeInput = document.getElementById(input.id + '_range');
@@ -869,10 +869,10 @@
       const obj = getAllDataObj();
       for (let key in obj) {
         if (key !== 'items') {
-          localStorage.setItem('loan_sim_v25_' + key, obj[key]);
+          localStorage.setItem('loan_sim_v26_' + key, obj[key]);
         }
       }
-      localStorage.setItem('loan_sim_v25_custom_items', JSON.stringify(customExpenseItems));
+      localStorage.setItem('loan_sim_v26_custom_items', JSON.stringify(customExpenseItems));
     }
 
     function shareConfigUrl() {
