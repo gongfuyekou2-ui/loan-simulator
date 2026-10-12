@@ -649,7 +649,6 @@
         ⚠️ <b>リスク警告:</b> <span id="riskAlertText">シミュレーション期間中に資金ショートまたは生活防衛資金を下回るタイミングがあります。</span>
       </div>
 
-      <!-- 将来シミュレーション専用：専門家アドバイスカード -->
       <div class="card" style="background: rgba(0, 122, 255, 0.04); border: 1.5px solid var(--primary-color);">
         <div class="card-title" style="border-bottom-color: var(--primary-color); margin-bottom: 10px;">
           <span style="color: var(--primary-color);">🎓 専門家による将来シミュレーション診断</span>
@@ -746,7 +745,10 @@
       setValAndRange('assetYield', s.yield);
       setValAndRange('wifeRetireYear', s.wife_retire);
 
+      // シナリオ読込時も確実に即座に自動保存を実行
+      saveInputs();
       calculate();
+      showToast('「' + (key === 'standard' ? '標準シナリオ' : key === 'conservative' ? '妻早めリタイア案' : '積極投資型') + '」を適用・保存しました');
     }
 
     function setValAndRange(id, val) {
@@ -858,7 +860,6 @@
     }
 
     function restoreInputs() {
-      // 1. URLハッシュからの復元を優先
       const hash = window.location.hash;
       let loadedFromHash = false;
       if (hash && hash.startsWith('#data=')) {
@@ -883,7 +884,7 @@
 
       if (!loadedFromHash) {
         document.querySelectorAll('input[type="number"]').forEach(input => {
-          const val = localStorage.getItem('loan_sim_v20_' + input.id);
+          const val = localStorage.getItem('loan_sim_v21_' + input.id);
           if (val !== null) {
             input.value = val;
             let rangeInput = document.getElementById(input.id + '_range');
@@ -891,7 +892,7 @@
           }
         });
 
-        const savedItems = localStorage.getItem('loan_sim_v20_custom_items');
+        const savedItems = localStorage.getItem('loan_sim_v21_custom_items');
         if (savedItems) {
           try { customExpenseItems = JSON.parse(savedItems); } catch(e) {}
         }
@@ -903,13 +904,12 @@
       const obj = getAllDataObj();
       for (let key in obj) {
         if (key !== 'items') {
-          localStorage.setItem('loan_sim_v20_' + key, obj[key]);
+          localStorage.setItem('loan_sim_v21_' + key, obj[key]);
         }
       }
-      localStorage.setItem('loan_sim_v20_custom_items', JSON.stringify(customExpenseItems));
+      localStorage.setItem('loan_sim_v21_custom_items', JSON.stringify(customExpenseItems));
     }
 
-    // 共有機能：URLコピー
     function shareConfigUrl() {
       const dataObj = getAllDataObj();
       const jsonStr = JSON.stringify(dataObj);
@@ -917,13 +917,12 @@
       const shareUrl = window.location.origin + window.location.pathname + '#data=' + b64;
 
       navigator.clipboard.writeText(shareUrl).then(() => {
-        showToast('共有用URLをコピーしました！LINEやメールで貼り付けてシェアできます。');
+        showToast('共有用URLをコピーしました！LINEやメールでシェアできます。');
       }).catch(() => {
         prompt('以下のURLをコピーしてください:', shareUrl);
       });
     }
 
-    // JSONファイル保存
     function exportJsonFile() {
       const dataObj = getAllDataObj();
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataObj, null, 2));
@@ -936,7 +935,6 @@
       showToast('設定データをJSONファイルとして保存しました！');
     }
 
-    // JSONファイル読み込み
     function importJsonFile(event) {
       const file = event.target.files[0];
       if (!file) return;
@@ -1221,9 +1219,7 @@
         banner.classList.remove('show');
       }
 
-      // 将来シミュレーション専門家アドバイスの生成
       const finalAsset = assetDataYielded[assetDataYielded.length - 1];
-      const peakAsset = Math.max(...assetDataYielded);
       const expertAdviceElem = document.getElementById('simExpertAdviceText');
       
       let expertHtml = "";
