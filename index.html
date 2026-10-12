@@ -11,6 +11,7 @@
       --primary-color: #007aff;
       --primary-gradient: linear-gradient(135deg, #007aff, #0051a8);
       --secondary-color: #34c759;
+      --line-color: #06C755;
       --danger-color: #ff3b30;
       --purple-color: #af52de;
       --orange-color: #ff9500;
@@ -25,6 +26,7 @@
       --primary-color: #0a84ff;
       --primary-gradient: linear-gradient(135deg, #0a84ff, #0056b3);
       --secondary-color: #32d74b;
+      --line-color: #06C755;
       --danger-color: #ff453a;
       --purple-color: #bf5af2;
       --orange-color: #ff9f0a;
@@ -68,7 +70,7 @@
       -webkit-text-fill-color: transparent;
       white-space: nowrap;
     }
-    .header-actions { display: flex; gap: 6px; align-items: center; }
+    .header-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
     .action-btn {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
@@ -82,6 +84,24 @@
       white-space: nowrap;
     }
     .action-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
+    .line-btn {
+      background-color: var(--line-color) !important;
+      color: white !important;
+      border: none !important;
+    }
+    .line-btn:hover { opacity: 0.9; }
+
+    .line-notice-banner {
+      display: none;
+      background: rgba(255, 149, 0, 0.15);
+      border: 1px solid var(--orange-color);
+      color: var(--text-color);
+      padding: 12px 14px;
+      border-radius: 12px;
+      font-size: 0.78rem;
+      margin-bottom: 14px;
+      line-height: 1.5;
+    }
 
     .tab-container {
       display: flex;
@@ -278,12 +298,19 @@
     <div class="top-header">
       <h1>住宅ローン＆ライフプラン</h1>
       <div class="header-actions">
+        <button class="action-btn line-btn" onclick="shareToLine()">💬 LINE共有</button>
         <button class="action-btn" onclick="shareConfigUrl()">🔗 共有URL</button>
         <button class="action-btn" onclick="exportJsonFile()">💾 保存</button>
         <button class="action-btn" onclick="document.getElementById('importFile').click()">📂 読込</button>
         <input type="file" id="importFile" style="display:none" accept=".json" onchange="importJsonFile(event)">
         <button class="action-btn" onclick="toggleTheme()" style="padding: 6px 10px;">🌙</button>
       </div>
+    </div>
+
+    <!-- LINE内ブラウザ用誘導バナー -->
+    <div id="lineInAppNotice" class="line-notice-banner">
+      ⚠️ <strong>LINE内ブラウザで閲覧中です</strong><br>
+      右下の「…」またはメニューから<strong>「ブラウザで開く（Safari / Chrome）」</strong>を選択すると、スマホのホーム画面にアイコンとして追加してスムーズに操作できます！
     </div>
 
     <div class="tab-container">
@@ -964,15 +991,25 @@
       localStorage.setItem('loan_sim_v32_custom_items', JSON.stringify(customExpenseItems));
     }
 
-    function shareConfigUrl() {
+    function generateShareableUrl() {
       saveInputs();
       const dataObj = getAllDataObj();
       const jsonStr = JSON.stringify(dataObj);
       const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
-      const shareUrl = window.location.origin + window.location.pathname + '#data=' + b64;
+      return window.location.origin + window.location.pathname + '#data=' + b64;
+    }
 
+    function shareToLine() {
+      const shareUrl = generateShareableUrl();
+      const text = "【住宅ローン＆ライフプランシミュレーター】\n現在の入力・シミュレーション結果を共有します：\n";
+      const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(text + shareUrl)}`;
+      window.open(lineUrl, '_blank');
+    }
+
+    function shareConfigUrl() {
+      const shareUrl = generateShareableUrl();
       navigator.clipboard.writeText(shareUrl).then(() => {
-        showToast('共有用URLをコピーしました！');
+        showToast('共有用URLをコピーしました！LINEやメールに貼り付けてください。');
       }).catch(() => {
         prompt('以下のURLをコピーしてください:', shareUrl);
       });
@@ -1023,8 +1060,16 @@
       const t = document.getElementById('toast');
       t.innerText = msg;
       t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 3000);
+      setTimeout(() => t.classList.remove('show'), 3500);
     }
+
+    window.addEventListener('DOMContentLoaded', () => {
+      const ua = navigator.userAgent || navigator.vendor || window.opera;
+      if (ua.indexOf("Line") > -1) {
+        const notice = document.getElementById('lineInAppNotice');
+        if (notice) notice.style.display = 'block';
+      }
+    });
 
     function calculate() {
       saveInputs();
@@ -1146,7 +1191,6 @@
       document.getElementById('accordionLivingTotal').innerText = `計 ${livingTotal.toFixed(1)} 万円/月`;
       document.getElementById('totalLivingCost').innerText = livingTotal.toFixed(1) + ' 万円/月';
 
-      // 生活費の診断アドバイス生成（二人暮らし・子なし平均：食費6.8万、水道光熱2.2万、通信1.5万、住居除く生活費約22-25万）
       const expAdviceElem = document.getElementById('expenseAdviceText');
       let expAdviceHtml = `<b>📊 総務省家計調査に基づく「二人暮らし世帯」との比較:</b><br>`;
       expAdviceHtml += `・<b>食費・日用品</b>: 設定 <b>${foodVal > 0 ? foodVal.toFixed(1) : livingTotal > 0 ? '未分類' : 0}万円</b> (二人暮らし全国平均: 約6.8万円/月)<br>`;
@@ -1427,7 +1471,6 @@
       });
     }
 
-    // 年間合計余剰金（ボーナス込）のみのシンプル累積貯蓄推移グラフ（5年間隔・MAX40年）
     function updateIncomeTabAssetChart(netAnnualSavingsWan, initAsset, maxYears) {
       const filteredLabels = [];
       const filteredData = [];
