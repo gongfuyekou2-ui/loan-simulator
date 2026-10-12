@@ -56,9 +56,11 @@
       align-items: center;
       margin-bottom: 12px;
       padding: 4px 2px;
+      flex-wrap: wrap;
+      gap: 8px;
     }
     h1 {
-      font-size: 1.1rem;
+      font-size: 1.05rem;
       font-weight: 700;
       margin: 0;
       background: var(--primary-gradient);
@@ -66,17 +68,20 @@
       -webkit-text-fill-color: transparent;
       white-space: nowrap;
     }
-    .theme-btn {
+    .header-actions { display: flex; gap: 6px; align-items: center; }
+    .action-btn {
       background: var(--card-bg);
       border: 1px solid var(--border-color);
       color: var(--text-color);
-      padding: 6px 12px;
+      padding: 6px 10px;
       border-radius: 20px;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 600;
       cursor: pointer;
       box-shadow: var(--shadow-sm);
+      white-space: nowrap;
     }
+    .action-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
 
     .scenario-bar { display: flex; gap: 8px; margin-bottom: 12px; }
     .scenario-btn {
@@ -150,7 +155,6 @@
       align-items: center;
     }
 
-    /* アコーディオン要素 */
     details.accordion-section {
       background: var(--bg-color);
       border: 1px solid var(--border-color);
@@ -211,12 +215,7 @@
     .dual-input input[type="number"]:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15); }
     .dual-input input[type="range"] { width: 100%; accent-color: var(--primary-color); cursor: pointer; margin: 2px 0; height: 5px; border-radius: 3px; }
 
-    /* 動的カスタム支出行 */
-    .custom-item-list {
-      display: flex;
-      flex-direction: column;
-      gap: 10px;
-    }
+    .custom-item-list { display: flex; flex-direction: column; gap: 10px; }
     .custom-item-row {
       display: grid;
       grid-template-columns: 1.2fr 1fr auto;
@@ -238,9 +237,7 @@
       padding: 6px 10px;
       border-radius: 6px;
     }
-    .del-btn:hover {
-      background: rgba(255, 59, 48, 0.2);
-    }
+    .del-btn:hover { background: rgba(255, 59, 48, 0.2); }
 
     .add-item-btn {
       width: 100%;
@@ -287,13 +284,26 @@
     tr:nth-child(even) { background-color: rgba(128,128,128,0.03); }
     .event-text { text-align: left; color: var(--primary-color); font-weight: 700; }
     .minus-val { color: var(--danger-color); font-weight: 700; }
+
+    .toast {
+      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
+      background: #1c1c1e; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 0.82rem;
+      box-shadow: 0 6px 20px rgba(0,0,0,0.3); transition: transform 0.3s ease; z-index: 999;
+    }
+    .toast.show { transform: translateX(-50%) translateY(0); }
   </style>
 </head>
 <body data-theme="light">
   <div class="container">
     <div class="top-header">
-      <h1>住宅ローン＆ライフプラン統合シミュレーター</h1>
-      <button class="theme-btn" onclick="toggleTheme()">🌙 ダークモード切替</button>
+      <h1>住宅ローン＆ライフプラン</h1>
+      <div class="header-actions">
+        <button class="action-btn" onclick="shareConfigUrl()">🔗 共有URL</button>
+        <button class="action-btn" onclick="exportJsonFile()">💾 保存</button>
+        <button class="action-btn" onclick="document.getElementById('importFile').click()">📂 読込</button>
+        <input type="file" id="importFile" style="display:none" accept=".json" onchange="importJsonFile(event)">
+        <button class="action-btn" onclick="toggleTheme()" style="padding: 6px 10px;">🌙</button>
+      </div>
     </div>
 
     <div class="scenario-bar">
@@ -456,7 +466,6 @@
         </div>
       </div>
 
-      <!-- 完全自由カスタマイズ対応のアコーディオン支出内訳 -->
       <details class="accordion-section" open>
         <summary>
           <span>📋 毎月の生活費の内訳 (自由編集・削除可)</span>
@@ -473,10 +482,7 @@
           </div>
         </div>
 
-        <div class="custom-item-list" id="customExpenseContainer">
-          <!-- 動的生成される支出項目エリア -->
-        </div>
-
+        <div class="custom-item-list" id="customExpenseContainer"></div>
         <button type="button" class="add-item-btn" onclick="addCustomExpenseItem('新しい支出項目', 1)">＋ 独自の支出項目を追加する</button>
       </details>
 
@@ -537,7 +543,6 @@
         </div>
       </div>
 
-      <!-- 折りたたみ：マイカー詳細設定 -->
       <details class="accordion-section">
         <summary>🚗 マイカー買い替え・ローン計画（開く）</summary>
         <div class="input-grid" style="margin-top: 8px;">
@@ -596,7 +601,6 @@
         </div>
       </details>
 
-      <!-- 折りたたみ：旅行・リフォーム詳細設定 -->
       <details class="accordion-section">
         <summary>✈️ 旅行・大規模リフォーム計画（開く）</summary>
         <div class="input-grid" style="margin-top: 8px;">
@@ -645,6 +649,16 @@
         ⚠️ <b>リスク警告:</b> <span id="riskAlertText">シミュレーション期間中に資金ショートまたは生活防衛資金を下回るタイミングがあります。</span>
       </div>
 
+      <!-- 将来シミュレーション専用：専門家アドバイスカード -->
+      <div class="card" style="background: rgba(0, 122, 255, 0.04); border: 1.5px solid var(--primary-color);">
+        <div class="card-title" style="border-bottom-color: var(--primary-color); margin-bottom: 10px;">
+          <span style="color: var(--primary-color);">🎓 専門家による将来シミュレーション診断</span>
+        </div>
+        <div id="simExpertAdviceText" style="font-size: 0.88rem; line-height: 1.5;">
+          分析中...
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title">
           40年間の資産推移シミュレーション (複利運用・控除考慮)
@@ -679,6 +693,8 @@
 
   </div>
 
+  <div id="toast" class="toast">クリップボードに共有URLをコピーしました！</div>
+
   <script>
     let loanChart = null;
     let assetChart = null;
@@ -698,16 +714,12 @@
       const next = current === 'dark' ? 'light' : 'dark';
       body.setAttribute('data-theme', next);
       localStorage.setItem('loan_sim_theme', next);
-      const btn = document.querySelector('.theme-btn');
-      if(btn) btn.innerText = next === 'dark' ? '☀️ ライトモード切替' : '🌙 ダークモード切替';
       calculate();
     }
 
     const savedTheme = localStorage.getItem('loan_sim_theme');
     if (savedTheme) {
       document.body.setAttribute('data-theme', savedTheme);
-      const btn = document.querySelector('.theme-btn');
-      if(btn) btn.innerText = savedTheme === 'dark' ? '☀️ ライトモード切替' : '🌙 ダークモード切替';
     }
 
     const scenarios = {
@@ -837,30 +849,128 @@
       calculate();
     }
 
-    function restoreInputs() {
+    function getAllDataObj() {
+      const data = { items: customExpenseItems };
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        const val = localStorage.getItem('loan_sim_v19_' + input.id);
-        if (val !== null) {
-          input.value = val;
-          let rangeInput = document.getElementById(input.id + '_range');
-          if (rangeInput) rangeInput.value = val;
-        }
+        data[input.id] = input.value;
       });
+      return data;
+    }
 
-      const savedItems = localStorage.getItem('loan_sim_v19_custom_items');
-      if (savedItems) {
+    function restoreInputs() {
+      // 1. URLハッシュからの復元を優先
+      const hash = window.location.hash;
+      let loadedFromHash = false;
+      if (hash && hash.startsWith('#data=')) {
         try {
-          customExpenseItems = JSON.parse(savedItems);
-        } catch(e) {}
+          const jsonStr = decodeURIComponent(escape(atob(hash.replace('#data=', ''))));
+          const parsed = JSON.parse(jsonStr);
+          if (parsed.items) {
+            customExpenseItems = parsed.items;
+          }
+          for (let key in parsed) {
+            if (key === 'items') continue;
+            let input = document.getElementById(key);
+            if (input) {
+              input.value = parsed[key];
+              let rng = document.getElementById(key + '_range');
+              if (rng) rng.value = parsed[key];
+            }
+          }
+          loadedFromHash = true;
+        } catch(e) { console.error('URL parse error', e); }
+      }
+
+      if (!loadedFromHash) {
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+          const val = localStorage.getItem('loan_sim_v20_' + input.id);
+          if (val !== null) {
+            input.value = val;
+            let rangeInput = document.getElementById(input.id + '_range');
+            if (rangeInput) rangeInput.value = val;
+          }
+        });
+
+        const savedItems = localStorage.getItem('loan_sim_v20_custom_items');
+        if (savedItems) {
+          try { customExpenseItems = JSON.parse(savedItems); } catch(e) {}
+        }
       }
       renderExpenseItems();
     }
 
     function saveInputs() {
-      document.querySelectorAll('input[type="number"]').forEach(input => {
-        localStorage.setItem('loan_sim_v19_' + input.id, input.value);
+      const obj = getAllDataObj();
+      for (let key in obj) {
+        if (key !== 'items') {
+          localStorage.setItem('loan_sim_v20_' + key, obj[key]);
+        }
+      }
+      localStorage.setItem('loan_sim_v20_custom_items', JSON.stringify(customExpenseItems));
+    }
+
+    // 共有機能：URLコピー
+    function shareConfigUrl() {
+      const dataObj = getAllDataObj();
+      const jsonStr = JSON.stringify(dataObj);
+      const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
+      const shareUrl = window.location.origin + window.location.pathname + '#data=' + b64;
+
+      navigator.clipboard.writeText(shareUrl).then(() => {
+        showToast('共有用URLをコピーしました！LINEやメールで貼り付けてシェアできます。');
+      }).catch(() => {
+        prompt('以下のURLをコピーしてください:', shareUrl);
       });
-      localStorage.setItem('loan_sim_v19_custom_items', JSON.stringify(customExpenseItems));
+    }
+
+    // JSONファイル保存
+    function exportJsonFile() {
+      const dataObj = getAllDataObj();
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataObj, null, 2));
+      const dlAnchor = document.createElement('a');
+      dlAnchor.setAttribute("href", dataStr);
+      dlAnchor.setAttribute("download", "life_plan_simulation_data.json");
+      document.body.appendChild(dlAnchor);
+      dlAnchor.click();
+      dlAnchor.remove();
+      showToast('設定データをJSONファイルとして保存しました！');
+    }
+
+    // JSONファイル読み込み
+    function importJsonFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          if (parsed.items) {
+            customExpenseItems = parsed.items;
+          }
+          for (let key in parsed) {
+            if (key === 'items') continue;
+            let input = document.getElementById(key);
+            if (input) {
+              input.value = parsed[key];
+              let rng = document.getElementById(key + '_range');
+              if (rng) rng.value = parsed[key];
+            }
+          }
+          renderExpenseItems();
+          calculate();
+          showToast('設定データを正常に読み込みました！');
+        } catch(err) {
+          alert('ファイルの読み込みに失敗しました。正しいJSONファイルを選択してください。');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.innerText = msg;
+      t.classList.add('show');
+      setTimeout(() => t.classList.remove('show'), 3500);
     }
 
     function calculate() {
@@ -948,7 +1058,6 @@
 
       const handInc = parseFloat(document.getElementById('inc_hand').value) || 0;
       
-      // カスタム生活費リストの総和を計算
       let livingTotal = 0;
       customExpenseItems.forEach(item => {
         livingTotal += (parseFloat(item.val) || 0);
@@ -1111,6 +1220,21 @@
       } else {
         banner.classList.remove('show');
       }
+
+      // 将来シミュレーション専門家アドバイスの生成
+      const finalAsset = assetDataYielded[assetDataYielded.length - 1];
+      const peakAsset = Math.max(...assetDataYielded);
+      const expertAdviceElem = document.getElementById('simExpertAdviceText');
+      
+      let expertHtml = "";
+      if (hasRisk) {
+        expertHtml = `🔴 <b>注意が必要です:</b> シミュレーション期間中の途中で一時的な資金の目減りや生活防衛ラインを下回る期間があります。マイカーの買い替え時期やリフォーム時期、または毎月の生活費を数万円スリム化することで資産曲線が大きく改善します。`;
+      } else if (finalAsset > initAsset * 3) {
+        expertHtml = `🟢 <b>極めて順調な資産形成パスです:</b> 想定運用利回り（<b>${(assetYield*100).toFixed(1)}%</b>）と複利効果により、40年後には資産が約<b>${Math.round(finalAsset)}万円</b>へと大きく拡大する理想的なライフプランです！住宅ローン控除期間（13年間）を活かしながら着実に資産を築けています。`;
+      } else {
+        expertHtml = `🟡 <b>安定した堅実な推移です:</b> 資産の極端な減少や破綻リスクはありません。さらに余裕を持たせるために、奥様の退職後や教育・レジャー費用のバランスを時折チェックしながら運用を継続するのがおすすめです。`;
+      }
+      expertAdviceElem.innerHTML = expertHtml;
 
       document.getElementById('cashflowTableBody').innerHTML = tableRowsHtml.join('');
 
