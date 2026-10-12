@@ -178,7 +178,6 @@
     .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .input-group { margin-bottom: 6px; }
     
-    /* 統一されたラベルデザイン（1行で綺麗に納める） */
     label, .custom-label-input {
       display: block;
       font-size: 0.78rem;
@@ -196,6 +195,7 @@
       border-bottom: 1px dashed var(--border-color);
       padding: 0 0 2px 0;
       width: 100%;
+      font-weight: 700;
     }
     .custom-label-input:focus {
       outline: none;
@@ -212,37 +212,47 @@
     .dual-input input[type="range"] { width: 100%; accent-color: var(--primary-color); cursor: pointer; margin: 2px 0; height: 5px; border-radius: 3px; }
 
     /* 動的カスタム支出行 */
+    .custom-item-list {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+    }
     .custom-item-row {
       display: grid;
-      grid-template-columns: 1fr 1fr auto;
-      gap: 8px;
+      grid-template-columns: 1.2fr 1fr auto;
+      gap: 10px;
       align-items: center;
-      margin-bottom: 8px;
       background: var(--card-bg);
-      padding: 8px;
-      border-radius: 8px;
+      padding: 10px 12px;
+      border-radius: 10px;
       border: 1px solid var(--border-color);
+      box-shadow: var(--shadow-sm);
     }
     .del-btn {
-      background: none;
+      background: rgba(255, 59, 48, 0.1);
       border: none;
       color: var(--danger-color);
-      font-size: 1.1rem;
+      font-size: 1rem;
+      font-weight: bold;
       cursor: pointer;
-      padding: 0 4px;
+      padding: 6px 10px;
+      border-radius: 6px;
+    }
+    .del-btn:hover {
+      background: rgba(255, 59, 48, 0.2);
     }
 
     .add-item-btn {
       width: 100%;
-      padding: 8px;
+      padding: 10px;
       background: rgba(0, 122, 255, 0.08);
       border: 1px dashed var(--primary-color);
       color: var(--primary-color);
-      border-radius: 8px;
-      font-size: 0.8rem;
+      border-radius: 10px;
+      font-size: 0.82rem;
       font-weight: 700;
       cursor: pointer;
-      margin-top: 8px;
+      margin-top: 12px;
     }
 
     .result-box { background-color: var(--bg-color); border-radius: 12px; padding: 14px; margin-top: 12px; border: 1px solid var(--border-color); }
@@ -302,7 +312,7 @@
     <!-- ===== シート1: 住宅ローン ===== -->
     <div id="tab-loan" class="tab-content active">
       <div class="card">
-        <div class="card-title">ローン基本条件 <span class="save-badge">● 自動保存</span></div>
+        <div class="card-title">ローン基本条件 <span class="save-badge">● 自動保存中</span></div>
         <div class="input-grid">
           <div class="input-group">
             <label for="amount">借入額 (万円)</label>
@@ -368,7 +378,7 @@
         </div>
 
         <div class="result-box" id="strategyAdviceBox" style="background: rgba(0, 122, 255, 0.05); border: 1px solid var(--primary-color);">
-          <div class="result-row"><span style="font-weight: 700; color: var(--primary-color);">💡 専門家のアドバイス</span></div>
+          <div class="result-row"><span style="font-weight: 700; color: var(--primary-color);">💡 住宅ローン・資金運用アドバイス</span></div>
           <div id="strategyAdviceText" style="font-size: 0.85rem; margin-top: 4px; line-height: 1.4;">判定中...</div>
         </div>
 
@@ -446,14 +456,14 @@
         </div>
       </div>
 
-      <!-- アコーディオン：詳細な生活費の内訳（自由編集可） -->
+      <!-- 完全自由カスタマイズ対応のアコーディオン支出内訳 -->
       <details class="accordion-section" open>
         <summary>
-          <span>📋 毎月の生活費の内訳 (タップして開閉)</span>
-          <span id="accordionLivingTotal" style="font-weight: normal; font-size: 0.8rem; color: var(--text-color);">計 0 万円/月</span>
+          <span>📋 毎月の生活費の内訳 (自由編集・削除可)</span>
+          <span id="accordionLivingTotal" style="font-weight: bold; font-size: 0.85rem; color: var(--primary-color);">計 0 万円/月</span>
         </summary>
         
-        <div class="input-grid" id="fixedExpenseGrid">
+        <div style="margin-bottom: 10px;">
           <div class="input-group">
             <label for="inc_hand">世帯手取り月収 (万円)</label>
             <div class="dual-input">
@@ -461,60 +471,13 @@
               <input type="range" id="inc_hand_range" value="45" step="1" min="10" max="100" oninput="syncVal('inc_hand_range', this.value)">
             </div>
           </div>
-          <div class="input-group">
-            <label for="exp_food">食費・日用品 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="exp_food" value="8" step="0.5" min="0" max="30" oninput="syncVal('exp_food', this.value)">
-              <input type="range" id="exp_food_range" value="8" step="0.5" min="3" max="20" oninput="syncVal('exp_food_range', this.value)">
-            </div>
-          </div>
-          <div class="input-group">
-            <label for="exp_util">水道光熱費 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="exp_util" value="2.5" step="0.1" min="0" max="10" oninput="syncVal('exp_util', this.value)">
-              <input type="range" id="exp_util_range" value="2.5" step="0.5" min="1" max="5" oninput="syncVal('exp_util_range', this.value)">
-            </div>
-          </div>
-          <div class="input-group">
-            <label for="exp_comm">通信・サブスク (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="exp_comm" value="1.5" step="0.1" min="0" max="5" oninput="syncVal('exp_comm', this.value)">
-              <input type="range" id="exp_comm_range" value="1.5" step="0.5" min="0.5" max="3" oninput="syncVal('exp_comm_range', this.value)">
-            </div>
-          </div>
-          <div class="input-group">
-            <label for="exp_car_maint">車維持・燃料費 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="exp_car_maint" value="2" step="0.5" min="0" max="10" oninput="syncVal('exp_car_maint', this.value)">
-              <input type="range" id="exp_car_maint_range" value="2" step="0.5" min="0.5" max="5" oninput="syncVal('exp_car_maint_range', this.value)">
-            </div>
-          </div>
-          <div class="input-group">
-            <label for="exp_ins">保険料 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="exp_ins" value="2" step="0.5" min="0" max="10" oninput="syncVal('exp_ins', this.value)">
-              <input type="range" id="exp_ins_range" value="2" step="0.5" min="0" max="5" oninput="syncVal('exp_ins_range', this.value)">
-            </div>
-          </div>
-          <div class="input-group">
-            <label for="exp_play">娯楽・小遣い (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="exp_play" value="5" step="1" min="0" max="20" oninput="syncVal('exp_play', this.value)">
-              <input type="range" id="exp_play_range" value="5" step="1" min="1" max="15" oninput="syncVal('exp_play_range', this.value)">
-            </div>
-          </div>
-          <div class="input-group">
-            <label for="exp_other">その他雑費 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="exp_other" value="3" step="0.5" min="0" max="15" oninput="syncVal('exp_other', this.value)">
-              <input type="range" id="exp_other_range" value="3" step="0.5" min="0" max="10" oninput="syncVal('exp_other_range', this.value)">
-            </div>
-          </div>
         </div>
 
-        <!-- 自由追加項目エリア -->
-        <div id="customExpenseContainer" style="margin-top: 10px;"></div>
-        <button type="button" class="add-item-btn" onclick="addCustomExpenseItem()">＋ 自由な支出項目を追加</button>
+        <div class="custom-item-list" id="customExpenseContainer">
+          <!-- 動的生成される支出項目エリア -->
+        </div>
+
+        <button type="button" class="add-item-btn" onclick="addCustomExpenseItem('新しい支出項目', 1)">＋ 独自の支出項目を追加する</button>
       </details>
 
       <div class="card">
@@ -524,7 +487,7 @@
           <div class="result-row"><span>世帯 手取り年収:</span><span id="totalNetIncome" class="result-value" style="color:var(--primary-color);">0 万円</span></div>
           <div class="result-row"><span>生活費合計 (月額):</span><span id="totalLivingCost" class="result-value">0 万円</span></div>
           <div class="result-row"><span>住宅ローン後の毎月余剰金:</span><span id="netMonthlySavings" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
-          <div id="cashflowHealthAdvice" style="font-size: 0.8rem; margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border-color); color: var(--secondary-color);">
+          <div id="cashflowHealthAdvice" style="font-size: 0.82rem; margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border-color); color: var(--secondary-color); line-height: 1.4;">
             家計診断チェック中...
           </div>
         </div>
@@ -719,7 +682,15 @@
   <script>
     let loanChart = null;
     let assetChart = null;
-    let customItemCount = 0;
+    let customExpenseItems = [
+      { id: 'exp_food', name: '食費・日用品', val: 8 },
+      { id: 'exp_util', name: '水道光熱費', val: 2.5 },
+      { id: 'exp_comm', name: '通信・サブスク', val: 1.5 },
+      { id: 'exp_car_maint', name: '車維持・燃料費', val: 2 },
+      { id: 'exp_ins', name: '保険料', val: 2 },
+      { id: 'exp_play', name: '娯楽・小遣い', val: 5 },
+      { id: 'exp_other', name: 'その他雑費', val: 3 }
+    ];
 
     function toggleTheme() {
       const body = document.body;
@@ -825,45 +796,71 @@
       }, 50);
     }
 
-    function addCustomExpenseItem(name = '追加項目', val = 1) {
-      customItemCount++;
-      const id = 'custom_exp_' + customItemCount;
+    function renderExpenseItems() {
       const container = document.getElementById('customExpenseContainer');
-      const row = document.createElement('div');
-      row.className = 'custom-item-row';
-      row.id = 'row_' + id;
-      row.innerHTML = `
-        <input type="text" class="custom-label-input" id="label_${id}" value="${name}" oninput="calculate()">
-        <div class="dual-input">
-          <input type="number" id="${id}" value="${val}" step="0.5" min="0" max="50" oninput="calculate()">
-        </div>
-        <button type="button" class="del-btn" onclick="removeCustomExpenseItem('${id}')">✕</button>
-      `;
-      container.appendChild(row);
+      container.innerHTML = '';
+
+      customExpenseItems.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'custom-item-row';
+        row.innerHTML = `
+          <input type="text" class="custom-label-input" value="${item.name}" oninput="updateItemName(${index}, this.value)">
+          <div class="dual-input">
+            <input type="number" value="${item.val}" step="0.5" min="0" max="100" oninput="updateItemVal(${index}, this.value)">
+          </div>
+          <button type="button" class="del-btn" onclick="removeExpenseItem(${index})">✕</button>
+        `;
+        container.appendChild(row);
+      });
+    }
+
+    function addCustomExpenseItem(defaultName, defaultVal) {
+      const newId = 'custom_' + Date.now();
+      customExpenseItems.push({ id: newId, name: defaultName, val: defaultVal });
+      renderExpenseItems();
       calculate();
     }
 
-    function removeCustomExpenseItem(id) {
-      const row = document.getElementById('row_' + id);
-      if (row) row.remove();
+    function removeExpenseItem(index) {
+      customExpenseItems.splice(index, 1);
+      renderExpenseItems();
+      calculate();
+    }
+
+    function updateItemName(index, name) {
+      customExpenseItems[index].name = name;
+      calculate();
+    }
+
+    function updateItemVal(index, val) {
+      customExpenseItems[index].val = parseFloat(val) || 0;
       calculate();
     }
 
     function restoreInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        const val = localStorage.getItem('loan_sim_v18_' + input.id);
+        const val = localStorage.getItem('loan_sim_v19_' + input.id);
         if (val !== null) {
           input.value = val;
           let rangeInput = document.getElementById(input.id + '_range');
           if (rangeInput) rangeInput.value = val;
         }
       });
+
+      const savedItems = localStorage.getItem('loan_sim_v19_custom_items');
+      if (savedItems) {
+        try {
+          customExpenseItems = JSON.parse(savedItems);
+        } catch(e) {}
+      }
+      renderExpenseItems();
     }
 
     function saveInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        localStorage.setItem('loan_sim_v18_' + input.id, input.value);
+        localStorage.setItem('loan_sim_v19_' + input.id, input.value);
       });
+      localStorage.setItem('loan_sim_v19_custom_items', JSON.stringify(customExpenseItems));
     }
 
     function calculate() {
@@ -951,17 +948,10 @@
 
       const handInc = parseFloat(document.getElementById('inc_hand').value) || 0;
       
-      // 基本生活費＋動的追加項目の合計を計算
-      let livingTotal = (parseFloat(document.getElementById('exp_food').value)||0) +
-                        (parseFloat(document.getElementById('exp_util').value)||0) +
-                        (parseFloat(document.getElementById('exp_comm').value)||0) +
-                        (parseFloat(document.getElementById('exp_car_maint').value)||0) +
-                        (parseFloat(document.getElementById('exp_ins').value)||0) +
-                        (parseFloat(document.getElementById('exp_play').value)||0) +
-                        (parseFloat(document.getElementById('exp_other').value)||0);
-
-      document.querySelectorAll('#customExpenseContainer input[type="number"]').forEach(input => {
-        livingTotal += (parseFloat(input.value) || 0);
+      // カスタム生活費リストの総和を計算
+      let livingTotal = 0;
+      customExpenseItems.forEach(item => {
+        livingTotal += (parseFloat(item.val) || 0);
       });
 
       document.getElementById('accordionLivingTotal').innerText = `計 ${livingTotal.toFixed(1)} 万円/月`;
