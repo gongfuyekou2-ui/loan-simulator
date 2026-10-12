@@ -48,7 +48,7 @@
       justify-content: center;
       -webkit-font-smoothing: antialiased;
     }
-    .container { width: 100%; max-width: 720px; }
+    .container { width: 100%; max-width: 760px; }
 
     .top-header {
       display: flex;
@@ -58,7 +58,7 @@
       padding: 4px 2px;
     }
     h1 {
-      font-size: 1.15rem;
+      font-size: 1.12rem;
       font-weight: 700;
       margin: 0;
       background: var(--primary-gradient);
@@ -81,7 +81,7 @@
     .scenario-btn {
       flex: 1;
       padding: 8px;
-      font-size: 0.75rem;
+      font-size: 0.72rem;
       font-weight: 700;
       border: 1px solid var(--border-color);
       background-color: var(--card-bg);
@@ -97,18 +97,20 @@
       box-shadow: 0 4px 14px rgba(0, 122, 255, 0.35);
     }
 
+    /* 4分割タブ用コンテナ */
     .tab-container {
       display: flex;
       background-color: var(--border-color);
       border-radius: 12px;
       padding: 3px;
       margin-bottom: 16px;
+      gap: 2px;
     }
     .tab-button {
       flex: 1;
-      padding: 10px 0;
+      padding: 8px 2px;
       text-align: center;
-      font-size: 0.85rem;
+      font-size: 0.75rem;
       font-weight: 700;
       border: none;
       background: none;
@@ -150,6 +152,28 @@
       margin: 14px 0 10px 0;
       border-left: 3px solid var(--primary-color);
       padding-left: 8px;
+    }
+
+    /* アコーディオン（折りたたみセクション） */
+    details.accordion-section {
+      background: var(--bg-color);
+      border: 1px solid var(--border-color);
+      border-radius: 12px;
+      padding: 12px 16px;
+      margin-bottom: 14px;
+    }
+    details.accordion-section summary {
+      font-size: 0.85rem;
+      font-weight: 700;
+      color: var(--primary-color);
+      cursor: pointer;
+      outline: none;
+      user-select: none;
+    }
+    details.accordion-section[open] summary {
+      margin-bottom: 12px;
+      border-bottom: 1px dashed var(--border-color);
+      padding-bottom: 8px;
     }
 
     .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
@@ -212,15 +236,18 @@
       <button class="scenario-btn" onclick="loadScenario('aggressive')">📁 積極投資型(運用4%)</button>
     </div>
 
+    <!-- 4分割シート（タブ）ナビゲーション -->
     <div class="tab-container">
-      <button class="tab-button active" onclick="switchTab('loan')">住宅ローン＆繰り上げ判断</button>
-      <button class="tab-button" onclick="switchTab('life')">家計簿＆将来の資産シミュレーション</button>
+      <button class="tab-button active" onclick="switchTab('loan')">1. 住宅ローン</button>
+      <button class="tab-button" onclick="switchTab('income')">2. 世帯収入＆家計</button>
+      <button class="tab-button" onclick="switchTab('life')">3. ライフイベント</button>
+      <button class="tab-button" onclick="switchTab('sim')">4. 将来シミュ</button>
     </div>
 
-    <!-- TAB 1 -->
+    <!-- ===== シート1: 住宅ローン＆繰り上げ ===== -->
     <div id="tab-loan" class="tab-content active">
       <div class="card">
-        <div class="card-title">1. 住宅ローンの基本条件 <span class="save-badge">● リアルタイム自動保存</span></div>
+        <div class="card-title">住宅ローンの基本条件 <span class="save-badge">● 自動保存中</span></div>
         <div class="input-grid">
           <div class="input-group">
             <label for="amount">住宅ローン借入額 (万円)</label>
@@ -260,7 +287,7 @@
       </div>
 
       <div class="card">
-        <div class="card-title">2. 繰り上げ返済 vs 資産運用（損益分岐の判断）</div>
+        <div class="card-title">繰り上げ返済 vs 資産運用（損益分岐の判断）</div>
         <div class="input-grid">
           <div class="input-group">
             <label for="prepayYear">繰り上げ返済のタイミング (年後)</label>
@@ -307,26 +334,21 @@
       </div>
 
       <div class="card">
-        <div class="card-title">3. 住宅ローン残高の減り方グラフ</div>
+        <div class="card-title">住宅ローン残高の減り方グラフ</div>
         <div class="chart-container"><canvas id="loanChart"></canvas></div>
       </div>
     </div>
 
-    <!-- TAB 2 -->
-    <div id="tab-life" class="tab-content">
-      <div id="riskAlertBanner" class="alert-banner">
-        ⚠️ <b>リスク警告:</b> <span id="riskAlertText">シミュレーション期間中に資金ショートまたは生活防衛資金を下回るタイミングがあります。</span>
-      </div>
-
-      <!-- 現在の貯蓄額コントロールパネル（シミュレーションの原資） -->
+    <!-- ===== シート2: 世帯収入＆家計簿 ===== -->
+    <div id="tab-income" class="tab-content">
       <div class="card" style="border: 2px solid var(--primary-color); background: rgba(0, 122, 255, 0.03);">
         <div class="card-title" style="border-bottom-color: var(--primary-color);">
-          <span>💰 現在の貯蓄・資産額 (シミュレーションのスタート地点)</span>
+          <span>💰 現在の貯蓄・資産額 (シミュレーション起点)</span>
           <span class="save-badge">● リアルタイム連動</span>
         </div>
         <div class="input-grid" style="grid-template-columns: 1fr;">
           <div class="input-group">
-            <label for="initAsset">手元の貯蓄総額 (万円) ※ここを調整して将来の増え方を比較できます</label>
+            <label for="initAsset">手元の貯蓄総額 (万円) ※将来グラフの0年目になります</label>
             <div class="dual-input">
               <input type="number" id="initAsset" value="500" step="50" min="0" max="20000" oninput="syncVal('initAsset', this.value)" style="font-size: 1.1rem; font-weight: bold; color: var(--primary-color);">
               <input type="range" id="initAsset_range" value="500" step="50" min="0" max="5000" oninput="syncVal('initAsset_range', this.value)">
@@ -336,9 +358,7 @@
       </div>
 
       <div class="card">
-        <div class="card-title">1. 世帯収入＆毎月の生活費の内訳 <span class="save-badge">● 自動計算中</span></div>
-        
-        <div class="sub-title">ご夫婦の年収設定 (額面・手取り)</div>
+        <div class="card-title">ご夫婦の年収設定 (額面・手取り)</div>
         <div class="input-grid">
           <div class="input-group">
             <label for="inc_husband_gross">夫 額面年収 (万円)</label>
@@ -369,8 +389,10 @@
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="sub-title">毎月の生活費支出の内訳</div>
+      <div class="card">
+        <div class="card-title">毎月の生活費支出の内訳</div>
         <div class="input-grid">
           <div class="input-group">
             <label for="inc_hand">毎月の世帯手取り額 (万円)</label>
@@ -440,11 +462,12 @@
           </div>
         </div>
       </div>
+    </div>
 
+    <!-- ===== シート3: ライフイベント設定 ===== -->
+    <div id="tab-life" class="tab-content">
       <div class="card">
-        <div class="card-title">2. ライフイベント＆将来の前提設定</div>
-        
-        <div class="sub-title">ご家族・住まい・資産運用の前提</div>
+        <div class="card-title">基本前提・運用・維持費の設定</div>
         <div class="input-grid">
           <div class="input-group">
             <label for="myAge">ご本人の現在の年齢 (歳)</label>
@@ -468,23 +491,26 @@
             </div>
           </div>
           <div class="input-group">
-            <label for="houseTax">毎年の固定資産税・都市計画税 (万円/年)</label>
+            <label for="houseTax">固定資産税・都市計画税 (万円/年)</label>
             <div class="dual-input">
               <input type="number" id="houseTax" value="12" step="1" min="0" max="50" oninput="syncVal('houseTax', this.value)">
               <input type="range" id="houseTax_range" value="12" step="1" min="0" max="30" oninput="syncVal('houseTax_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="houseRepair">将来の外壁・屋根・設備リフォーム準備金 (万円/年)</label>
+            <label for="houseRepair">外壁・屋根リフォーム準備金 (万円/年)</label>
             <div class="dual-input">
               <input type="number" id="houseRepair" value="10" step="1" min="0" max="50" oninput="syncVal('houseRepair', this.value)">
               <input type="range" id="houseRepair_range" value="10" step="1" min="0" max="30" oninput="syncVal('houseRepair_range', this.value)">
             </div>
           </div>
         </div>
+      </div>
 
-        <div class="sub-title">マイカーの買い替え・マイカーローン設定</div>
-        <div class="input-grid">
+      <!-- 折りたたみ：マイカー詳細設定 -->
+      <details class="accordion-section">
+        <summary>🚗 マイカーの購入・ローン設定（詳細を開く）</summary>
+        <div class="input-grid" style="margin-top: 8px;">
           <div class="input-group">
             <label for="carPrice">車 買い替え時の予算 (万円)</label>
             <div class="dual-input">
@@ -500,22 +526,21 @@
             </div>
           </div>
           <div class="input-group">
-            <label for="carLoanYears">マイカーローンの返済期間 (年)</label>
+            <label for="carLoanYears">マイカーローン返済期間 (年)</label>
             <div class="dual-input">
               <input type="number" id="carLoanYears" value="5" step="1" min="1" max="10" oninput="syncVal('carLoanYears', this.value)">
               <input type="range" id="carLoanYears_range" value="5" step="1" min="1" max="7" oninput="syncVal('carLoanYears_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="carLoanRate">マイカーローンの金利 (%)</label>
+            <label for="carLoanRate">マイカーローン金利 (%)</label>
             <div class="dual-input">
               <input type="number" id="carLoanRate" value="2.0" step="0.1" min="0" max="10" oninput="syncVal('carLoanRate', this.value)">
               <input type="range" id="carLoanRate_range" value="2.0" step="0.5" min="0" max="6" oninput="syncVal('carLoanRate_range', this.value)">
             </div>
           </div>
         </div>
-
-        <div class="sub-title">マイカーの買い替えサイクル (最大3回)</div>
+        <div class="sub-title" style="margin-top: 12px;">自動車の買い替え時期 (最大3回)</div>
         <div class="input-grid">
           <div class="input-group">
             <label for="car1Year">車 1回目の買い替え (年後)</label>
@@ -539,9 +564,12 @@
             </div>
           </div>
         </div>
+      </details>
 
-        <div class="sub-title">家族旅行・レジャー＆大型イベント</div>
-        <div class="input-grid">
+      <!-- 折りたたみ：旅行・レジャー＆大型イベント設定 -->
+      <details class="accordion-section">
+        <summary>✈️ 旅行・レジャー＆大規模リフォーム計画（詳細を開く）</summary>
+        <div class="input-grid" style="margin-top: 8px;">
           <div class="input-group">
             <label for="travelAnnual">毎年の家族旅行予算 (万円/年)</label>
             <div class="dual-input">
@@ -564,7 +592,7 @@
             </div>
           </div>
           <div class="input-group">
-            <label for="reformYear">自宅の大規模リフォーム予定 (年後)</label>
+            <label for="reformYear">大規模リフォーム予定 (年後)</label>
             <div class="dual-input">
               <input type="number" id="reformYear" value="20" step="1" min="1" max="40" oninput="syncVal('reformYear', this.value)">
               <input type="range" id="reformYear_range" value="20" step="1" min="5" max="35" oninput="syncVal('reformYear_range', this.value)">
@@ -578,11 +606,18 @@
             </div>
           </div>
         </div>
+      </details>
+    </div>
+
+    <!-- ===== シート4: 将来シミュレーション ===== -->
+    <div id="tab-sim" class="tab-content">
+      <div id="riskAlertBanner" class="alert-banner">
+        ⚠️ <b>リスク警告:</b> <span id="riskAlertText">シミュレーション期間中に資金ショートまたは生活防衛資金を下回るタイミングがあります。</span>
       </div>
 
       <div class="card">
         <div class="card-title">
-          3. 40年間の資産推移シミュレーション (複利運用・控除考慮)
+          40年間の資産推移シミュレーション (複利運用・控除考慮)
         </div>
         <div style="font-size: 0.78rem; opacity: 0.7; margin-bottom: 6px;">
           ※ 緑：月収ベース ｜ 青：源泉徴収ベース ｜ 紫：運用利回り込資産推移（設定した現在の貯蓄額からスタート）
@@ -591,7 +626,7 @@
       </div>
 
       <div class="card">
-        <div class="card-title">4. 1年ごとの詳細キャッシュフロー年表 (住宅ローン減税反映)</div>
+        <div class="card-title">1年ごとの詳細キャッシュフロー年表 (住宅ローン減税反映)</div>
         <div class="table-wrapper">
           <table>
             <thead>
@@ -709,13 +744,13 @@
     function switchTab(tabName) {
       document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      if(tabName === 'loan') {
-        document.querySelectorAll('.tab-button')[0].classList.add('active');
-        document.getElementById('tab-loan').classList.add('active');
-      } else {
-        document.querySelectorAll('.tab-button')[1].classList.add('active');
-        document.getElementById('tab-life').classList.add('active');
-      }
+      
+      const buttons = document.querySelectorAll('.tab-button');
+      if(tabName === 'loan') { buttons[0].classList.add('active'); document.getElementById('tab-loan').classList.add('active'); }
+      else if(tabName === 'income') { buttons[1].classList.add('active'); document.getElementById('tab-income').classList.add('active'); }
+      else if(tabName === 'life') { buttons[2].classList.add('active'); document.getElementById('tab-life').classList.add('active'); }
+      else if(tabName === 'sim') { buttons[3].classList.add('active'); document.getElementById('tab-sim').classList.add('active'); }
+
       setTimeout(() => {
         if (loanChart) loanChart.resize();
         if (assetChart) assetChart.resize();
@@ -724,7 +759,7 @@
 
     function restoreInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        const val = localStorage.getItem('loan_sim_v16_' + input.id);
+        const val = localStorage.getItem('loan_sim_v17_' + input.id);
         if (val !== null) {
           input.value = val;
           let rangeInput = document.getElementById(input.id + '_range');
@@ -735,7 +770,7 @@
 
     function saveInputs() {
       document.querySelectorAll('input[type="number"]').forEach(input => {
-        localStorage.setItem('loan_sim_v16_' + input.id, input.value);
+        localStorage.setItem('loan_sim_v17_' + input.id, input.value);
       });
     }
 
@@ -806,9 +841,9 @@
       const adviceTextElem = document.getElementById('strategyAdviceText');
       if (investYield > initialRate) {
         const diffGain = Math.round(expectedInvestmentGain - savedInterestWan);
-        adviceTextElem.innerHTML = `現在の想定運用利回り（<b>${investYield}%</b>）は、ローン金利（<b>${initialRate}%</b>）を上回っています。<br>繰り上げ返済に<sup>${prepayAmountWan}万円</sup>使うよりも、投資に回す方が【約<b>${diffGain}万円</b>】有利になる計算です！手元の流動性資金を確保できるメリットもあります。`;
+        adviceTextElem.innerHTML = `現在の想定運用利回り（<b>${investYield}%</b>）は、ローン金利（<b>${initialRate}%</b>）を上回っています。<br>繰り上げ返済に${prepayAmountWan}万円使うよりも、投資に回す方が【約<b>${diffGain}万円</b>】有利になる計算です！`;
       } else {
-        adviceTextElem.innerHTML = `住宅ローン金利（<b>${initialRate}%</b>）が想定運用利回り（<b>${investYield}%</b>）を上回っています。<br>リスクを取って運用するよりも、「① 期間短縮型の繰り上げ返済」で確実にお利息をカット（約<b>${Math.round(savedInterestWan)}万円軽減</b>）する戦略が安全かつ確実です。`;
+        adviceTextElem.innerHTML = `住宅ローン金利（<b>${initialRate}%</b>）が想定運用利回り（<b>${investYield}%</b>）を上回っています。<br>「① 期間短縮型の繰り上げ返済」で確実にお利息をカット（約<b>${Math.round(savedInterestWan)}万円軽減</b>）する戦略が安全です。`;
       }
 
       const hGross = parseFloat(document.getElementById('inc_husband_gross').value) || 0;
@@ -835,16 +870,15 @@
       const netSavingsWan = handInc - livingTotal - (normalPMT / 10000);
       document.getElementById('netMonthlySavings').innerText = netSavingsWan.toFixed(1) + ' 万円/月';
 
-      // 家計診断アドバイス
       const healthElem = document.getElementById('cashflowHealthAdvice');
       if (netSavingsWan >= 5) {
         healthElem.innerHTML = `🟢 <b>良好な家計環境:</b> 毎月約${netSavingsWan.toFixed(1)}万円の余剰金が出ており、理想的な貯蓄・積立ペースを維持できます！`;
         healthElem.style.color = "var(--secondary-color)";
       } else if (netSavingsWan > 0) {
-        healthElem.innerHTML = `🟡 <b>注意水準:</b> 毎月の手残りは${netSavingsWan.toFixed(1)}万円です。急な出費に備え、固定費の見直しや予備費の確保を推奨します。`;
+        healthElem.innerHTML = `🟡 <b>注意水準:</b> 毎月の手残りは${netSavingsWan.toFixed(1)}万円です。予備費の確保を推奨します。`;
         healthElem.style.color = "var(--orange-color)";
       } else {
-        healthElem.innerHTML = `🔴 <b>家計見直し推奨:</b> 毎月の収支がマイナス（${netSavingsWan.toFixed(1)}万円）になっています。生活費またはローン条件を見直す必要があります。`;
+        healthElem.innerHTML = `🔴 <b>家計見直し推奨:</b> 毎月の収支がマイナス（${netSavingsWan.toFixed(1)}万円）になっています。生活費やローン条件を見直してください。`;
         healthElem.style.color = "var(--danger-color)";
       }
 
@@ -955,7 +989,7 @@
         const safetyBuffer = (livingTotal * 6) + (y < years ? (normalPMT / 10000 * 6) : 0);
         if (y > 0 && currentAssetYielded < safetyBuffer && !hasRisk) {
           hasRisk = true;
-          riskMessage = `${y}年後（ご本人${currentAge}歳頃）に資産残高が生活防衛資金（約${Math.round(safetyBuffer)}万円）を下回るリスクがあります！予定支出の調整をおすすめします。`;
+          riskMessage = `${y}年後（ご本人${currentAge}歳頃）に資産残高が生活防衛資金（約${Math.round(safetyBuffer)}万円）を下回るリスクがあります！支出の調整を検討してください。`;
         }
 
         assetLabels.push(y + '年後');
