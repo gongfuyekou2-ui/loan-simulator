@@ -473,6 +473,16 @@
         <button type="button" class="add-item-btn" onclick="addCustomExpenseItem('新しい支出項目', 1)">＋ 独自の支出項目を追加する</button>
       </details>
 
+      <!-- 専門家による生活費内訳の評価・平均比較アドバイス -->
+      <div class="card" style="background: rgba(52, 199, 89, 0.04); border: 1.5px solid var(--secondary-color);">
+        <div class="card-title" style="border-bottom-color: var(--secondary-color); margin-bottom: 10px;">
+          <span style="color: var(--secondary-color);">💡 専門家による生活費内訳の診断＆平均比較</span>
+        </div>
+        <div id="expenseAdviceText" style="font-size: 0.82rem; line-height: 1.6;">
+          診断中...
+        </div>
+      </div>
+
       <div class="card">
         <div class="card-title">月間家計収支のサマリー</div>
         <div class="result-box">
@@ -487,10 +497,10 @@
         </div>
       </div>
 
-      <!-- 追加された家計ベースの貯蓄推移グラフカード -->
+      <!-- 年間合計余剰金の累積推移グラフ -->
       <div class="card">
         <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
-          <span>📈 家計ベースの貯蓄推移グラフ（5年間隔・MAX40年）</span>
+          <span>📈 年間合計余剰金（ボーナス込）の累積貯蓄推移</span>
           <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem;">
             <label for="incomeTabMaxYears" style="margin:0; font-weight:600;">表示年数:</label>
             <select id="incomeTabMaxYears" onchange="calculate()" style="padding:4px 8px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-color); font-weight:bold;">
@@ -501,7 +511,7 @@
           </div>
         </div>
         <div style="font-size: 0.75rem; opacity: 0.7; margin-bottom: 6px;">
-          ※ 月間家計収支（手取り月収＋夏冬ボーナス－生活費－住宅ローン返済）のベース蓄積推移
+          ※ 現在の年間合計余剰金（毎月余剰金×12＋夏冬ボーナス合計）をベースとした5年間隔の積み上げ推移
         </div>
         <div class="chart-container"><canvas id="incomeTabAssetChart"></canvas></div>
       </div>
@@ -699,7 +709,7 @@
             <div class="result-row"><span>運用益:</span><span id="yield2Gain" class="result-value" style="color:var(--secondary-color);">+0 万円</span></div>
           </div>
           <div class="comp-card" style="border-top: 3px solid var(--purple-color);">
-            <div class="comp-title" style="color: var(--purple-color);">③ 积极型 (6.0%)</div>
+            <div class="comp-title" style="color: var(--purple-color);">③ 積極型 (6.0%)</div>
             <div class="result-row"><span>積立成果:</span><span id="yield3Total" class="result-value">0 万円</span></div>
             <div class="result-row"><span>運用益:</span><span id="yield3Gain" class="result-value" style="color:var(--secondary-color);">+0 万円</span></div>
           </div>
@@ -926,13 +936,13 @@
       }
 
       if (!loadedFromHash) {
-        const savedItems = localStorage.getItem('loan_sim_v31_custom_items');
+        const savedItems = localStorage.getItem('loan_sim_v32_custom_items');
         if (savedItems) {
           try { customExpenseItems = JSON.parse(savedItems); } catch(e) {}
         }
 
         document.querySelectorAll('input[type="number"], select').forEach(input => {
-          const val = localStorage.getItem('loan_sim_v31_' + input.id);
+          const val = localStorage.getItem('loan_sim_v32_' + input.id);
           if (val !== null) {
             input.value = val;
             let rangeInput = document.getElementById(input.id + '_range');
@@ -948,10 +958,10 @@
       const obj = getAllDataObj();
       for (let key in obj) {
         if (key !== 'items') {
-          localStorage.setItem('loan_sim_v31_' + key, obj[key]);
+          localStorage.setItem('loan_sim_v32_' + key, obj[key]);
         }
       }
-      localStorage.setItem('loan_sim_v31_custom_items', JSON.stringify(customExpenseItems));
+      localStorage.setItem('loan_sim_v32_custom_items', JSON.stringify(customExpenseItems));
     }
 
     function shareConfigUrl() {
@@ -1122,12 +1132,35 @@
       if (bonusDisp) bonusDisp.innerText = `${totalBonusAnnual.toFixed(0)} 万円`;
 
       let livingTotal = 0;
+      let foodVal = 0, utilVal = 0, commVal = 0, playVal = 0;
+
       customExpenseItems.forEach(item => {
-        livingTotal += (parseFloat(item.val) || 0);
+        const v = (parseFloat(item.val) || 0);
+        livingTotal += v;
+        if (item.name.includes('食')) foodVal += v;
+        else if (item.name.includes('光熱') || item.name.includes('水道')) utilVal += v;
+        else if (item.name.includes('通信') || item.name.includes('スマホ')) commVal += v;
+        else if (item.name.includes('娯楽') || item.name.includes('小遣')) playVal += v;
       });
 
       document.getElementById('accordionLivingTotal').innerText = `計 ${livingTotal.toFixed(1)} 万円/月`;
       document.getElementById('totalLivingCost').innerText = livingTotal.toFixed(1) + ' 万円/月';
+
+      // 生活費の診断アドバイス生成（二人暮らし・子なし平均：食費6.8万、水道光熱2.2万、通信1.5万、住居除く生活費約22-25万）
+      const expAdviceElem = document.getElementById('expenseAdviceText');
+      let expAdviceHtml = `<b>📊 総務省家計調査に基づく「二人暮らし世帯」との比較:</b><br>`;
+      expAdviceHtml += `・<b>食費・日用品</b>: 設定 <b>${foodVal > 0 ? foodVal.toFixed(1) : livingTotal > 0 ? '未分類' : 0}万円</b> (二人暮らし全国平均: 約6.8万円/月)<br>`;
+      expAdviceHtml += `・<b>水道光熱費</b>: 設定 <b>${utilVal > 0 ? utilVal.toFixed(1) : '未分類'}万円</b> (二人暮らし全国平均: 約2.2万円/月)<br>`;
+      expAdviceHtml += `・<b>生活費合計</b>: 毎月 <b>${livingTotal.toFixed(1)}万円</b> (住居費・ローンを除く二人暮らし平均支出: 約20～24万円/月)<br>`;
+
+      if (livingTotal <= 25) {
+        expAdviceHtml += `<div style="margin-top:6px; color:var(--secondary-color); font-weight:bold;">✨ 【評価: 優秀】全国平均と同等以下にしっかりと抑えられており、非常にスリムで理想的な家計構造です。</div>`;
+      } else if (livingTotal <= 32) {
+        expAdviceHtml += `<div style="margin-top:6px; color:var(--primary-color); font-weight:bold;">👍 【評価: 標準的】平均的でゆとりのある生活費水準です。車維持費や娯楽費のメリハリが効いています。</div>`;
+      } else {
+        expAdviceHtml += `<div style="margin-top:6px; color:var(--orange-color); font-weight:bold;">⚠️ 【評価: やや高め】住居費を除く生活費が30万円を超えています。固定費や娯楽費の見直しでさらに蓄積ペースを上げられます。</div>`;
+      }
+      expAdviceElem.innerHTML = expAdviceHtml;
       
       const netSavingsWan = handInc - livingTotal - (normalPMT / 10000);
       document.getElementById('netMonthlySavings').innerText = netSavingsWan.toFixed(1) + ' 万円/月';
@@ -1308,7 +1341,7 @@
 
       updateLoanChart(years, principal, normalPMT, monthlyRate, prepayMonth, prepayVal, newReducePMT);
       updateAssetChart(assetLabels, assetDataNet, assetDataGross, assetDataYielded);
-      updateIncomeTabAssetChart(assetLabels, assetDataNet, incomeTabMaxYears);
+      updateIncomeTabAssetChart(netAnnualSavingsWan, initAsset, incomeTabMaxYears);
       updateInvestCompareChart(investYears, monthlyInvestWan, yieldRates);
     }
 
@@ -1394,16 +1427,15 @@
       });
     }
 
-    function updateIncomeTabAssetChart(labels, dataNet, maxYears) {
-      // 5年間隔でフィルター（0, 5, 10, 15, 20, 25, 30, 35, 40）
+    // 年間合計余剰金（ボーナス込）のみのシンプル累積貯蓄推移グラフ（5年間隔・MAX40年）
+    function updateIncomeTabAssetChart(netAnnualSavingsWan, initAsset, maxYears) {
       const filteredLabels = [];
       const filteredData = [];
 
-      for (let i = 0; i <= maxYears; i++) {
-        if (i % 5 === 0 || i === maxYears) {
-          filteredLabels.push(i === 0 ? '現在' : i + '年後');
-          filteredData.push(dataNet[i] !== undefined ? dataNet[i] : dataNet[dataNet.length - 1]);
-        }
+      for (let i = 0; i <= maxYears; i += 5) {
+        filteredLabels.push(i === 0 ? '現在' : i + '年後');
+        const accumulated = initAsset + (netAnnualSavingsWan * i);
+        filteredData.push(Math.round(accumulated));
       }
 
       const isDark = document.body.getAttribute('data-theme') === 'dark';
@@ -1418,15 +1450,15 @@
           labels: filteredLabels,
           datasets: [
             {
-              label: '家計ベース貯蓄推移 (万円)',
+              label: '余剰金累積貯蓄額 (万円)',
               data: filteredData,
-              borderColor: '#34c759',
-              backgroundColor: isDark ? 'rgba(50, 215, 75, 0.15)' : 'rgba(52, 199, 89, 0.1)',
+              borderColor: '#007aff',
+              backgroundColor: isDark ? 'rgba(10, 132, 255, 0.18)' : 'rgba(0, 122, 255, 0.1)',
               fill: true,
               borderWidth: 2.5,
-              tension: 0.25,
+              tension: 0.2,
               pointRadius: 4,
-              pointBackgroundColor: '#34c759'
+              pointBackgroundColor: '#007aff'
             }
           ]
         },
