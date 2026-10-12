@@ -621,7 +621,7 @@
         </div>
       </details>
 
-      <!-- 資産運用・積立シミュレーション（3パターン利回り比較）アコーディオン -->
+      <!-- 資産運用・積立シミュレーション（完全独立型） -->
       <details class="accordion-section">
         <summary>📈 資産運用・積立シミュレーション（3パターン比較）</summary>
         <div class="input-grid" style="margin-top: 8px;">
@@ -630,6 +630,13 @@
             <div class="dual-input">
               <input type="number" id="monthlyInvest" value="3" step="0.5" min="0" max="20" oninput="syncVal('monthlyInvest', this.value)">
               <input type="range" id="monthlyInvest_range" value="3" step="0.5" min="0" max="10" oninput="syncVal('monthlyInvest_range', this.value)">
+            </div>
+          </div>
+          <div class="input-group">
+            <label for="investYears">積立シミュレーション期間 (年)</label>
+            <div class="dual-input">
+              <input type="number" id="investYears" value="20" step="1" min="1" max="40" oninput="syncVal('investYears', this.value)">
+              <input type="range" id="investYears_range" value="20" step="1" min="1" max="40" oninput="syncVal('investYears_range', this.value)">
             </div>
           </div>
         </div>
@@ -872,13 +879,13 @@
       }
 
       if (!loadedFromHash) {
-        const savedItems = localStorage.getItem('loan_sim_v28_custom_items');
+        const savedItems = localStorage.getItem('loan_sim_v29_custom_items');
         if (savedItems) {
           try { customExpenseItems = JSON.parse(savedItems); } catch(e) {}
         }
 
         document.querySelectorAll('input[type="number"], select').forEach(input => {
-          const val = localStorage.getItem('loan_sim_v28_' + input.id);
+          const val = localStorage.getItem('loan_sim_v29_' + input.id);
           if (val !== null) {
             input.value = val;
             let rangeInput = document.getElementById(input.id + '_range');
@@ -894,10 +901,10 @@
       const obj = getAllDataObj();
       for (let key in obj) {
         if (key !== 'items') {
-          localStorage.setItem('loan_sim_v28_' + key, obj[key]);
+          localStorage.setItem('loan_sim_v29_' + key, obj[key]);
         }
       }
-      localStorage.setItem('loan_sim_v28_custom_items', JSON.stringify(customExpenseItems));
+      localStorage.setItem('loan_sim_v29_custom_items', JSON.stringify(customExpenseItems));
     }
 
     function shareConfigUrl() {
@@ -971,6 +978,7 @@
       const prepayYear = parseInt(document.getElementById('prepayYear').value) || 0;
       const prepayAmountWan = parseFloat(document.getElementById('prepayAmount').value) || 0;
       const monthlyInvestWan = parseFloat(document.getElementById('monthlyInvest').value) || 0;
+      const investYears = parseInt(document.getElementById('investYears').value) || 20;
       const maxSimYears = parseInt(document.getElementById('simMaxYears').value) || 40;
 
       const totalMonths = years * 12;
@@ -1022,9 +1030,9 @@
       document.getElementById('reduceMonthlyDiff').innerText = '-' + Math.round(normalPMT - newReducePMT).toLocaleString() + ' 円';
       document.getElementById('reduceSavedInterest').innerText = Math.round((normRemInt - redRemInt)/10000).toLocaleString() + ' 万円';
 
-      // 3パターン利回り積立シミュレーション計算 (保守2.0%, 標準4.0%, 積極6.0%)
+      // 3パターン利回り積立シミュレーション計算（独立した investYears を使用）
       const yieldRates = [0.02, 0.04, 0.06];
-      const investTotalMonths = prepayYear * 12;
+      const investTotalMonths = investYears * 12;
       const resultsByYield = yieldRates.map(yRate => {
         const mRate = yRate / 12;
         let curAsset = 0;
@@ -1090,7 +1098,6 @@
         { y: parseInt(document.getElementById('car3Year').value) || 0, price: parseFloat(document.getElementById('car3Price').value) || 0, down: parseFloat(document.getElementById('car3Down').value) || 0 }
       ];
 
-      // 各車のローン年間返済額を計算
       cars.forEach(c => {
         c.loanPrincipal = Math.max(0, c.price - c.down);
         c.monthlyPMT = calcPMT(c.loanPrincipal * 10000, carMonthlyRate, carLoanY * 12);
@@ -1237,7 +1244,7 @@
 
       updateLoanChart(years, principal, normalPMT, monthlyRate, prepayMonth, prepayVal, newReducePMT);
       updateAssetChart(assetLabels, assetDataNet, assetDataGross, assetDataYielded);
-      updateInvestCompareChart(prepayYear, monthlyInvestWan, yieldRates);
+      updateInvestCompareChart(investYears, monthlyInvestWan, yieldRates);
     }
 
     function calcPMT(pv, rate, nper) {
@@ -1322,12 +1329,11 @@
       });
     }
 
-    function updateInvestCompareChart(prepayYear, monthlyInvestWan, yieldRates) {
-      const maxSimYears = parseInt(document.getElementById('simMaxYears').value) || 40;
+    function updateInvestCompareChart(investYears, monthlyInvestWan, yieldRates) {
       const labels = [];
       const data1 = [], data2 = [], data3 = [];
 
-      for (let y = 0; y <= maxSimYears; y++) {
+      for (let y = 0; y <= investYears; y++) {
         labels.push(y + '年後');
         const months = y * 12;
 
