@@ -54,7 +54,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 12px;
+      margin-bottom: 14px;
       padding: 4px 2px;
       flex-wrap: wrap;
       gap: 8px;
@@ -82,29 +82,6 @@
       white-space: nowrap;
     }
     .action-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
-
-    .scenario-bar { display: flex; gap: 8px; margin-bottom: 12px; }
-    .scenario-btn {
-      flex: 1;
-      padding: 8px 4px;
-      font-size: 0.72rem;
-      font-weight: 700;
-      border: 1px solid var(--border-color);
-      background-color: var(--card-bg);
-      border-radius: 10px;
-      cursor: pointer;
-      color: var(--text-color);
-      box-shadow: var(--shadow-sm);
-      white-space: nowrap;
-      text-overflow: ellipsis;
-      overflow: hidden;
-    }
-    .scenario-btn.active {
-      background: var(--primary-gradient);
-      color: #fff;
-      border-color: transparent;
-      box-shadow: 0 4px 14px rgba(0, 122, 255, 0.35);
-    }
 
     .tab-container {
       display: flex;
@@ -304,12 +281,6 @@
         <input type="file" id="importFile" style="display:none" accept=".json" onchange="importJsonFile(event)">
         <button class="action-btn" onclick="toggleTheme()" style="padding: 6px 10px;">🌙</button>
       </div>
-    </div>
-
-    <div class="scenario-bar">
-      <button class="scenario-btn" id="btn_standard" onclick="loadScenario('standard')">📁 標準シナリオ</button>
-      <button class="scenario-btn" id="btn_conservative" onclick="loadScenario('conservative')">📁 妻早めリタイア案</button>
-      <button class="scenario-btn" id="btn_aggressive" onclick="loadScenario('aggressive')">📁 積極投資型(運用4%)</button>
     </div>
 
     <div class="tab-container">
@@ -721,44 +692,6 @@
       document.body.setAttribute('data-theme', savedTheme);
     }
 
-    const scenarios = {
-      standard: { amount: 3500, rate: 0.5, years: 35, h_gross: 500, h_net: 390, w_gross: 200, w_net: 150, hand: 45, asset: 500, yield: 3.0, wife_retire: 10 },
-      conservative: { amount: 3800, rate: 0.7, years: 35, h_gross: 480, h_net: 380, w_gross: 150, w_net: 110, hand: 40, asset: 400, yield: 1.5, wife_retire: 5 },
-      aggressive: { amount: 3500, rate: 0.5, years: 30, h_gross: 550, h_net: 420, w_gross: 250, w_net: 180, hand: 50, asset: 700, yield: 5.0, wife_retire: 15 }
-    };
-
-    function loadScenario(key) {
-      document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
-      const activeBtn = document.getElementById('btn_' + key);
-      if (activeBtn) activeBtn.classList.add('active');
-
-      const s = scenarios[key];
-      if (!s) return;
-
-      setValAndRange('amount', s.amount);
-      setValAndRange('rate', s.rate);
-      setValAndRange('years', s.years);
-      setValAndRange('inc_husband_gross', s.h_gross);
-      setValAndRange('inc_husband_net', s.h_net);
-      setValAndRange('inc_wife_gross', s.w_gross);
-      setValAndRange('inc_wife_net', s.w_net);
-      setValAndRange('inc_hand', s.hand);
-      setValAndRange('initAsset', s.asset);
-      setValAndRange('assetYield', s.yield);
-      setValAndRange('wifeRetireYear', s.wife_retire);
-
-      saveInputs();
-      calculate();
-      showToast('「' + (key === 'standard' ? '標準シナリオ' : key === 'conservative' ? '妻早めリタイア案' : '積極投資型') + '」を適用・保存しました');
-    }
-
-    function setValAndRange(id, val) {
-      const num = document.getElementById(id);
-      const rng = document.getElementById(id + '_range');
-      if (num) num.value = val;
-      if (rng) rng.value = val;
-    }
-
     function syncVal(sourceId, val) {
       let baseId = sourceId.replace('_range', '');
       let numInput = document.getElementById(baseId);
@@ -796,7 +729,6 @@
     }
 
     function switchTab(tabName) {
-      // タブ切替時にも現在の状態を必ず即座に保存
       saveInputs();
 
       document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
@@ -864,39 +796,42 @@
     }
 
     function restoreInputs() {
-      // 1. ローカルストレージにすでにユーザーが編集したデータがあればそれを最優先で復元
-      const savedItems = localStorage.getItem('loan_sim_v22_custom_items');
-      let hasLocalData = savedItems !== null;
-
-      if (savedItems) {
-        try { customExpenseItems = JSON.parse(savedItems); } catch(e) {}
+      const hash = window.location.hash;
+      let loadedFromHash = false;
+      if (hash && hash.startsWith('#data=')) {
+        try {
+          const jsonStr = decodeURIComponent(escape(atob(hash.replace('#data=', ''))));
+          const parsed = JSON.parse(jsonStr);
+          if (parsed.items) {
+            customExpenseItems = parsed.items;
+          }
+          for (let key in parsed) {
+            if (key === 'items') continue;
+            let input = document.getElementById(key);
+            if (input) {
+              input.value = parsed[key];
+              let rng = document.getElementById(key + '_range');
+              if (rng) rng.value = parsed[key];
+            }
+          }
+          loadedFromHash = true;
+        } catch(e) { console.error('URL parse error', e); }
       }
 
-      document.querySelectorAll('input[type="number"]').forEach(input => {
-        const val = localStorage.getItem('loan_sim_v22_' + input.id);
-        if (val !== null) {
-          hasLocalData = true;
-          input.value = val;
-          let rangeInput = document.getElementById(input.id + '_range');
-          if (rangeInput) rangeInput.value = val;
+      if (!loadedFromHash) {
+        const savedItems = localStorage.getItem('loan_sim_v23_custom_items');
+        if (savedItems) {
+          try { customExpenseItems = JSON.parse(savedItems); } catch(e) {}
         }
-      });
 
-      // 2. もしローカルストレージに一切データがない初回のみ、標準シナリオをデフォルトロードして自動保存
-      if (!hasLocalData) {
-        const s = scenarios['standard'];
-        setValAndRange('amount', s.amount);
-        setValAndRange('rate', s.rate);
-        setValAndRange('years', s.years);
-        setValAndRange('inc_husband_gross', s.h_gross);
-        setValAndRange('inc_husband_net', s.h_net);
-        setValAndRange('inc_wife_gross', s.w_gross);
-        setValAndRange('inc_wife_net', s.w_net);
-        setValAndRange('inc_hand', s.hand);
-        setValAndRange('initAsset', s.asset);
-        setValAndRange('assetYield', s.yield);
-        setValAndRange('wifeRetireYear', s.wife_retire);
-        document.getElementById('btn_standard').classList.add('active');
+        document.querySelectorAll('input[type="number"]').forEach(input => {
+          const val = localStorage.getItem('loan_sim_v23_' + input.id);
+          if (val !== null) {
+            input.value = val;
+            let rangeInput = document.getElementById(input.id + '_range');
+            if (rangeInput) rangeInput.value = val;
+          }
+        });
       }
 
       renderExpenseItems();
@@ -906,10 +841,10 @@
       const obj = getAllDataObj();
       for (let key in obj) {
         if (key !== 'items') {
-          localStorage.setItem('loan_sim_v22_' + key, obj[key]);
+          localStorage.setItem('loan_sim_v23_' + key, obj[key]);
         }
       }
-      localStorage.setItem('loan_sim_v22_custom_items', JSON.stringify(customExpenseItems));
+      localStorage.setItem('loan_sim_v23_custom_items', JSON.stringify(customExpenseItems));
     }
 
     function shareConfigUrl() {
@@ -977,7 +912,6 @@
     }
 
     function calculate() {
-      // 編集のたびに常に自動でローカルストレージへ上書き保存
       saveInputs();
 
       const amountWan = parseFloat(document.getElementById('amount').value) || 0;
