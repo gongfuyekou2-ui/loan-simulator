@@ -666,7 +666,7 @@
       </div>
 
       <div class="card">
-        <div class="card-title">1年ごとの詳細キャッシュフロー年表 (住宅ローン減税反映)</div>
+        <div class="card-title">詳細キャッシュフロー年表</div>
         <div class="table-wrapper">
           <table>
             <thead>
@@ -847,13 +847,13 @@
       }
 
       if (!loadedFromHash) {
-        const savedItems = localStorage.getItem('loan_sim_v26_custom_items');
+        const savedItems = localStorage.getItem('loan_sim_v27_custom_items');
         if (savedItems) {
           try { customExpenseItems = JSON.parse(savedItems); } catch(e) {}
         }
 
         document.querySelectorAll('input[type="number"]').forEach(input => {
-          const val = localStorage.getItem('loan_sim_v26_' + input.id);
+          const val = localStorage.getItem('loan_sim_v27_' + input.id);
           if (val !== null) {
             input.value = val;
             let rangeInput = document.getElementById(input.id + '_range');
@@ -869,10 +869,10 @@
       const obj = getAllDataObj();
       for (let key in obj) {
         if (key !== 'items') {
-          localStorage.setItem('loan_sim_v26_' + key, obj[key]);
+          localStorage.setItem('loan_sim_v27_' + key, obj[key]);
         }
       }
-      localStorage.setItem('loan_sim_v26_custom_items', JSON.stringify(customExpenseItems));
+      localStorage.setItem('loan_sim_v27_custom_items', JSON.stringify(customExpenseItems));
     }
 
     function shareConfigUrl() {
