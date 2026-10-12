@@ -307,9 +307,9 @@
     </div>
 
     <div class="scenario-bar">
-      <button class="scenario-btn active" onclick="loadScenario('standard')">📁 標準シナリオ</button>
-      <button class="scenario-btn" onclick="loadScenario('conservative')">📁 妻早めリタイア案</button>
-      <button class="scenario-btn" onclick="loadScenario('aggressive')">📁 積極投資型(運用4%)</button>
+      <button class="scenario-btn" id="btn_standard" onclick="loadScenario('standard')">📁 標準シナリオ</button>
+      <button class="scenario-btn" id="btn_conservative" onclick="loadScenario('conservative')">📁 妻早めリタイア案</button>
+      <button class="scenario-btn" id="btn_aggressive" onclick="loadScenario('aggressive')">📁 積極投資型(運用4%)</button>
     </div>
 
     <div class="tab-container">
@@ -692,7 +692,7 @@
 
   </div>
 
-  <div id="toast" class="toast">クリップボードに共有URLをコピーしました！</div>
+  <div id="toast" class="toast">設定を自動保存しました</div>
 
   <script>
     let loanChart = null;
@@ -729,7 +729,9 @@
 
     function loadScenario(key) {
       document.querySelectorAll('.scenario-btn').forEach(b => b.classList.remove('active'));
-      if(event && event.target) event.target.classList.add('active');
+      const activeBtn = document.getElementById('btn_' + key);
+      if (activeBtn) activeBtn.classList.add('active');
+
       const s = scenarios[key];
       if (!s) return;
 
@@ -745,7 +747,6 @@
       setValAndRange('assetYield', s.yield);
       setValAndRange('wifeRetireYear', s.wife_retire);
 
-      // シナリオ読込時も確実に即座に自動保存を実行
       saveInputs();
       calculate();
       showToast('「' + (key === 'standard' ? '標準シナリオ' : key === 'conservative' ? '妻早めリタイア案' : '積極投資型') + '」を適用・保存しました');
@@ -795,6 +796,9 @@
     }
 
     function switchTab(tabName) {
+      // タブ切替時にも現在の状態を必ず即座に保存
+      saveInputs();
+
       document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       
@@ -860,43 +864,41 @@
     }
 
     function restoreInputs() {
-      const hash = window.location.hash;
-      let loadedFromHash = false;
-      if (hash && hash.startsWith('#data=')) {
-        try {
-          const jsonStr = decodeURIComponent(escape(atob(hash.replace('#data=', ''))));
-          const parsed = JSON.parse(jsonStr);
-          if (parsed.items) {
-            customExpenseItems = parsed.items;
-          }
-          for (let key in parsed) {
-            if (key === 'items') continue;
-            let input = document.getElementById(key);
-            if (input) {
-              input.value = parsed[key];
-              let rng = document.getElementById(key + '_range');
-              if (rng) rng.value = parsed[key];
-            }
-          }
-          loadedFromHash = true;
-        } catch(e) { console.error('URL parse error', e); }
+      // 1. ローカルストレージにすでにユーザーが編集したデータがあればそれを最優先で復元
+      const savedItems = localStorage.getItem('loan_sim_v22_custom_items');
+      let hasLocalData = savedItems !== null;
+
+      if (savedItems) {
+        try { customExpenseItems = JSON.parse(savedItems); } catch(e) {}
       }
 
-      if (!loadedFromHash) {
-        document.querySelectorAll('input[type="number"]').forEach(input => {
-          const val = localStorage.getItem('loan_sim_v21_' + input.id);
-          if (val !== null) {
-            input.value = val;
-            let rangeInput = document.getElementById(input.id + '_range');
-            if (rangeInput) rangeInput.value = val;
-          }
-        });
-
-        const savedItems = localStorage.getItem('loan_sim_v21_custom_items');
-        if (savedItems) {
-          try { customExpenseItems = JSON.parse(savedItems); } catch(e) {}
+      document.querySelectorAll('input[type="number"]').forEach(input => {
+        const val = localStorage.getItem('loan_sim_v22_' + input.id);
+        if (val !== null) {
+          hasLocalData = true;
+          input.value = val;
+          let rangeInput = document.getElementById(input.id + '_range');
+          if (rangeInput) rangeInput.value = val;
         }
+      });
+
+      // 2. もしローカルストレージに一切データがない初回のみ、標準シナリオをデフォルトロードして自動保存
+      if (!hasLocalData) {
+        const s = scenarios['standard'];
+        setValAndRange('amount', s.amount);
+        setValAndRange('rate', s.rate);
+        setValAndRange('years', s.years);
+        setValAndRange('inc_husband_gross', s.h_gross);
+        setValAndRange('inc_husband_net', s.h_net);
+        setValAndRange('inc_wife_gross', s.w_gross);
+        setValAndRange('inc_wife_net', s.w_net);
+        setValAndRange('inc_hand', s.hand);
+        setValAndRange('initAsset', s.asset);
+        setValAndRange('assetYield', s.yield);
+        setValAndRange('wifeRetireYear', s.wife_retire);
+        document.getElementById('btn_standard').classList.add('active');
       }
+
       renderExpenseItems();
     }
 
@@ -904,13 +906,14 @@
       const obj = getAllDataObj();
       for (let key in obj) {
         if (key !== 'items') {
-          localStorage.setItem('loan_sim_v21_' + key, obj[key]);
+          localStorage.setItem('loan_sim_v22_' + key, obj[key]);
         }
       }
-      localStorage.setItem('loan_sim_v21_custom_items', JSON.stringify(customExpenseItems));
+      localStorage.setItem('loan_sim_v22_custom_items', JSON.stringify(customExpenseItems));
     }
 
     function shareConfigUrl() {
+      saveInputs();
       const dataObj = getAllDataObj();
       const jsonStr = JSON.stringify(dataObj);
       const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
@@ -924,6 +927,7 @@
     }
 
     function exportJsonFile() {
+      saveInputs();
       const dataObj = getAllDataObj();
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataObj, null, 2));
       const dlAnchor = document.createElement('a');
@@ -955,8 +959,9 @@
             }
           }
           renderExpenseItems();
+          saveInputs();
           calculate();
-          showToast('設定データを正常に読み込みました！');
+          showToast('設定データを正常に読み込み・保存しました！');
         } catch(err) {
           alert('ファイルの読み込みに失敗しました。正しいJSONファイルを選択してください。');
         }
@@ -968,10 +973,11 @@
       const t = document.getElementById('toast');
       t.innerText = msg;
       t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 3500);
+      setTimeout(() => t.classList.remove('show'), 3000);
     }
 
     function calculate() {
+      // 編集のたびに常に自動でローカルストレージへ上書き保存
       saveInputs();
 
       const amountWan = parseFloat(document.getElementById('amount').value) || 0;
