@@ -3,8 +3,10 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>統合住宅ローン＆ライフプランシミュレーター</title>
+  <title>住宅ローン＆ライフプラン</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <!-- Supabase JS Client -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <link rel="apple-touch-icon" href="https://img.icons8.com/fluency/180/000000/real-estate.png">
   <style>
     :root {
@@ -56,7 +58,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      margin-bottom: 14px;
+      margin-bottom: 10px;
       padding: 4px 2px;
       flex-wrap: wrap;
       gap: 8px;
@@ -91,16 +93,24 @@
     }
     .line-btn:hover { opacity: 0.9; }
 
-    .line-notice-banner {
-      display: none;
-      background: rgba(255, 149, 0, 0.15);
-      border: 1px solid var(--orange-color);
-      color: var(--text-color);
-      padding: 12px 14px;
-      border-radius: 12px;
-      font-size: 0.78rem;
+    .sync-status-bar {
+      background: var(--card-bg);
+      border: 1px solid var(--border-color);
+      border-radius: 10px;
+      padding: 8px 12px;
       margin-bottom: 14px;
-      line-height: 1.5;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 0.75rem;
+      box-shadow: var(--shadow-sm);
+    }
+    .sync-info { display: flex; align-items: center; gap: 6px; font-weight: 600; }
+    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--secondary-color); display: inline-block; }
+    .room-input-box { display: flex; align-items: center; gap: 4px; }
+    .room-input-box input {
+      padding: 3px 6px; font-size: 0.75rem; border: 1px solid var(--border-color);
+      border-radius: 6px; background: var(--bg-color); color: var(--text-color); width: 110px; font-weight: bold;
     }
 
     .tab-container {
@@ -299,7 +309,6 @@
       <h1>住宅ローン＆ライフプラン</h1>
       <div class="header-actions">
         <button class="action-btn line-btn" onclick="shareToLine()">💬 LINE共有</button>
-        <button class="action-btn" onclick="shareConfigUrl()">🔗 共有URL</button>
         <button class="action-btn" onclick="exportJsonFile()">💾 保存</button>
         <button class="action-btn" onclick="document.getElementById('importFile').click()">📂 読込</button>
         <input type="file" id="importFile" style="display:none" accept=".json" onchange="importJsonFile(event)">
@@ -307,10 +316,16 @@
       </div>
     </div>
 
-    <!-- LINE内ブラウザ用誘導バナー -->
-    <div id="lineInAppNotice" class="line-notice-banner">
-      ⚠️ <strong>LINE内ブラウザで閲覧中です</strong><br>
-      右下の「…」またはメニューから<strong>「ブラウザで開く（Safari / Chrome）」</strong>を選択すると、スマホのホーム画面にアイコンとして追加してスムーズに操作できます！
+    <!-- クラウド自動同期ステータスバー -->
+    <div class="sync-status-bar">
+      <div class="sync-info">
+        <span id="syncDot" class="sync-dot"></span>
+        <span id="syncText">クラウド自動同期中（接続完了）</span>
+      </div>
+      <div class="room-input-box">
+        <label for="roomInput" style="margin:0; font-size:0.72rem;">共有ID:</label>
+        <input type="text" id="roomInput" value="our-home-2026" onchange="changeRoom(this.value)">
+      </div>
     </div>
 
     <div class="tab-container">
@@ -323,7 +338,7 @@
     <!-- ===== シート1: 住宅ローン ===== -->
     <div id="tab-loan" class="tab-content active">
       <div class="card">
-        <div class="card-title">ローン基本条件 <span class="save-badge">● 自動保存中</span></div>
+        <div class="card-title">ローン基本条件 <span class="save-badge">● クラウド自動保存</span></div>
         <div class="input-grid">
           <div class="input-group">
             <label for="amount">借入額 (万円)</label>
@@ -408,7 +423,7 @@
       <div class="card" style="border: 2px solid var(--primary-color); background: rgba(0, 122, 255, 0.03);">
         <div class="card-title" style="border-bottom-color: var(--primary-color);">
           <span>💰 現在の保有資産</span>
-          <span class="save-badge">● リアルタイム連動</span>
+          <span class="save-badge">● クラウド連動</span>
         </div>
         <div class="input-grid" style="grid-template-columns: 1fr;">
           <div class="input-group">
@@ -500,7 +515,6 @@
         <button type="button" class="add-item-btn" onclick="addCustomExpenseItem('新しい支出項目', 1)">＋ 独自の支出項目を追加する</button>
       </details>
 
-      <!-- 専門家による生活費内訳の評価・平均比較アドバイス -->
       <div class="card" style="background: rgba(52, 199, 89, 0.04); border: 1.5px solid var(--secondary-color);">
         <div class="card-title" style="border-bottom-color: var(--secondary-color); margin-bottom: 10px;">
           <span style="color: var(--secondary-color);">💡 専門家による生活費内訳の診断＆平均比較</span>
@@ -524,7 +538,6 @@
         </div>
       </div>
 
-      <!-- 年間合計余剰金の累積推移グラフ -->
       <div class="card">
         <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
           <span>📈 年間合計余剰金（ボーナス込）の累積貯蓄推移</span>
@@ -703,7 +716,6 @@
         </div>
       </details>
 
-      <!-- 資産運用・積立シミュレーション（完全独立型） -->
       <details class="accordion-section">
         <summary>📈 資産運用・積立シミュレーション（3パターン比較）</summary>
         <div class="input-grid" style="margin-top: 8px;">
@@ -803,9 +815,20 @@
 
   </div>
 
-  <div id="toast" class="toast">設定を自動保存しました</div>
+  <div id="toast" class="toast">クラウド同期完了</div>
 
   <script>
+    // ===== Supabase設定 =====
+    const SUPABASE_URL = 'https://pdaiohiduxfgbohppqxq.supabase.co';
+    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkYWlvaGlkdXhmZ2JvaHBwcXhxIkwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4MTExMzAsImV4cCI6MjEwNzM4NzEzMH0.N-OTunpFeENEI7y-WEcJwSEhqsvAxa45SQ7_4leCN5E';
+    
+    const { createClient } = supabase;
+    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+    let currentRoomId = 'our-home-2026';
+    let isSavingToCloud = false;
+    let realtimeChannel = null;
+
     let loanChart = null;
     let assetChart = null;
     let incomeTabAssetChart = null;
@@ -859,6 +882,7 @@
 
       triggerPulse();
       calculate();
+      saveToCloud();
     }
 
     function triggerPulse() {
@@ -871,8 +895,6 @@
     }
 
     function switchTab(tabName) {
-      saveInputs();
-
       document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
       
@@ -913,22 +935,26 @@
       customExpenseItems.push({ id: newId, name: defaultName, val: defaultVal });
       renderExpenseItems();
       calculate();
+      saveToCloud();
     }
 
     function removeExpenseItem(index) {
       customExpenseItems.splice(index, 1);
       renderExpenseItems();
       calculate();
+      saveToCloud();
     }
 
     function updateItemName(index, name) {
       customExpenseItems[index].name = name;
       calculate();
+      saveToCloud();
     }
 
     function updateItemVal(index, val) {
       customExpenseItems[index].val = parseFloat(val) || 0;
       calculate();
+      saveToCloud();
     }
 
     function getAllDataObj() {
@@ -939,16 +965,36 @@
       return data;
     }
 
-    function restoreInputs() {
-      const hash = window.location.hash;
-      let loadedFromHash = false;
-      if (hash && hash.startsWith('#data=')) {
-        try {
-          const jsonStr = decodeURIComponent(escape(atob(hash.replace('#data=', ''))));
-          const parsed = JSON.parse(jsonStr);
-          if (parsed.items) {
-            customExpenseItems = parsed.items;
-          }
+    // ===== クラウド同期処理 =====
+    async function saveToCloud() {
+      if (isSavingToCloud) return;
+      isSavingToCloud = true;
+      
+      const obj = getAllDataObj();
+      try {
+        const { error } = await db.from('sim_data').upsert({
+          id: currentRoomId,
+          data: obj,
+          updated_at: new Date()
+        });
+        if (error) console.error('Supabase save error:', error);
+      } catch(e) {
+        console.error('Save exception:', e);
+      } finally {
+        isSavingToCloud = false;
+      }
+    }
+
+    async function loadFromCloud() {
+      try {
+        const { data, error } = await db.from('sim_data').select('data').eq('id', currentRoomId).single();
+        if (error && error.code !== 'PGRST116') {
+          console.error('Load error:', error);
+          return;
+        }
+        if (data && data.data) {
+          const parsed = data.data;
+          if (parsed.items) { customExpenseItems = parsed.items; }
           for (let key in parsed) {
             if (key === 'items') continue;
             let input = document.getElementById(key);
@@ -958,65 +1004,75 @@
               if (rng) rng.value = parsed[key];
             }
           }
-          loadedFromHash = true;
-        } catch(e) { console.error('URL parse error', e); }
+          renderExpenseItems();
+          calculate();
+          showToast('クラウドから最新データを同期しました');
+        }
+      } catch(e) {
+        console.error('Load exception:', e);
+      }
+    }
+
+    function setupRealtimeSubscription() {
+      if (realtimeChannel) {
+        db.removeChannel(realtimeChannel);
       }
 
-      if (!loadedFromHash) {
-        const savedItems = localStorage.getItem('loan_sim_v32_custom_items');
-        if (savedItems) {
-          try { customExpenseItems = JSON.parse(savedItems); } catch(e) {}
-        }
-
-        document.querySelectorAll('input[type="number"], select').forEach(input => {
-          const val = localStorage.getItem('loan_sim_v32_' + input.id);
-          if (val !== null) {
-            input.value = val;
-            let rangeInput = document.getElementById(input.id + '_range');
-            if (rangeInput) rangeInput.value = val;
+      realtimeChannel = db.channel('public:sim_data:' + currentRoomId)
+        .on('postgres_changes', {
+          event: '*',
+          schema: 'public',
+          table: 'sim_data',
+          filter: `id=eq.${currentRoomId}`
+        }, payload => {
+          if (payload.new && payload.new.data && !isSavingToCloud) {
+            const parsed = payload.new.data;
+            if (parsed.items) { customExpenseItems = parsed.items; }
+            for (let key in parsed) {
+              if (key === 'items') continue;
+              let input = document.getElementById(key);
+              if (input && document.activeElement !== input) {
+                input.value = parsed[key];
+                let rng = document.getElementById(key + '_range');
+                if (rng) rng.value = parsed[key];
+              }
+            }
+            renderExpenseItems();
+            calculate();
+            showToast('🔄 パートナーの変更をリアルタイム同期しました');
+          }
+        })
+        .subscribe((status) => {
+          const dot = document.getElementById('syncDot');
+          const txt = document.getElementById('syncText');
+          if (status === 'SUBSCRIBED') {
+            dot.style.backgroundColor = 'var(--secondary-color)';
+            txt.innerText = 'クラウド自動同期中（接続完了）';
+          } else {
+            dot.style.backgroundColor = 'var(--orange-color)';
+            txt.innerText = '再接続中...';
           }
         });
-      }
-
-      renderExpenseItems();
     }
 
-    function saveInputs() {
-      const obj = getAllDataObj();
-      for (let key in obj) {
-        if (key !== 'items') {
-          localStorage.setItem('loan_sim_v32_' + key, obj[key]);
-        }
-      }
-      localStorage.setItem('loan_sim_v32_custom_items', JSON.stringify(customExpenseItems));
-    }
-
-    function generateShareableUrl() {
-      saveInputs();
-      const dataObj = getAllDataObj();
-      const jsonStr = JSON.stringify(dataObj);
-      const b64 = btoa(unescape(encodeURIComponent(jsonStr)));
-      return window.location.origin + window.location.pathname + '#data=' + b64;
+    function changeRoom(newId) {
+      if (!newId.trim()) return;
+      currentRoomId = newId.trim();
+      localStorage.setItem('loan_sim_room_id', currentRoomId);
+      loadFromCloud().then(() => {
+        setupRealtimeSubscription();
+        showToast(`共有ID「${currentRoomId}」に切り替えました`);
+      });
     }
 
     function shareToLine() {
-      const shareUrl = generateShareableUrl();
-      const text = "【住宅ローン＆ライフプランシミュレーター】\n現在の入力・シミュレーション結果を共有します：\n";
+      const shareUrl = window.location.origin + window.location.pathname + '?room=' + encodeURIComponent(currentRoomId);
+      const text = `【住宅ローン＆ライフプラン】\n一緒にリアルタイムでシミュレーションを確認・編集しましょう：\n`;
       const lineUrl = `https://line.me/R/msg/text/?${encodeURIComponent(text + shareUrl)}`;
       window.open(lineUrl, '_blank');
     }
 
-    function shareConfigUrl() {
-      const shareUrl = generateShareableUrl();
-      navigator.clipboard.writeText(shareUrl).then(() => {
-        showToast('共有用URLをコピーしました！LINEやメールに貼り付けてください。');
-      }).catch(() => {
-        prompt('以下のURLをコピーしてください:', shareUrl);
-      });
-    }
-
     function exportJsonFile() {
-      saveInputs();
       const dataObj = getAllDataObj();
       const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(dataObj, null, 2));
       const dlAnchor = document.createElement('a');
@@ -1046,9 +1102,9 @@
             }
           }
           renderExpenseItems();
-          saveInputs();
           calculate();
-          showToast('設定データを正常に読み込みました！');
+          saveToCloud();
+          showToast('設定データを読み込みクラウドに保存しました！');
         } catch(err) {
           alert('ファイルの読み込みに失敗しました。');
         }
@@ -1063,17 +1119,28 @@
       setTimeout(() => t.classList.remove('show'), 3500);
     }
 
+    // 初期化実行
     window.addEventListener('DOMContentLoaded', () => {
-      const ua = navigator.userAgent || navigator.vendor || window.opera;
-      if (ua.indexOf("Line") > -1) {
-        const notice = document.getElementById('lineInAppNotice');
-        if (notice) notice.style.display = 'block';
+      const params = new URLSearchParams(window.location.search);
+      const roomParam = params.get('room');
+      if (roomParam) {
+        currentRoomId = roomParam;
+        document.getElementById('roomInput').value = currentRoomId;
+      } else {
+        const savedRoom = localStorage.getItem('loan_sim_room_id');
+        if (savedRoom) {
+          currentRoomId = savedRoom;
+          document.getElementById('roomInput').value = currentRoomId;
+        }
       }
+
+      loadFromCloud().then(() => {
+        setupRealtimeSubscription();
+        calculate();
+      });
     });
 
     function calculate() {
-      saveInputs();
-
       const amountWan = parseFloat(document.getElementById('amount').value) || 0;
       const initialRate = parseFloat(document.getElementById('rate').value) || 0;
       const years = parseInt(document.getElementById('years').value) || 0;
@@ -1567,9 +1634,6 @@
         }
       });
     }
-
-    restoreInputs();
-    calculate();
   </script>
 </body>
 </html>
