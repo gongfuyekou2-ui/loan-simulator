@@ -489,6 +489,13 @@
             </div>
           </div>
           <div class="input-group">
+            <label for="wifePension">妻の月々年金額 (万円/月)</label>
+            <div class="dual-input">
+              <input type="number" id="wifePension" value="6" step="0.5" min="0" max="25" oninput="syncVal('wifePension', this.value)">
+              <input type="range" id="wifePension_range" value="6" step="0.5" min="0" max="15" oninput="syncVal('wifePension_range', this.value)">
+            </div>
+          </div>
+          <div class="input-group">
             <label for="houseTax">固定資産税 (万円/年)</label>
             <div class="dual-input">
               <input type="number" id="houseTax" value="12" step="1" min="0" max="50" oninput="syncVal('houseTax', this.value)">
@@ -509,20 +516,6 @@
         <summary>🚗 マイカー買い替え・ローン計画（開く）</summary>
         <div class="input-grid" style="margin-top: 8px;">
           <div class="input-group">
-            <label for="carPrice">車購入予算 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="carPrice" value="300" step="10" min="50" max="1000" oninput="syncVal('carPrice', this.value)">
-              <input type="range" id="carPrice_range" value="300" step="50" min="100" max="600" oninput="syncVal('carPrice_range', this.value)">
-            </div>
-          </div>
-          <div class="input-group">
-            <label for="carDownPayment">車購入頭金 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="carDownPayment" value="50" step="10" min="0" max="500" oninput="syncVal('carDownPayment', this.value)">
-              <input type="range" id="carDownPayment_range" value="50" step="10" min="0" max="300" oninput="syncVal('carDownPayment_range', this.value)">
-            </div>
-          </div>
-          <div class="input-group">
             <label for="carLoanYears">マイカーローン期間 (年)</label>
             <div class="dual-input">
               <input type="number" id="carLoanYears" value="5" step="1" min="1" max="10" oninput="syncVal('carLoanYears', this.value)">
@@ -537,28 +530,52 @@
             </div>
           </div>
         </div>
-        <div style="font-size: 0.8rem; font-weight: bold; color: var(--primary-color); margin: 10px 0 6px 0;">買い替え時期 (最大3回)</div>
+
+        <div style="font-size: 0.8rem; font-weight: bold; color: var(--primary-color); margin: 12px 0 6px 0;">買い替え 1回目</div>
         <div class="input-grid">
           <div class="input-group">
-            <label for="car1Year">車 1回目 (年後)</label>
-            <div class="dual-input">
-              <input type="number" id="car1Year" value="5" step="1" min="1" max="35" oninput="syncVal('car1Year', this.value)">
-              <input type="range" id="car1Year_range" value="5" step="1" min="1" max="25" oninput="syncVal('car1Year_range', this.value)">
-            </div>
+            <label for="car1Year">時期 (年後)</label>
+            <div class="dual-input"><input type="number" id="car1Year" value="5" step="1" min="1" max="40" oninput="syncVal('car1Year', this.value)"></div>
           </div>
           <div class="input-group">
-            <label for="car2Year">車 2回目 (年後)</label>
-            <div class="dual-input">
-              <input type="number" id="car2Year" value="12" step="1" min="1" max="35" oninput="syncVal('car2Year', this.value)">
-              <input type="range" id="car2Year_range" value="12" step="1" min="1" max="30" oninput="syncVal('car2Year_range', this.value)">
-            </div>
+            <label for="car1Price">購入金額 (万円)</label>
+            <div class="dual-input"><input type="number" id="car1Price" value="300" step="10" min="50" max="1000" oninput="syncVal('car1Price', this.value)"></div>
           </div>
           <div class="input-group">
-            <label for="car3Year">車 3回目 (年後)</label>
-            <div class="dual-input">
-              <input type="number" id="car3Year" value="20" step="1" min="1" max="35" oninput="syncVal('car3Year', this.value)">
-              <input type="range" id="car3Year_range" value="20" step="1" min="1" max="35" oninput="syncVal('car3Year_range', this.value)">
-            </div>
+            <label for="car1Down">頭金 (万円)</label>
+            <div class="dual-input"><input type="number" id="car1Down" value="50" step="10" min="0" max="500" oninput="syncVal('car1Down', this.value)"></div>
+          </div>
+        </div>
+
+        <div style="font-size: 0.8rem; font-weight: bold; color: var(--primary-color); margin: 12px 0 6px 0;">買い替え 2回目</div>
+        <div class="input-grid">
+          <div class="input-group">
+            <label for="car2Year">時期 (年後)</label>
+            <div class="dual-input"><input type="number" id="car2Year" value="12" step="1" min="1" max="40" oninput="syncVal('car2Year', this.value)"></div>
+          </div>
+          <div class="input-group">
+            <label for="car2Price">購入金額 (万円)</label>
+            <div class="dual-input"><input type="number" id="car2Price" value="300" step="10" min="50" max="1000" oninput="syncVal('car2Price', this.value)"></div>
+          </div>
+          <div class="input-group">
+            <label for="car2Down">頭金 (万円)</label>
+            <div class="dual-input"><input type="number" id="car2Down" value="50" step="10" min="0" max="500" oninput="syncVal('car2Down', this.value)"></div>
+          </div>
+        </div>
+
+        <div style="font-size: 0.8rem; font-weight: bold; color: var(--primary-color); margin: 12px 0 6px 0;">買い替え 3回目</div>
+        <div class="input-grid">
+          <div class="input-group">
+            <label for="car3Year">時期 (年後)</label>
+            <div class="dual-input"><input type="number" id="car3Year" value="20" step="1" min="1" max="40" oninput="syncVal('car3Year', this.value)"></div>
+          </div>
+          <div class="input-group">
+            <label for="car3Price">購入金額 (万円)</label>
+            <div class="dual-input"><input type="number" id="car3Price" value="300" step="10" min="50" max="1000" oninput="syncVal('car3Price', this.value)"></div>
+          </div>
+          <div class="input-group">
+            <label for="car3Down">頭金 (万円)</label>
+            <div class="dual-input"><input type="number" id="car3Down" value="50" step="10" min="0" max="500" oninput="syncVal('car3Down', this.value)"></div>
           </div>
         </div>
       </details>
@@ -621,17 +638,17 @@
         <div class="triple-grid">
           <div class="comp-card" style="border-top: 3px solid var(--secondary-color);">
             <div class="comp-title" style="color: var(--secondary-color);">① 保守的 (2.0%)</div>
-            <div class="result-row"><span>最終資産:</span><span id="yield1Total" class="result-value">0 万円</span></div>
+            <div class="result-row"><span>積立成果:</span><span id="yield1Total" class="result-value">0 万円</span></div>
             <div class="result-row"><span>運用益:</span><span id="yield1Gain" class="result-value" style="color:var(--secondary-color);">+0 万円</span></div>
           </div>
           <div class="comp-card" style="border-top: 3px solid var(--primary-color);">
             <div class="comp-title" style="color: var(--primary-color);">② 標準的 (4.0%)</div>
-            <div class="result-row"><span>最終資産:</span><span id="yield2Total" class="result-value">0 万円</span></div>
+            <div class="result-row"><span>積立成果:</span><span id="yield2Total" class="result-value">0 万円</span></div>
             <div class="result-row"><span>運用益:</span><span id="yield2Gain" class="result-value" style="color:var(--secondary-color);">+0 万円</span></div>
           </div>
           <div class="comp-card" style="border-top: 3px solid var(--purple-color);">
             <div class="comp-title" style="color: var(--purple-color);">③ 積極型 (6.0%)</div>
-            <div class="result-row"><span>最終資産:</span><span id="yield3Total" class="result-value">0 万円</span></div>
+            <div class="result-row"><span>積立成果:</span><span id="yield3Total" class="result-value">0 万円</span></div>
             <div class="result-row"><span>運用益:</span><span id="yield3Gain" class="result-value" style="color:var(--secondary-color);">+0 万円</span></div>
           </div>
         </div>
@@ -656,11 +673,19 @@
       </div>
 
       <div class="card">
-        <div class="card-title">
-          40年間の資産推移
+        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span>資産推移シミュレーション</span>
+          <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem;">
+            <label for="simMaxYears" style="margin:0; font-weight:600;">表示年数:</label>
+            <select id="simMaxYears" onchange="calculate()" style="padding:4px 8px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-color); font-weight:bold;">
+              <option value="20">20年</option>
+              <option value="30">30年</option>
+              <option value="40" selected>40年</option>
+            </select>
+          </div>
         </div>
         <div style="font-size: 0.75rem; opacity: 0.7; margin-bottom: 6px;">
-          ※ 緑：月収ベース ｜ 青：源泉徴収ベース ｜ 紫：運用利回り込資産推移（現在の貯蓄からスタート）
+          ※ 緑：月収ベース ｜ 青：源泉徴収ベース ｜ 紫：運用利回り込資産推移（現在の貯蓄＆毎月積立）
         </div>
         <div class="chart-container"><canvas id="assetChart"></canvas></div>
       </div>
@@ -817,7 +842,7 @@
 
     function getAllDataObj() {
       const data = { items: customExpenseItems };
-      document.querySelectorAll('input[type="number"]').forEach(input => {
+      document.querySelectorAll('input[type="number"], select').forEach(input => {
         data[input.id] = input.value;
       });
       return data;
@@ -847,13 +872,13 @@
       }
 
       if (!loadedFromHash) {
-        const savedItems = localStorage.getItem('loan_sim_v27_custom_items');
+        const savedItems = localStorage.getItem('loan_sim_v28_custom_items');
         if (savedItems) {
           try { customExpenseItems = JSON.parse(savedItems); } catch(e) {}
         }
 
-        document.querySelectorAll('input[type="number"]').forEach(input => {
-          const val = localStorage.getItem('loan_sim_v27_' + input.id);
+        document.querySelectorAll('input[type="number"], select').forEach(input => {
+          const val = localStorage.getItem('loan_sim_v28_' + input.id);
           if (val !== null) {
             input.value = val;
             let rangeInput = document.getElementById(input.id + '_range');
@@ -869,10 +894,10 @@
       const obj = getAllDataObj();
       for (let key in obj) {
         if (key !== 'items') {
-          localStorage.setItem('loan_sim_v27_' + key, obj[key]);
+          localStorage.setItem('loan_sim_v28_' + key, obj[key]);
         }
       }
-      localStorage.setItem('loan_sim_v27_custom_items', JSON.stringify(customExpenseItems));
+      localStorage.setItem('loan_sim_v28_custom_items', JSON.stringify(customExpenseItems));
     }
 
     function shareConfigUrl() {
@@ -883,7 +908,7 @@
       const shareUrl = window.location.origin + window.location.pathname + '#data=' + b64;
 
       navigator.clipboard.writeText(shareUrl).then(() => {
-        showToast('共有用URLをコピーしました！LINEやメールでシェアできます。');
+        showToast('共有用URLをコピーしました！');
       }).catch(() => {
         prompt('以下のURLをコピーしてください:', shareUrl);
       });
@@ -899,7 +924,7 @@
       document.body.appendChild(dlAnchor);
       dlAnchor.click();
       dlAnchor.remove();
-      showToast('設定データをJSONファイルとして保存しました！');
+      showToast('設定データをJSON保存しました！');
     }
 
     function importJsonFile(event) {
@@ -909,9 +934,7 @@
       reader.onload = function(e) {
         try {
           const parsed = JSON.parse(e.target.result);
-          if (parsed.items) {
-            customExpenseItems = parsed.items;
-          }
+          if (parsed.items) { customExpenseItems = parsed.items; }
           for (let key in parsed) {
             if (key === 'items') continue;
             let input = document.getElementById(key);
@@ -924,9 +947,9 @@
           renderExpenseItems();
           saveInputs();
           calculate();
-          showToast('設定データを正常に読み込み・保存しました！');
+          showToast('設定データを正常に読み込みました！');
         } catch(err) {
-          alert('ファイルの読み込みに失敗しました。正しいJSONファイルを選択してください。');
+          alert('ファイルの読み込みに失敗しました。');
         }
       };
       reader.readAsText(file);
@@ -948,6 +971,7 @@
       const prepayYear = parseInt(document.getElementById('prepayYear').value) || 0;
       const prepayAmountWan = parseFloat(document.getElementById('prepayAmount').value) || 0;
       const monthlyInvestWan = parseFloat(document.getElementById('monthlyInvest').value) || 0;
+      const maxSimYears = parseInt(document.getElementById('simMaxYears').value) || 40;
 
       const totalMonths = years * 12;
       const monthlyRate = (initialRate / 100) / 12;
@@ -998,22 +1022,21 @@
       document.getElementById('reduceMonthlyDiff').innerText = '-' + Math.round(normalPMT - newReducePMT).toLocaleString() + ' 円';
       document.getElementById('reduceSavedInterest').innerText = Math.round((normRemInt - redRemInt)/10000).toLocaleString() + ' 万円';
 
-      // 3パターン利回りシミュレーション計算 (保守2.0%, 標準4.0%, 積極6.0%)
+      // 3パターン利回り積立シミュレーション計算 (保守2.0%, 標準4.0%, 積極6.0%)
       const yieldRates = [0.02, 0.04, 0.06];
-      const investMonths = prepayYear * 12;
+      const investTotalMonths = prepayYear * 12;
       const resultsByYield = yieldRates.map(yRate => {
         const mRate = yRate / 12;
-        let curAsset = prepayVal;
-        let totalPrincipalInvested = prepayVal;
+        let curAsset = 0;
+        let totalPrincipalInvested = 0;
 
-        for (let m = 1; m <= investMonths; m++) {
+        for (let m = 1; m <= investTotalMonths; m++) {
           curAsset = (curAsset + (monthlyInvestWan * 10000)) * (1 + mRate);
           totalPrincipalInvested += (monthlyInvestWan * 10000);
         }
         return {
           total: Math.round(curAsset / 10000),
-          gain: Math.round((curAsset - totalPrincipalInvested) / 10000),
-          principal: Math.round(totalPrincipalInvested / 10000)
+          gain: Math.round((curAsset - totalPrincipalInvested) / 10000)
         };
       });
 
@@ -1029,11 +1052,8 @@
       const wGross = parseFloat(document.getElementById('inc_wife_gross').value) || 0;
       const wNet = parseFloat(document.getElementById('inc_wife_net').value) || 0;
 
-      const totalGross = hGross + wGross;
-      const totalNet = hNet + wNet;
-
-      document.getElementById('totalGrossIncome').innerText = totalGross.toFixed(0) + ' 万円';
-      document.getElementById('totalNetIncome').innerText = totalNet.toFixed(0) + ' 万円';
+      document.getElementById('totalGrossIncome').innerText = (hGross + wGross).toFixed(0) + ' 万円';
+      document.getElementById('totalNetIncome').innerText = (hNet + wNet).toFixed(0) + ' 万円';
 
       const handInc = parseFloat(document.getElementById('inc_hand').value) || 0;
       
@@ -1059,27 +1079,31 @@
         healthElem.style.color = "var(--danger-color)";
       }
 
-      const carPrice = parseFloat(document.getElementById('carPrice').value) || 0;
-      const carDown = parseFloat(document.getElementById('carDownPayment').value) || 0;
+      // マイカー設定
       const carLoanY = parseInt(document.getElementById('carLoanYears').value) || 5;
-      const carRate = parseFloat(document.getElementById('carLoanRate').value) || 0;
-      
-      const carLoanPrincipal = Math.max(0, carPrice - carDown);
+      const carRate = parseFloat(document.getElementById('carLoanRate').value) || 2.0;
       const carMonthlyRate = (carRate / 100) / 12;
-      const carMonthlyPMT = calcPMT(carLoanPrincipal * 10000, carMonthlyRate, carLoanY * 12);
-      const carAnnualPayment = carMonthlyPMT * 12 / 10000;
+
+      const cars = [
+        { y: parseInt(document.getElementById('car1Year').value) || 0, price: parseFloat(document.getElementById('car1Price').value) || 0, down: parseFloat(document.getElementById('car1Down').value) || 0 },
+        { y: parseInt(document.getElementById('car2Year').value) || 0, price: parseFloat(document.getElementById('car2Price').value) || 0, down: parseFloat(document.getElementById('car2Down').value) || 0 },
+        { y: parseInt(document.getElementById('car3Year').value) || 0, price: parseFloat(document.getElementById('car3Price').value) || 0, down: parseFloat(document.getElementById('car3Down').value) || 0 }
+      ];
+
+      // 各車のローン年間返済額を計算
+      cars.forEach(c => {
+        c.loanPrincipal = Math.max(0, c.price - c.down);
+        c.monthlyPMT = calcPMT(c.loanPrincipal * 10000, carMonthlyRate, carLoanY * 12);
+        c.annualPMT = c.monthlyPMT * 12 / 10000;
+      });
 
       const startAge = parseInt(document.getElementById('myAge').value) || 34;
       const initAsset = parseFloat(document.getElementById('initAsset').value) || 0;
       const wifeRetireYear = parseInt(document.getElementById('wifeRetireYear').value) || 0;
+      const wifeMonthlyPension = parseFloat(document.getElementById('wifePension').value) || 0;
       
       const houseTax = parseFloat(document.getElementById('houseTax').value) || 0;
       const houseRepair = parseFloat(document.getElementById('houseRepair').value) || 0;
-      
-      const car1Y = parseInt(document.getElementById('car1Year').value) || 0;
-      const car2Y = parseInt(document.getElementById('car2Year').value) || 0;
-      const car3Y = parseInt(document.getElementById('car3Year').value) || 0;
-      
       const travelAnnual = parseFloat(document.getElementById('travelAnnual').value) || 0;
       const spTravelY = parseInt(document.getElementById('specialTravelYear').value) || 0, spTravelC = parseFloat(document.getElementById('specialTravelCost').value) || 0;
       const reformY = parseInt(document.getElementById('reformYear').value) || 0, reformC = parseFloat(document.getElementById('reformCost').value) || 0;
@@ -1107,22 +1131,17 @@
         yearlyLoanBalances[y] = tempLoanBal;
       }
 
-      for (let y = 0; y <= 40; y++) {
+      for (let y = 0; y <= maxSimYears; y++) {
         const currentAge = startAge + y;
         let events = [];
 
-        let currentHGross = hGross;
-        let currentHNet = hNet;
-        let currentWGross = wGross;
         let currentWNet = wNet;
-
         if (y >= wifeRetireYear && wifeRetireYear > 0) {
-          currentWGross = 0;
-          currentWNet = 0;
-          if (y === wifeRetireYear) events.push("妻退職");
+          currentWNet = (wifeMonthlyPension * 12);
+          if (y === wifeRetireYear) events.push("妻退職(年金受給開始)");
         }
 
-        const currentYearlyNet = currentHNet + currentWNet;
+        const currentYearlyNet = hNet + currentWNet;
 
         let mortgageDeduction = 0;
         if (y >= 1 && y <= 13 && yearlyLoanBalances[y] > 0) {
@@ -1132,15 +1151,14 @@
 
         let annualExp = (livingTotal * 12) + (y < years ? (normalPMT / 10000 * 12) : 0) + houseTax + houseRepair + travelAnnual;
 
-        let carLoanActiveYears = [car1Y, car2Y, car3Y];
-        carLoanActiveYears.forEach(cYear => {
-          if (cYear > 0) {
-            if (y === cYear) {
-              annualExp += carDown;
-              events.push(`車購入(-${carDown}万頭金)`);
+        cars.forEach((c, idx) => {
+          if (c.y > 0) {
+            if (y === c.y) {
+              annualExp += c.down;
+              events.push(`車${idx+1}購入(-${c.down}万頭金/月${Math.round(c.monthlyPMT).toLocaleString()}円)`);
             }
-            if (y >= cYear && y < cYear + carLoanY) {
-              annualExp += carAnnualPayment;
+            if (y >= c.y && y < c.y + carLoanY) {
+              annualExp += c.annualPMT;
             }
           }
         });
@@ -1161,13 +1179,14 @@
           const annualNetDiffGross = effectiveNetIncome - annualExp;
           currentAssetGross += annualNetDiffGross;
 
-          currentAssetYielded = (currentAssetYielded * (1 + assetYield)) + annualNetDiffGross;
+          const annualInvestAmount = monthlyInvestWan * 12;
+          currentAssetYielded = (currentAssetYielded * (1 + assetYield)) + annualNetDiffGross + annualInvestAmount;
         }
 
         const safetyBuffer = (livingTotal * 6) + (y < years ? (normalPMT / 10000 * 6) : 0);
         if (y > 0 && currentAssetYielded < safetyBuffer && !hasRisk) {
           hasRisk = true;
-          riskMessage = `${y}年後（${currentAge}歳頃）に資産残高が生活防衛資金（約${Math.round(safetyBuffer)}万円）を下回るリスクがあります！支出の調整を検討してください。`;
+          riskMessage = `${y}年後（${currentAge}歳頃）に資産残高が生活防衛資金（約${Math.round(safetyBuffer)}万円）を下回るリスクがあります！`;
         }
 
         assetLabels.push(y + '年後');
@@ -1206,11 +1225,11 @@
       
       let expertHtml = "";
       if (hasRisk) {
-        expertHtml = `🔴 <b>注意が必要です:</b> シミュレーション期間中の途中で一時的な資金の目減りや生活防衛ラインを下回る期間があります。マイカーの買い替え時期やリフォーム時期、または毎月の生活費を数万円スリム化することで資産曲線が大きく改善します。`;
+        expertHtml = `🔴 <b>注意が必要です:</b> シミュレーション途中で資金が目減りするタイミングがあります。車の購入予算や毎月の積立額、生活費のバランスを調整してください。`;
       } else if (finalAsset > initAsset * 3) {
-        expertHtml = `🟢 <b>極めて順調な資産形成パスです:</b> 想定運用利回り（<b>${(assetYield*100).toFixed(1)}%</b>）と複利効果により、40年後には資産が約<b>${Math.round(finalAsset)}万円</b>へと大きく拡大する理想的なライフプランです！住宅ローン控除期間（13年間）を活かしながら着実に資産を築けています。`;
+        expertHtml = `🟢 <b>極めて順調な資産形成パスです:</b> 想定運用利回り（<b>${(assetYield*100).toFixed(1)}%</b>）と毎月の積立・複利効果により、${maxSimYears}年後には約<b>${Math.round(finalAsset)}万円</b>へと大きく拡大する理想的なライフプランです！`;
       } else {
-        expertHtml = `🟡 <b>安定した堅実な推移です:</b> 資産の極端な減少や破綻リスクはありません。さらに余裕を持たせるために、奥様の退職後や教育・レジャー費用のバランスを時折チェックしながら運用を継続するのがおすすめです。`;
+        expertHtml = `🟡 <b>安定した堅実な推移です:</b> 破綻リスクはありません。さらに余裕を持たせるために、積立額の増額なども検討可能です。`;
       }
       expertAdviceElem.innerHTML = expertHtml;
 
@@ -1218,7 +1237,7 @@
 
       updateLoanChart(years, principal, normalPMT, monthlyRate, prepayMonth, prepayVal, newReducePMT);
       updateAssetChart(assetLabels, assetDataNet, assetDataGross, assetDataYielded);
-      updateInvestCompareChart(prepayYear, prepayVal, monthlyInvestWan, yieldRates);
+      updateInvestCompareChart(prepayYear, monthlyInvestWan, yieldRates);
     }
 
     function calcPMT(pv, rate, nper) {
@@ -1286,34 +1305,9 @@
         data: {
           labels: labels,
           datasets: [
-            {
-              label: '月収ベース (緑)',
-              data: dataNet,
-              borderColor: '#34c759',
-              borderDash: [3,3],
-              fill: false,
-              tension: 0.25,
-              pointRadius: 0
-            },
-            {
-              label: '源泉徴収ベース (青)',
-              data: dataGross,
-              borderColor: '#007aff',
-              borderDash: [3,3],
-              fill: false,
-              tension: 0.25,
-              pointRadius: 0
-            },
-            {
-              label: '運用利回り込資産 (紫)',
-              data: dataYielded,
-              borderColor: '#af52de',
-              backgroundColor: isDark ? 'rgba(191, 90, 242, 0.15)' : 'rgba(175, 82, 222, 0.08)',
-              fill: true,
-              borderWidth: 2.5,
-              tension: 0.25,
-              pointRadius: 0
-            }
+            { label: '月収ベース (緑)', data: dataNet, borderColor: '#34c759', borderDash: [3,3], fill: false, tension: 0.25, pointRadius: 0 },
+            { label: '源泉徴収ベース (青)', data: dataGross, borderColor: '#007aff', borderDash: [3,3], fill: false, tension: 0.25, pointRadius: 0 },
+            { label: '運用利回り込資産 (紫)', data: dataYielded, borderColor: '#af52de', backgroundColor: isDark ? 'rgba(191, 90, 242, 0.15)' : 'rgba(175, 82, 222, 0.08)', fill: true, borderWidth: 2.5, tension: 0.25, pointRadius: 0 }
           ]
         },
         options: { 
@@ -1328,18 +1322,19 @@
       });
     }
 
-    function updateInvestCompareChart(prepayYear, prepayVal, monthlyInvestWan, yieldRates) {
+    function updateInvestCompareChart(prepayYear, monthlyInvestWan, yieldRates) {
+      const maxSimYears = parseInt(document.getElementById('simMaxYears').value) || 40;
       const labels = [];
       const data1 = [], data2 = [], data3 = [];
 
-      for (let y = 0; y <= prepayYear; y++) {
+      for (let y = 0; y <= maxSimYears; y++) {
         labels.push(y + '年後');
         const months = y * 12;
 
         for (let idx = 0; idx < yieldRates.length; idx++) {
           const yRate = yieldRates[idx];
           const mRate = yRate / 12;
-          let cur = prepayVal;
+          let cur = 0;
           for (let m = 1; m <= months; m++) {
             cur = (cur + (monthlyInvestWan * 10000)) * (1 + mRate);
           }
