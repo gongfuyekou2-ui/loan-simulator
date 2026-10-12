@@ -239,6 +239,9 @@
     .comp-card { border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; background-color: var(--card-bg); box-shadow: var(--shadow-sm); }
     .comp-title { font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; text-align: center; padding-bottom: 4px; border-bottom: 1px solid var(--border-color); }
 
+    .triple-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+    @media (max-width: 600px) { .triple-grid { grid-template-columns: 1fr; } }
+
     .chart-container { position: relative; height: 280px; width: 100%; margin-top: 10px; }
     .save-badge { font-size: 0.65rem; background-color: rgba(52, 199, 89, 0.15); color: var(--secondary-color); padding: 3px 8px; border-radius: 12px; font-weight: 700; }
     
@@ -333,33 +336,53 @@
       </div>
 
       <div class="card">
-        <div class="card-title">繰り上げ返済 vs 資産運用（損益分岐）</div>
+        <div class="card-title">繰り上げ返済 vs 資産運用（3パターン利回り比較）</div>
         <div class="input-grid">
           <div class="input-group">
-            <label for="prepayYear">繰り上げ時期 (年後)</label>
+            <label for="prepayYear">運用/繰り上げ時期 (年後)</label>
             <div class="dual-input">
               <input type="number" id="prepayYear" value="10" step="1" min="1" max="35" oninput="syncVal('prepayYear', this.value)">
               <input type="range" id="prepayYear_range" value="10" step="1" min="1" max="30" oninput="syncVal('prepayYear_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="prepayAmount">繰り上げ額 (万円)</label>
+            <label for="prepayAmount">元手/一括投資額 (万円)</label>
             <div class="dual-input">
               <input type="number" id="prepayAmount" value="300" step="50" min="10" max="3000" oninput="syncVal('prepayAmount', this.value)">
               <input type="range" id="prepayAmount_range" value="300" step="50" min="50" max="1500" oninput="syncVal('prepayAmount_range', this.value)">
             </div>
           </div>
           <div class="input-group">
-            <label for="investYield">想定運用利回り (%)</label>
+            <label for="monthlyInvest">毎月の積立投資額 (万円/月)</label>
             <div class="dual-input">
-              <input type="number" id="investYield" value="4.0" step="0.5" min="0" max="15" oninput="syncVal('investYield', this.value)">
-              <input type="range" id="investYield_range" value="4.0" step="0.5" min="1.0" max="10.0" oninput="syncVal('investYield_range', this.value)">
+              <input type="number" id="monthlyInvest" value="3" step="0.5" min="0" max="20" oninput="syncVal('monthlyInvest', this.value)">
+              <input type="range" id="monthlyInvest_range" value="3" step="0.5" min="0" max="10" oninput="syncVal('monthlyInvest_range', this.value)">
             </div>
           </div>
         </div>
 
-        <div class="result-box" id="strategyAdviceBox" style="background: rgba(0, 122, 255, 0.05); border: 1px solid var(--primary-color);">
-          <div class="result-row"><span style="font-weight: 700; color: var(--primary-color);">💡 住宅ローン・資金運用アドバイス</span></div>
+        <!-- 3パターンの利回り比較カード -->
+        <div style="font-size: 0.82rem; font-weight: 700; color: var(--primary-color); margin: 14px 0 6px 0;">📈 想定利回り 3パターン比較シミュレーション</div>
+        <div class="triple-grid">
+          <div class="comp-card" style="border-top: 3px solid var(--secondary-color);">
+            <div class="comp-title" style="color: var(--secondary-color);">① 保守的 (2.0%)</div>
+            <div class="result-row"><span>最終資産:</span><span id="yield1Total" class="result-value">0 万円</span></div>
+            <div class="result-row"><span>うち運用益:</span><span id="yield1Gain" class="result-value" style="color:var(--secondary-color);">+0 万円</span></div>
+          </div>
+          <div class="comp-card" style="border-top: 3px solid var(--primary-color);">
+            <div class="comp-title" style="color: var(--primary-color);">② 標準的 (4.0%)</div>
+            <div class="result-row"><span>最終資産:</span><span id="yield2Total" class="result-value">0 万円</span></div>
+            <div class="result-row"><span>うち運用益:</span><span id="yield2Gain" class="result-value" style="color:var(--secondary-color);">+0 万円</span></div>
+          </div>
+          <div class="comp-card" style="border-top: 3px solid var(--purple-color);">
+            <div class="comp-title" style="color: var(--purple-color);">③ 積極型 (6.0%)</div>
+            <div class="result-row"><span>最終資産:</span><span id="yield3Total" class="result-value">0 万円</span></div>
+            <div class="result-row"><span>うち運用益:</span><span id="yield3Gain" class="result-value" style="color:var(--secondary-color);">+0 万円</span></div>
+          </div>
+        </div>
+
+        <div class="result-box" id="strategyAdviceBox" style="background: rgba(0, 122, 255, 0.05); border: 1px solid var(--primary-color); margin-top: 12px;">
+          <div class="result-row"><span style="font-weight: 700; color: var(--primary-color);">💡 住宅ローン・資産運用アドバイス</span></div>
           <div id="strategyAdviceText" style="font-size: 0.85rem; margin-top: 4px; line-height: 1.4;">判定中...</div>
         </div>
 
@@ -377,6 +400,11 @@
             <div class="result-row"><span>軽減利息:</span><span id="reduceSavedInterest" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
           </div>
         </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">運用リターン（3パターン）推移グラフ</div>
+        <div class="chart-container"><canvas id="investCompareChart"></canvas></div>
       </div>
 
       <div class="card">
@@ -668,6 +696,7 @@
   <script>
     let loanChart = null;
     let assetChart = null;
+    let investCompareChart = null;
     let customExpenseItems = [
       { id: 'exp_food', name: '食費・日用品', val: 8 },
       { id: 'exp_util', name: '水道光熱費', val: 2.5 },
@@ -743,6 +772,7 @@
       setTimeout(() => {
         if (loanChart) loanChart.resize();
         if (assetChart) assetChart.resize();
+        if (investCompareChart) investCompareChart.resize();
       }, 50);
     }
 
@@ -819,13 +849,13 @@
       }
 
       if (!loadedFromHash) {
-        const savedItems = localStorage.getItem('loan_sim_v23_custom_items');
+        const savedItems = localStorage.getItem('loan_sim_v24_custom_items');
         if (savedItems) {
           try { customExpenseItems = JSON.parse(savedItems); } catch(e) {}
         }
 
         document.querySelectorAll('input[type="number"]').forEach(input => {
-          const val = localStorage.getItem('loan_sim_v23_' + input.id);
+          const val = localStorage.getItem('loan_sim_v24_' + input.id);
           if (val !== null) {
             input.value = val;
             let rangeInput = document.getElementById(input.id + '_range');
@@ -841,10 +871,10 @@
       const obj = getAllDataObj();
       for (let key in obj) {
         if (key !== 'items') {
-          localStorage.setItem('loan_sim_v23_' + key, obj[key]);
+          localStorage.setItem('loan_sim_v24_' + key, obj[key]);
         }
       }
-      localStorage.setItem('loan_sim_v23_custom_items', JSON.stringify(customExpenseItems));
+      localStorage.setItem('loan_sim_v24_custom_items', JSON.stringify(customExpenseItems));
     }
 
     function shareConfigUrl() {
@@ -919,8 +949,7 @@
       const years = parseInt(document.getElementById('years').value) || 0;
       const prepayYear = parseInt(document.getElementById('prepayYear').value) || 0;
       const prepayAmountWan = parseFloat(document.getElementById('prepayAmount').value) || 0;
-      const investYield = parseFloat(document.getElementById('investYield').value) || 4.0;
-      const assetYield = (parseFloat(document.getElementById('assetYield').value) || 3.0) / 100;
+      const monthlyInvestWan = parseFloat(document.getElementById('monthlyInvest').value) || 0;
 
       const totalMonths = years * 12;
       const monthlyRate = (initialRate / 100) / 12;
@@ -971,16 +1000,38 @@
       document.getElementById('reduceMonthlyDiff').innerText = '-' + Math.round(normalPMT - newReducePMT).toLocaleString() + ' 円';
       document.getElementById('reduceSavedInterest').innerText = Math.round((normRemInt - redRemInt)/10000).toLocaleString() + ' 万円';
 
+      // 3パターン利回りシミュレーション計算 (保守2.0%, 標準4.0%, 積極6.0%)
+      const yieldRates = [0.02, 0.04, 0.06];
+      const investMonths = prepayYear * 12;
+      const resultsByYield = yieldRates.map(yRate => {
+        const mRate = yRate / 12;
+        let curAsset = prepayVal;
+        let totalPrincipalInvested = prepayVal;
+
+        for (let m = 1; m <= investMonths; m++) {
+          curAsset = (curAsset + (monthlyInvestWan * 10000)) * (1 + mRate);
+          totalPrincipalInvested += (monthlyInvestWan * 10000);
+        }
+        return {
+          total: Math.round(curAsset / 10000),
+          gain: Math.round((curAsset - totalPrincipalInvested) / 10000),
+          principal: Math.round(totalPrincipalInvested / 10000)
+        };
+      });
+
+      document.getElementById('yield1Total').innerText = resultsByYield[0].total.toLocaleString() + ' 万円';
+      document.getElementById('yield1Gain').innerText = '+' + resultsByYield[0].gain.toLocaleString() + ' 万円';
+      document.getElementById('yield2Total').innerText = resultsByYield[1].total.toLocaleString() + ' 万円';
+      document.getElementById('yield2Gain').innerText = '+' + resultsByYield[1].gain.toLocaleString() + ' 万円';
+      document.getElementById('yield3Total').innerText = resultsByYield[2].total.toLocaleString() + ' 万円';
+      document.getElementById('yield3Gain').innerText = '+' + resultsByYield[2].gain.toLocaleString() + ' 万円';
+
       const savedInterestWan = (normRemInt - shortRemInt) / 10000;
-      const approxYearsLeft = Math.max(1, (years - prepayYear));
-      const expectedInvestmentGain = prepayAmountWan * (Math.pow(1 + (investYield / 100), approxYearsLeft) - 1);
-      
       const adviceTextElem = document.getElementById('strategyAdviceText');
-      if (investYield > initialRate) {
-        const diffGain = Math.round(expectedInvestmentGain - savedInterestWan);
-        adviceTextElem.innerHTML = `現在の想定運用利回り（<b>${investYield}%</b>）は、ローン金利（<b>${initialRate}%</b>）を上回っています。<br>繰り上げ返済に${prepayAmountWan}万円使うよりも、投資に回す方が【約<b>${diffGain}万円</b>】有利になる計算です！`;
+      if (resultsByYield[1].gain > savedInterestWan) {
+        adviceTextElem.innerHTML = `標準的な想定運用利回り（<b>4.0%</b>）の場合、${prepayYear}年間の運用で得られる利益（約<b>${resultsByYield[1].gain.toLocaleString()}万円</b>）が、期間短縮による軽減利息（約<b>${Math.round(savedInterestWan)}万円</b>）を大きく上回るため、資産運用が圧倒的にお得です！`;
       } else {
-        adviceTextElem.innerHTML = `住宅ローン金利（<b>${initialRate}%</b>）が想定運用利回り（<b>${investYield}%</b>）を上回っています。<br>「① 期間短縮型の繰り上げ返済」で確実にお利息をカット（約<b>${Math.round(savedInterestWan)}万円軽減</b>）する戦略が安全です。`;
+        adviceTextElem.innerHTML = `ローン金利と利回りのバランスを踏まえると、確実に利息をカットできる期間短縮型の繰り上げ返済も有力な選択肢です。`;
       }
 
       const hGross = parseFloat(document.getElementById('inc_husband_gross').value) || 0;
@@ -1043,6 +1094,7 @@
       const spTravelY = parseInt(document.getElementById('specialTravelYear').value) || 0, spTravelC = parseFloat(document.getElementById('specialTravelCost').value) || 0;
       const reformY = parseInt(document.getElementById('reformYear').value) || 0, reformC = parseFloat(document.getElementById('reformCost').value) || 0;
 
+      const assetYield = (parseFloat(document.getElementById('assetYield').value) || 3.0) / 100;
       let currentAssetNet = initAsset;
       let currentAssetGross = initAsset;
       let currentAssetYielded = initAsset;
@@ -1176,6 +1228,7 @@
 
       updateLoanChart(years, principal, normalPMT, monthlyRate, prepayMonth, prepayVal, newReducePMT);
       updateAssetChart(assetLabels, assetDataNet, assetDataGross, assetDataYielded);
+      updateInvestCompareChart(prepayYear, prepayVal, monthlyInvestWan, yieldRates);
     }
 
     function calcPMT(pv, rate, nper) {
@@ -1271,6 +1324,56 @@
               tension: 0.25,
               pointRadius: 0
             }
+          ]
+        },
+        options: { 
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: 400, easing: 'easeOutQuart' },
+          plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { weight: '600' } } } },
+          scales: {
+            x: { grid: { color: gridColor }, ticks: { color: textColor } },
+            y: { grid: { color: gridColor }, ticks: { color: textColor } }
+          }
+        }
+      });
+    }
+
+    function updateInvestCompareChart(prepayYear, prepayVal, monthlyInvestWan, yieldRates) {
+      const labels = [];
+      const data1 = [], data2 = [], data3 = [];
+
+      for (let y = 0; y <= prepayYear; y++) {
+        labels.push(y + '年後');
+        const months = y * 12;
+
+        for (let idx = 0; idx < yieldRates.length; idx++) {
+          const yRate = yieldRates[idx];
+          const mRate = yRate / 12;
+          let cur = prepayVal;
+          for (let m = 1; m <= months; m++) {
+            cur = (cur + (monthlyInvestWan * 10000)) * (1 + mRate);
+          }
+          const valWan = Math.round(cur / 10000);
+          if (idx === 0) data1.push(valWan);
+          else if (idx === 1) data2.push(valWan);
+          else if (idx === 2) data3.push(valWan);
+        }
+      }
+
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
+      const gridColor = isDark ? '#2c2c2e' : '#e5e5ea';
+      const textColor = isDark ? '#f2f2f7' : '#1c1c1e';
+
+      const ctx = document.getElementById('investCompareChart').getContext('2d');
+      if (investCompareChart) investCompareChart.destroy();
+      investCompareChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: '保守的 (2.0%)', data: data1, borderColor: '#34c759', fill: false, borderWidth: 2, pointRadius: 0 },
+            { label: '標準的 (4.0%)', data: data2, borderColor: '#007aff', fill: false, borderWidth: 2.5, pointRadius: 0 },
+            { label: '積極型 (6.0%)', data: data3, borderColor: '#af52de', fill: false, borderWidth: 2.5, pointRadius: 0 }
           ]
         },
         options: { 
