@@ -444,7 +444,6 @@
           </div>
         </div>
 
-        <!-- 夏・冬ボーナス入力欄 -->
         <div style="background: var(--card-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 14px;">
           <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;">🎁 夏・冬ボーナス設定 (手取り額)</div>
           <div class="input-grid">
@@ -486,6 +485,25 @@
             家計診断チェック中...
           </div>
         </div>
+      </div>
+
+      <!-- 追加された家計ベースの貯蓄推移グラフカード -->
+      <div class="card">
+        <div class="card-title" style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <span>📈 家計ベースの貯蓄推移グラフ（5年間隔・MAX40年）</span>
+          <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem;">
+            <label for="incomeTabMaxYears" style="margin:0; font-weight:600;">表示年数:</label>
+            <select id="incomeTabMaxYears" onchange="calculate()" style="padding:4px 8px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-color); font-weight:bold;">
+              <option value="20">20年</option>
+              <option value="30">30年</option>
+              <option value="40" selected>40年</option>
+            </select>
+          </div>
+        </div>
+        <div style="font-size: 0.75rem; opacity: 0.7; margin-bottom: 6px;">
+          ※ 月間家計収支（手取り月収＋夏冬ボーナス－生活費－住宅ローン返済）のベース蓄積推移
+        </div>
+        <div class="chart-container"><canvas id="incomeTabAssetChart"></canvas></div>
       </div>
     </div>
 
@@ -681,7 +699,7 @@
             <div class="result-row"><span>運用益:</span><span id="yield2Gain" class="result-value" style="color:var(--secondary-color);">+0 万円</span></div>
           </div>
           <div class="comp-card" style="border-top: 3px solid var(--purple-color);">
-            <div class="comp-title" style="color: var(--purple-color);">③ 積極型 (6.0%)</div>
+            <div class="comp-title" style="color: var(--purple-color);">③ 积极型 (6.0%)</div>
             <div class="result-row"><span>積立成果:</span><span id="yield3Total" class="result-value">0 万円</span></div>
             <div class="result-row"><span>運用益:</span><span id="yield3Gain" class="result-value" style="color:var(--secondary-color);">+0 万円</span></div>
           </div>
@@ -753,6 +771,7 @@
   <script>
     let loanChart = null;
     let assetChart = null;
+    let incomeTabAssetChart = null;
     let investCompareChart = null;
     let customExpenseItems = [
       { id: 'exp_food', name: '食費・日用品', val: 8 },
@@ -829,6 +848,7 @@
       setTimeout(() => {
         if (loanChart) loanChart.resize();
         if (assetChart) assetChart.resize();
+        if (incomeTabAssetChart) incomeTabAssetChart.resize();
         if (investCompareChart) investCompareChart.resize();
       }, 50);
     }
@@ -906,13 +926,13 @@
       }
 
       if (!loadedFromHash) {
-        const savedItems = localStorage.getItem('loan_sim_v30_custom_items');
+        const savedItems = localStorage.getItem('loan_sim_v31_custom_items');
         if (savedItems) {
           try { customExpenseItems = JSON.parse(savedItems); } catch(e) {}
         }
 
         document.querySelectorAll('input[type="number"], select').forEach(input => {
-          const val = localStorage.getItem('loan_sim_v30_' + input.id);
+          const val = localStorage.getItem('loan_sim_v31_' + input.id);
           if (val !== null) {
             input.value = val;
             let rangeInput = document.getElementById(input.id + '_range');
@@ -928,10 +948,10 @@
       const obj = getAllDataObj();
       for (let key in obj) {
         if (key !== 'items') {
-          localStorage.setItem('loan_sim_v30_' + key, obj[key]);
+          localStorage.setItem('loan_sim_v31_' + key, obj[key]);
         }
       }
-      localStorage.setItem('loan_sim_v30_custom_items', JSON.stringify(customExpenseItems));
+      localStorage.setItem('loan_sim_v31_custom_items', JSON.stringify(customExpenseItems));
     }
 
     function shareConfigUrl() {
@@ -1007,6 +1027,7 @@
       const monthlyInvestWan = parseFloat(document.getElementById('monthlyInvest').value) || 0;
       const investYears = parseInt(document.getElementById('investYears').value) || 20;
       const maxSimYears = parseInt(document.getElementById('simMaxYears').value) || 40;
+      const incomeTabMaxYears = parseInt(document.getElementById('incomeTabMaxYears').value) || 40;
 
       const totalMonths = years * 12;
       const monthlyRate = (initialRate / 100) / 12;
@@ -1057,7 +1078,6 @@
       document.getElementById('reduceMonthlyDiff').innerText = '-' + Math.round(normalPMT - newReducePMT).toLocaleString() + ' 円';
       document.getElementById('reduceSavedInterest').innerText = Math.round((normRemInt - redRemInt)/10000).toLocaleString() + ' 万円';
 
-      // 3パターン利回り積立シミュレーション計算（独立 investYears）
       const yieldRates = [0.02, 0.04, 0.06];
       const investTotalMonths = investYears * 12;
       const resultsByYield = yieldRates.map(yRate => {
@@ -1092,7 +1112,6 @@
 
       const handInc = parseFloat(document.getElementById('inc_hand').value) || 0;
       
-      // 夏・冬ボーナス値取得
       const bHS = parseFloat(document.getElementById('bonus_husband_summer').value) || 0;
       const bHW = parseFloat(document.getElementById('bonus_husband_winter').value) || 0;
       const bWS = parseFloat(document.getElementById('bonus_wife_summer').value) || 0;
@@ -1113,7 +1132,6 @@
       const netSavingsWan = handInc - livingTotal - (normalPMT / 10000);
       document.getElementById('netMonthlySavings').innerText = netSavingsWan.toFixed(1) + ' 万円/月';
 
-      // ボーナス込の年間手残り余剰金
       const netAnnualSavingsWan = (netSavingsWan * 12) + totalBonusAnnual;
       const netAnnualElem = document.getElementById('netAnnualSavings');
       if (netAnnualElem) netAnnualElem.innerText = `${netAnnualSavingsWan.toFixed(1)} 万円/年`;
@@ -1130,7 +1148,6 @@
         healthElem.style.color = "var(--danger-color)";
       }
 
-      // マイカー設定
       const carLoanY = parseInt(document.getElementById('carLoanYears').value) || 5;
       const carRate = parseFloat(document.getElementById('carLoanRate').value) || 2.0;
       const carMonthlyRate = (carRate / 100) / 12;
@@ -1190,7 +1207,7 @@
 
         if (y >= wifeRetireYear && wifeRetireYear > 0) {
           currentWNet = (wifeMonthlyPension * 12);
-          currentWBonus = 0; // 退職後は妻ボーナス0
+          currentWBonus = 0;
           if (y === wifeRetireYear) events.push("妻退職(年金受給開始)");
         }
 
@@ -1291,6 +1308,7 @@
 
       updateLoanChart(years, principal, normalPMT, monthlyRate, prepayMonth, prepayVal, newReducePMT);
       updateAssetChart(assetLabels, assetDataNet, assetDataGross, assetDataYielded);
+      updateIncomeTabAssetChart(assetLabels, assetDataNet, incomeTabMaxYears);
       updateInvestCompareChart(investYears, monthlyInvestWan, yieldRates);
     }
 
@@ -1366,6 +1384,55 @@
         },
         options: { 
           responsive: true, maintainAspectRatio: false,
+          animation: { duration: 400, easing: 'easeOutQuart' },
+          plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { weight: '600' } } } },
+          scales: {
+            x: { grid: { color: gridColor }, ticks: { color: textColor } },
+            y: { grid: { color: gridColor }, ticks: { color: textColor } }
+          }
+        }
+      });
+    }
+
+    function updateIncomeTabAssetChart(labels, dataNet, maxYears) {
+      // 5年間隔でフィルター（0, 5, 10, 15, 20, 25, 30, 35, 40）
+      const filteredLabels = [];
+      const filteredData = [];
+
+      for (let i = 0; i <= maxYears; i++) {
+        if (i % 5 === 0 || i === maxYears) {
+          filteredLabels.push(i === 0 ? '現在' : i + '年後');
+          filteredData.push(dataNet[i] !== undefined ? dataNet[i] : dataNet[dataNet.length - 1]);
+        }
+      }
+
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
+      const gridColor = isDark ? '#2c2c2e' : '#e5e5ea';
+      const textColor = isDark ? '#f2f2f7' : '#1c1c1e';
+
+      const ctx = document.getElementById('incomeTabAssetChart').getContext('2d');
+      if (incomeTabAssetChart) incomeTabAssetChart.destroy();
+      incomeTabAssetChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: filteredLabels,
+          datasets: [
+            {
+              label: '家計ベース貯蓄推移 (万円)',
+              data: filteredData,
+              borderColor: '#34c759',
+              backgroundColor: isDark ? 'rgba(50, 215, 75, 0.15)' : 'rgba(52, 199, 89, 0.1)',
+              fill: true,
+              borderWidth: 2.5,
+              tension: 0.25,
+              pointRadius: 4,
+              pointBackgroundColor: '#34c759'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
           animation: { duration: 400, easing: 'easeOutQuart' },
           plugins: { legend: { position: 'bottom', labels: { color: textColor, font: { weight: '600' } } } },
           scales: {
