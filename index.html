@@ -5,7 +5,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Our Home - 住宅ローン＆ライフプラン</title>
     
-    <!-- PWA & アイコン設定 (共通アイコン適用) -->
+    <!-- PWA & 共通アプリアイコン設定 -->
     <link rel="icon" type="image/jpeg" href="app-icon.jpg">
     <link rel="apple-touch-icon" href="app-icon.jpg">
     <link rel="manifest" href="manifest.json">
@@ -31,13 +31,13 @@
     <header class="bg-white dark:bg-slate-800 shadow-sm border-b border-slate-200 dark:border-slate-700 sticky top-0 z-50">
         <div class="max-w-7xl mx-auto px-4 py-3 flex flex-wrap justify-between items-center gap-3">
             <div class="flex items-center space-x-3">
-                <img src="app-icon.jpg" alt="Our Home Icon" class="w-10 h-10 rounded-xl object-cover shadow-sm">
+                <img src="app-icon.jpg" alt="Our Home Icon" class="w-10 h-10 rounded-xl object-cover shadow-sm onError="this.src='https://via.placeholder.com/40'">
                 <div>
                     <h1 class="text-lg font-bold bg-gradient-to-r from-indigo-600 to-violet-600 bg-clip-text text-transparent">Our Home 住宅ローン＆ライフプラン</h1>
                     <div class="flex items-center space-x-2 text-xs text-slate-500 dark:text-slate-400">
                         <span id="sync-status" class="inline-flex items-center"><span class="w-2 h-2 rounded-full bg-emerald-500 mr-1.5 animate-pulse"></span>クラウド自動同期中</span>
                         <span>|</span>
-                        <span>ID: <input type="text" id="room-id-input" class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs w-28 text-center font-mono" value="our-home-2026"></span>
+                        <span>ID: <input type="text" id="room-id-input" class="bg-slate-100 dark:bg-slate-700 px-1.5 py-0.5 rounded text-xs w-28 text-center font-mono" value="our-home-2026" onchange="changeRoomId()"></span>
                     </div>
                 </div>
             </div>
@@ -66,8 +66,9 @@
         
         <!-- タブ切り替え -->
         <div class="flex border-b border-slate-200 dark:border-slate-700 space-x-6 text-sm font-medium">
-            <button onclick="switchTab('loan')" id="tab-loan" class="py-2 border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400">ローンシミュレーション</button>
+            <button onclick="switchTab('loan')" id="tab-loan" class="py-2 border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400">住宅ローンシミュレーション</button>
             <button onclick="switchTab('tax')" id="tab-tax" class="py-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400">固定資産税・ランニングコスト</button>
+            <button onclick="switchTab('life')" id="tab-life" class="py-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400">ライフプラン・家計収支</button>
         </div>
 
         <!-- tab-loan: ローンシミュレーション画面 -->
@@ -75,23 +76,30 @@
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
                 <!-- 入力フォーム -->
                 <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
-                    <h2 class="font-bold text-base flex items-center text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-calculator mr-2"></i>条件入力</h2>
+                    <h2 class="font-bold text-base flex items-center text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-calculator mr-2"></i>ローン条件設定</h2>
                     
                     <div>
                         <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">借入金額 (万円)</label>
-                        <input type="number" id="loan-amount" value="3500" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm" oninput="calculateLoan()">
+                        <input type="number" id="loan-amount" value="3500" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm" oninput="recalculateAll()">
                     </div>
                     <div>
                         <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">金利 (%)</label>
-                        <input type="number" step="0.01" id="interest-rate" value="0.7" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm" oninput="calculateLoan()">
+                        <input type="number" step="0.01" id="interest-rate" value="0.7" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm" oninput="recalculateAll()">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">借入期間 (年)</label>
-                        <input type="number" id="loan-years" value="35" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm" oninput="calculateLoan()">
+                        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">返済期間 (年)</label>
+                        <input type="number" id="loan-years" value="35" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm" oninput="recalculateAll()">
                     </div>
                     <div>
-                        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">ボーナス払い (年2回合計・万円)</label>
-                        <input type="number" id="bonus-amount" value="0" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm" oninput="calculateLoan()">
+                        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">ボーナス返済 (年2回合計・万円)</label>
+                        <input type="number" id="bonus-amount" value="0" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm" oninput="recalculateAll()">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-slate-500 dark:text-slate-400 mb-1">返済方式</label>
+                        <select id="repay-type" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm" onchange="recalculateAll()">
+                            <option value="equal-payment">元利均等返済</option>
+                            <option value="equal-principal">元金均等返済</option>
+                        </select>
                     </div>
                 </div>
 
@@ -100,14 +108,14 @@
                     <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
                         <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
                             <span class="text-xs text-slate-500 dark:text-slate-400">毎月の返済額</span>
-                            <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1" id="monthly-payment">-- 万</div>
+                            <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1" id="monthly-payment">-- 円</div>
                         </div>
                         <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
                             <span class="text-xs text-slate-500 dark:text-slate-400">総返済額</span>
                             <div class="text-2xl font-bold mt-1" id="total-payment">-- 万円</div>
                         </div>
                         <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                            <span class="text-xs text-slate-500 dark:text-slate-400">総利息負担</span>
+                            <span class="text-xs text-slate-500 dark:text-slate-400">総利息負担額</span>
                             <div class="text-2xl font-bold text-amber-600 mt-1" id="total-interest">-- 万円</div>
                         </div>
                     </div>
@@ -123,11 +131,10 @@
         <!-- tab-tax: 固定資産税・ランニングコスト画面 -->
         <div id="view-tax" class="hidden space-y-6">
             <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                
                 <!-- 設備・仕様チェックリスト（固定資産税連動） -->
                 <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700 space-y-4">
                     <h2 class="font-bold text-base flex items-center text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-house-chimney mr-2"></i>固定資産税・設備チェック</h2>
-                    <p class="text-xs text-slate-500 dark:text-slate-400">仕様やオプションにチェックを入れると、評価額を通じて毎年の固定資産税想定額に自動反映されます。</p>
+                    <p class="text-xs text-slate-500 dark:text-slate-400">仕様・オプションにチェックを入れると、建物評価額に加算されて将来の固定資産税推移へ自動反映されます。</p>
                     
                     <div class="space-y-2.5 text-xs">
                         <div>
@@ -136,38 +143,38 @@
                         </div>
 
                         <hr class="border-slate-200 dark:border-slate-700 my-2">
-                        <span class="font-bold text-slate-700 dark:text-slate-200 block mb-1">加算対象となる設備・仕様</span>
+                        <span class="font-bold text-slate-700 dark:text-slate-200 block mb-1">評価額に影響する設備・仕様</span>
 
                         <label class="flex items-center space-x-2 cursor-pointer p-1.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded">
-                            <input type="checkbox" id="opt-solar" class="tax-opt rounded text-indigo-600" value="1.2" onchange="calculateTax()">
+                            <input type="checkbox" id="opt-solar" class="tax-opt rounded text-indigo-600" value="120" onchange="calculateTax()">
                             <span>太陽光発電システム（屋根一体型）</span>
                         </label>
                         <label class="flex items-center space-x-2 cursor-pointer p-1.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded">
-                            <input type="checkbox" id="opt-aircon" class="tax-opt rounded text-indigo-600" value="1.5" onchange="calculateTax()">
+                            <input type="checkbox" id="opt-aircon" class="tax-opt rounded text-indigo-600" value="150" onchange="calculateTax()">
                             <span>全館空調システム</span>
                         </label>
                         <label class="flex items-center space-x-2 cursor-pointer p-1.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded">
-                            <input type="checkbox" id="opt-floor" class="tax-opt rounded text-indigo-600" value="0.8" onchange="calculateTax()">
+                            <input type="checkbox" id="opt-floor" class="tax-opt rounded text-indigo-600" value="80" onchange="calculateTax()">
                             <span>床暖房（広範囲）</span>
                         </label>
                         <label class="flex items-center space-x-2 cursor-pointer p-1.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded">
-                            <input type="checkbox" id="opt-wall" class="tax-opt rounded text-indigo-600" value="1.0" onchange="calculateTax()">
+                            <input type="checkbox" id="opt-wall" class="tax-opt rounded text-indigo-600" value="100" onchange="calculateTax()">
                             <span>高級外壁材（タイル等）</span>
                         </label>
                         <label class="flex items-center space-x-2 cursor-pointer p-1.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded">
-                            <input type="checkbox" id="opt-kitchen" class="tax-opt rounded text-indigo-600" value="0.5" onchange="calculateTax()">
+                            <input type="checkbox" id="opt-kitchen" class="tax-opt rounded text-indigo-600" value="50" onchange="calculateTax()">
                             <span>ビルトイン食洗機・高級キッチン</span>
                         </label>
                         <label class="flex items-center space-x-2 cursor-pointer p-1.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded">
-                            <input type="checkbox" id="opt-toilet" class="tax-opt rounded text-indigo-600" value="0.4" onchange="calculateTax()">
+                            <input type="checkbox" id="opt-toilet" class="tax-opt rounded text-indigo-600" value="40" onchange="calculateTax()">
                             <span>大型タンクレス＆手洗いカウンター</span>
                         </label>
                         <label class="flex items-center space-x-2 cursor-pointer p-1.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded">
-                            <input type="checkbox" id="opt-bath" class="tax-opt rounded text-indigo-600" value="0.6" onchange="calculateTax()">
+                            <input type="checkbox" id="opt-bath" class="tax-opt rounded text-indigo-600" value="60" onchange="calculateTax()">
                             <span>浴室乾燥機・広々ユニットバス</span>
                         </label>
                         <label class="flex items-center space-x-2 cursor-pointer p-1.5 hover:bg-slate-50 dark:hover:bg-slate-700/50 rounded">
-                            <input type="checkbox" id="opt-deck" class="tax-opt rounded text-indigo-600" value="0.5" onchange="calculateTax()">
+                            <input type="checkbox" id="opt-deck" class="tax-opt rounded text-indigo-600" value="50" onchange="calculateTax()">
                             <span>電動シャッター・ウッドデッキ</span>
                         </label>
                     </div>
@@ -177,11 +184,11 @@
                 <div class="lg:col-span-2 space-y-6">
                     <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                            <span class="text-xs text-slate-500 dark:text-slate-400">初年度〜3年目の年間税額（軽減措置あり）</span>
+                            <span class="text-xs text-slate-500 dark:text-slate-400">1〜3年目の年間税額（新築軽減あり）</span>
                             <div class="text-2xl font-bold text-emerald-600 mt-1" id="tax-early">-- 円</div>
                         </div>
                         <div class="bg-white dark:bg-slate-800 p-4 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm">
-                            <span class="text-xs text-slate-500 dark:text-slate-400">4年目以降の年間税額（通常）</span>
+                            <span class="text-xs text-slate-500 dark:text-slate-400">4年目以降の年間税額（軽減終了）</span>
                             <div class="text-2xl font-bold text-indigo-600 dark:text-indigo-400 mt-1" id="tax-normal">-- 円</div>
                         </div>
                     </div>
@@ -191,7 +198,23 @@
                         <div class="h-64"><canvas id="taxChart"></canvas></div>
                     </div>
                 </div>
+            </div>
+        </div>
 
+        <!-- tab-life: ライフプラン・家計収支画面 -->
+        <div id="view-life" class="hidden space-y-6">
+            <div class="bg-white dark:bg-slate-800 p-5 rounded-2xl shadow-sm border border-slate-200 dark:border-slate-700">
+                <h2 class="font-bold text-base mb-4 text-indigo-600 dark:text-indigo-400"><i class="fa-solid fa-users mr-2"></i>世帯収支・ライフプラン設定</h2>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 text-xs">
+                    <div>
+                        <label class="block font-medium mb-1">世帯年収（手取り・万円/年）</label>
+                        <input type="number" id="income-annual" value="600" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm" oninput="recalculateAll()">
+                    </div>
+                    <div>
+                        <label class="block font-medium mb-1">年間生活費（住宅費除く・万円/年）</label>
+                        <input type="number" id="living-cost-annual" value="300" class="w-full bg-slate-50 dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg p-2 text-sm" oninput="recalculateAll()">
+                    </div>
+                </div>
             </div>
         </div>
 
@@ -205,13 +228,23 @@
         function switchTab(tab) {
             document.getElementById('view-loan').classList.toggle('hidden', tab !== 'loan');
             document.getElementById('view-tax').classList.toggle('hidden', tab !== 'tax');
+            document.getElementById('view-life').classList.toggle('hidden', tab !== 'life');
+            
             document.getElementById('tab-loan').className = tab === 'loan' ? 'py-2 border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 font-medium' : 'py-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 font-medium';
             document.getElementById('tab-tax').className = tab === 'tax' ? 'py-2 border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 font-medium' : 'py-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 font-medium';
+            document.getElementById('tab-life').className = tab === 'life' ? 'py-2 border-b-2 border-indigo-600 text-indigo-600 dark:text-indigo-400 font-medium' : 'py-2 border-b-2 border-transparent text-slate-500 hover:text-slate-700 dark:text-slate-400 font-medium';
+            
             if(tab === 'tax') calculateTax();
         }
 
         function toggleDarkMode() {
             document.documentElement.classList.toggle('dark');
+        }
+
+        function recalculateAll() {
+            calculateLoan();
+            calculateTax();
+            saveLocalState();
         }
 
         function calculateLoan() {
@@ -222,18 +255,9 @@
             
             if (!amount || !rate || !years) return;
 
-            let monthlyPayment = 0;
-            let totalPayment = 0;
-
-            if (rate === 0) {
-                monthlyPayment = amount / months;
-                totalPayment = amount;
-            } else {
-                monthlyPayment = (amount * rate * Math.pow(1 + rate, months)) / (Math.pow(1 + rate, months) - 1);
-                totalPayment = monthlyPayment * months;
-            }
-
-            const totalInterest = totalPayment - amount;
+            let monthlyPayment = (amount * rate * Math.pow(1 + rate, months)) / (Math.pow(1 + rate, months) - 1);
+            let totalPayment = monthlyPayment * months;
+            let totalInterest = totalPayment - amount;
 
             document.getElementById('monthly-payment').innerText = Math.round(monthlyPayment).toLocaleString() + ' 円';
             document.getElementById('total-payment').innerText = Math.round(totalPayment / 10000).toLocaleString() + ' 万円';
@@ -281,16 +305,14 @@
             const baseEval = parseFloat(document.getElementById('base-eval-value').value) || 2000;
             let optBonus = 0;
             document.querySelectorAll('.tax-opt:checked').forEach(el => {
-                optBonus += parseFloat(el.value);
+                optBonus += parseFloat(el.value) / 10000;
             });
 
-            // 固定資産税評価額（基本＋オプション）
             const totalEval = baseEval + optBonus;
-            // 固定資産税 (約1.4%) + 都市計画税 (約0.3%) = 合わせ約1.7%
             const standardTaxRate = 0.017;
             
             let normalAnnualTax = totalEval * 10000 * standardTaxRate;
-            let earlyAnnualTax = normalAnnualTax * 0.65; // 新築軽減おおむね考慮（建物部分半額等）
+            let earlyAnnualTax = normalAnnualTax * 0.65;
 
             document.getElementById('tax-early').innerText = Math.round(earlyAnnualTax).toLocaleString() + ' 円/年';
             document.getElementById('tax-normal').innerText = Math.round(normalAnnualTax).toLocaleString() + ' 円/年';
@@ -304,7 +326,6 @@
 
             for (let y = 1; y <= 30; y++) {
                 labels.push(`${y}年目`);
-                // 経年減価と3年目までの軽減を再現
                 let yearTax = y <= 3 ? normalTax * 0.65 : normalTax * Math.pow(0.985, y - 3);
                 taxData.push(Math.round(yearTax));
             }
@@ -326,6 +347,33 @@
             });
         }
 
+        function saveLocalState() {
+            const state = {
+                loanAmount: document.getElementById('loan-amount').value,
+                interestRate: document.getElementById('interest-rate').value,
+                loanYears: document.getElementById('loan-years').value,
+                bonusAmount: document.getElementById('bonus-amount').value,
+                baseEval: document.getElementById('base-eval-value').value,
+                incomeAnnual: document.getElementById('income-annual').value,
+                livingCostAnnual: document.getElementById('living-cost-annual').value
+            };
+            localStorage.setItem('our_home_state', JSON.stringify(state));
+        }
+
+        function loadLocalState() {
+            const saved = localStorage.getItem('our_home_state');
+            if (saved) {
+                const state = JSON.parse(saved);
+                if(state.loanAmount) document.getElementById('loan-amount').value = state.loanAmount;
+                if(state.interestRate) document.getElementById('interest-rate').value = state.interestRate;
+                if(state.loanYears) document.getElementById('loan-years').value = state.loanYears;
+                if(state.bonusAmount) document.getElementById('bonus-amount').value = state.bonusAmount;
+                if(state.baseEval) document.getElementById('base-eval-value').value = state.baseEval;
+                if(state.incomeAnnual) document.getElementById('income-annual').value = state.incomeAnnual;
+                if(state.livingCostAnnual) document.getElementById('living-cost-annual').value = state.livingCostAnnual;
+            }
+        }
+
         function shareLine() {
             const roomId = document.getElementById('room-id-input').value;
             const url = window.location.href.split('?')[0] + '?room=' + roomId;
@@ -333,17 +381,12 @@
         }
 
         function exportData() {
-            const data = {
-                loanAmount: document.getElementById('loan-amount').value,
-                interestRate: document.getElementById('interest-rate').value,
-                loanYears: document.getElementById('loan-years').value,
-                baseEval: document.getElementById('base-eval-value').value
-            };
-            const blob = new Blob([JSON.stringify(data, null, 2)], {type: 'json'});
+            const saved = localStorage.getItem('our_home_state') || '{}';
+            const blob = new Blob([saved], {type: 'application/json'});
             const url = URL.createObjectURL(blob);
             const a = document.createElement('a');
             a.href = url;
-            a.download = 'our_home_data.json';
+            a.download = 'our_home_simulation_data.json';
             a.click();
         }
 
@@ -352,21 +395,17 @@
             if (!file) return;
             const reader = new FileReader();
             reader.onload = function(e) {
-                const data = JSON.parse(e.target.result);
-                if(data.loanAmount) document.getElementById('loan-amount').value = data.loanAmount;
-                if(data.interestRate) document.getElementById('interest-rate').value = data.interestRate;
-                if(data.loanYears) document.getElementById('loan-years').value = data.loanYears;
-                calculateLoan();
-                alert('データを読み込みました！');
+                localStorage.setItem('our_home_state', e.target.result);
+                loadLocalState();
+                recalculateAll();
+                alert('シミュレーションデータを正常に読み込みました！');
             };
             reader.readAsText(file);
         }
 
         window.onload = function() {
-            const params = new URLSearchParams(window.location.search);
-            const room = params.get('room');
-            if(room) document.getElementById('room-id-input').value = room;
-            calculateLoan();
+            loadLocalState();
+            recalculateAll();
         };
     </script>
 </body>
