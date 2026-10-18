@@ -1,0 +1,16 @@
+{
+  "short_name": "OurHome",
+  "name": "Our Home - 住宅ローン＆ライフプラン",
+  "icons": [
+    {
+      "src": "app-icon.png",
+      "type": "image/png",
+      "sizes": "512x512",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./index.html",
+  "background_color": "#ffffff",
+  "theme_color": "#4f46e5",
+  "display": "standalone"
+}
