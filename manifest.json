@@ -1,16 +1,15 @@
 {
-  "short_name": "OurHome",
-  "name": "Our Home - 住宅ローン＆ライフプラン",
-  "icons": [
-    {
-      "src": "app-icon.jpg",
-      "type": "image/jpeg",
-      "sizes": "512x512",
-      "purpose": "any maskable"
-    }
-  ],
+  "name": "マイホーム・ライフプラン",
+  "short_name": "ライフプラン",
+  "id": "./index.html",
   "start_url": "./index.html",
-  "background_color": "#ffffff",
-  "theme_color": "#4f46e5",
-  "display": "standalone"
+  "scope": "./",
+  "display": "standalone",
+  "orientation": "portrait",
+  "background_color": "#f2f2f7",
+  "theme_color": "#007aff",
+  "lang": "ja",
+  "icons": [
+    { "src": "app-icon.jpg", "sizes": "512x512", "type": "image/jpeg", "purpose": "any" }
+  ]
 }
