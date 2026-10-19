@@ -2,14 +2,29 @@
 <html lang="ja">
 <head>
   <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>マイホーム＆ライフプラン総合シミュレーター</title>
-  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
-  <!-- Supabase JS Client -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <!-- PWA / Apple Touch Icon -->
-  <link rel="apple-touch-icon" href="app-icon.jpg">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <title>マイホーム・ライフプラン</title>
+
+  <!-- ===== セキュリティ: CSP（許可した配信元以外は読み込み・通信しない） ===== -->
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'">
+  <meta name="referrer" content="no-referrer">
+
+  <!-- ===== PWA / アプリアイコン ===== -->
   <link rel="manifest" href="manifest.json">
+  <link rel="icon" type="image/jpeg" href="app-icon.jpg">
+  <link rel="apple-touch-icon" href="app-icon.jpg">
+  <meta name="theme-color" content="#007aff">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="ライフプラン">
+
+  <!-- ===== ライブラリ（バージョン固定・すべて無料CDN） ===== -->
+  <script src="https://cdn.tailwindcss.com/3.4.17"></script>
+  <script>tailwind.config = { corePlugins: { preflight: false } };</script>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.7/dist/chart.umd.min.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.45.4/dist/umd/supabase.min.js"></script>
+
   <style>
     :root {
       --primary-color: #007aff;
@@ -43,6 +58,7 @@
     }
 
     * { box-sizing: border-box; transition: background-color 0.25s ease, border-color 0.25s ease, color 0.25s ease; }
+    img { max-width: 100%; }
 
     body {
       font-family: -apple-system, BlinkMacSystemFont, "SF Pro Display", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
@@ -50,719 +66,1090 @@
       color: var(--text-color);
       margin: 0;
       padding: 12px;
+      padding-top: max(12px, env(safe-area-inset-top));
+      padding-bottom: calc(86px + env(safe-area-inset-bottom));
       display: flex;
       justify-content: center;
       -webkit-font-smoothing: antialiased;
+      -webkit-tap-highlight-color: transparent;
     }
     .container { width: 100%; max-width: 760px; }
+    /* iPhoneで入力時に勝手に拡大されないよう16px固定 */
+    @media (max-width: 760px) { input, select, textarea { font-size: 16px !important; } }
 
-    .top-header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 10px;
-      padding: 4px 2px;
-      flex-wrap: wrap;
-      gap: 8px;
-    }
-    h1 {
-      font-size: 1.05rem;
-      font-weight: 700;
-      margin: 0;
-      background: var(--primary-gradient);
-      -webkit-background-clip: text;
-      -webkit-text-fill-color: transparent;
-      white-space: nowrap;
-      cursor: pointer;
-    }
+    .top-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; padding: 4px 2px; flex-wrap: wrap; gap: 8px; }
+    .title-wrap { display: flex; align-items: center; gap: 8px; cursor: pointer; }
+    .app-icon { width: 32px; height: 32px; border-radius: 8px; object-fit: cover; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); flex-shrink: 0; }
+    h1 { font-size: 1.05rem; font-weight: 700; margin: 0; background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; white-space: nowrap; }
     .header-actions { display: flex; gap: 6px; align-items: center; flex-wrap: wrap; }
-    .action-btn {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      color: var(--text-color);
-      padding: 6px 10px;
-      border-radius: 20px;
-      font-size: 0.72rem;
-      font-weight: 600;
-      cursor: pointer;
-      box-shadow: var(--shadow-sm);
-      white-space: nowrap;
-    }
+    .action-btn { background: var(--card-bg); border: 1px solid var(--border-color); color: var(--text-color); padding: 7px 11px; border-radius: 20px; font-size: 0.74rem; font-weight: 600; cursor: pointer; box-shadow: var(--shadow-sm); white-space: nowrap; }
     .action-btn:hover { border-color: var(--primary-color); color: var(--primary-color); }
-    .line-btn {
-      background-color: var(--line-color) !important;
-      color: white !important;
-      border: none !important;
-    }
-    .line-btn:hover { opacity: 0.9; }
+    .line-btn { background-color: var(--line-color) !important; color: white !important; border: none !important; }
 
-    .sync-status-bar {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 10px;
-      padding: 8px 12px;
-      margin-bottom: 14px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      font-size: 0.75rem;
-      box-shadow: var(--shadow-sm);
-    }
+    .help-btn { border: none; background: rgba(0,122,255,0.12); color: var(--primary-color); width: 24px; height: 24px; border-radius: 50%; font-size: 0.8rem; line-height: 1; cursor: pointer; padding: 0; margin-left: 6px; flex-shrink: 0; vertical-align: middle; }
+    .help-btn:active { transform: scale(0.92); }
+
+    .sync-status-bar { background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 10px; padding: 9px 12px; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; font-size: 0.75rem; box-shadow: var(--shadow-sm); cursor: pointer; }
     .sync-info { display: flex; align-items: center; gap: 6px; font-weight: 600; }
-    .sync-dot { width: 8px; height: 8px; border-radius: 50%; background-color: var(--secondary-color); display: inline-block; }
-    .room-input-box { display: flex; align-items: center; gap: 4px; }
-    .room-input-box input {
-      padding: 3px 6px; font-size: 0.75rem; border: 1px solid var(--border-color);
-      border-radius: 6px; background: var(--bg-color); color: var(--text-color); width: 110px; font-weight: bold;
-    }
+    .sync-dot { width: 9px; height: 9px; border-radius: 50%; background-color: #8e8e93; display: inline-block; }
 
-    /* タブ・ホームナビ */
-    .tab-container {
-      display: flex;
-      background-color: var(--border-color);
-      border-radius: 12px;
-      padding: 3px;
-      margin-bottom: 16px;
-      gap: 2px;
-      overflow-x: auto;
-    }
-    .tab-button {
-      flex: 1;
-      padding: 8px 4px;
-      text-align: center;
-      font-size: 0.72rem;
-      font-weight: 700;
-      border: none;
-      background: none;
-      border-radius: 9px;
-      cursor: pointer;
-      color: #8e8e93;
-      white-space: nowrap;
-    }
-    .tab-button.active {
-      background-color: var(--card-bg);
-      color: var(--primary-color);
-      box-shadow: var(--shadow-sm);
-    }
+    .tab-container { display: flex; background-color: var(--border-color); border-radius: 12px; padding: 3px; margin-bottom: 14px; gap: 2px; overflow-x: auto; scrollbar-width: none; }
+    .tab-container::-webkit-scrollbar { display: none; }
+    .tab-button { flex: 1 0 auto; padding: 10px 12px; text-align: center; font-size: 0.8rem; font-weight: 700; border: none; background: none; border-radius: 9px; cursor: pointer; color: #8e8e93; white-space: nowrap; }
+    .tab-button.active { background-color: var(--card-bg); color: var(--primary-color); box-shadow: var(--shadow-sm); }
 
     .tab-content { display: none; opacity: 0; transform: translateY(6px); transition: opacity 0.3s ease, transform 0.3s ease; }
     .tab-content.active { display: block; opacity: 1; transform: translateY(0); }
 
-    /* ホーム画面（ダッシュボード） */
-    .home-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 16px; }
-    @media (max-width: 500px) { .home-grid { grid-template-columns: 1fr; } }
-    .home-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 16px;
-      padding: 16px;
-      cursor: pointer;
-      box-shadow: var(--shadow-sm);
-      transition: transform 0.2s, box-shadow 0.2s;
-    }
-    .home-card:hover { transform: translateY(-2px); box-shadow: var(--shadow-hover); border-color: var(--primary-color); }
-    .home-card-icon { font-size: 1.8rem; margin-bottom: 6px; }
-    .home-card-title { font-size: 0.92rem; font-weight: 700; margin-bottom: 4px; color: var(--text-color); }
-    .home-card-desc { font-size: 0.72rem; opacity: 0.7; line-height: 1.3; }
+    .card { background-color: var(--card-bg); border-radius: 16px; padding: 18px; margin-bottom: 16px; box-shadow: var(--shadow-sm); border: 1px solid var(--border-color); }
+    .card-title { font-size: 0.95rem; font-weight: 700; margin-bottom: 14px; padding-bottom: 8px; border-bottom: 2px solid var(--primary-color); display: flex; justify-content: space-between; align-items: center; }
 
-    .card {
-      background-color: var(--card-bg);
-      border-radius: 16px;
-      padding: 18px;
-      margin-bottom: 16px;
-      box-shadow: var(--shadow-sm);
-      border: 1px solid var(--border-color);
-    }
-    .card-title {
-      font-size: 0.95rem;
-      font-weight: 700;
-      margin-bottom: 14px;
-      padding-bottom: 8px;
-      border-bottom: 2px solid var(--primary-color);
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
-
-    details.accordion-section {
-      background: var(--bg-color);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 12px 16px;
-      margin-bottom: 14px;
-    }
-    details.accordion-section summary {
-      font-size: 0.85rem;
-      font-weight: 700;
-      color: var(--primary-color);
-      cursor: pointer;
-      outline: none;
-      user-select: none;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-    }
+    details.accordion-section { background: var(--bg-color); border: 1px solid var(--border-color); border-radius: 12px; padding: 12px 16px; margin-bottom: 14px; }
+    details.accordion-section summary { font-size: 0.85rem; font-weight: 700; color: var(--primary-color); cursor: pointer; outline: none; user-select: none; display: flex; justify-content: space-between; align-items: center; }
+    details.accordion-section[open] summary { margin-bottom: 12px; border-bottom: 1px dashed var(--border-color); padding-bottom: 8px; }
 
     .input-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
     .input-group { margin-bottom: 6px; }
-    
-    label, .custom-label-input {
-      display: block;
-      font-size: 0.78rem;
-      font-weight: 600;
-      margin-bottom: 4px;
-      opacity: 0.88;
-      white-space: nowrap;
-      overflow: hidden;
-      text-overflow: ellipsis;
-    }
-    .custom-label-input {
-      border: none;
-      background: transparent;
-      color: var(--text-color);
-      border-bottom: 1px dashed var(--border-color);
-      padding: 0 0 2px 0;
-      width: 100%;
-      font-weight: 700;
-    }
-    
+    label, .custom-label-input { display: block; font-size: 0.78rem; font-weight: 600; margin-bottom: 4px; opacity: 0.88; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+    .custom-label-input { border: none; background: transparent; color: var(--text-color); border-bottom: 1px dashed var(--border-color); padding: 0 0 2px 0; width: 100%; font-weight: 700; }
+    .custom-label-input:focus { outline: none; border-bottom-color: var(--primary-color); }
+
     .dual-input { display: flex; flex-direction: column; gap: 4px; }
-    .dual-input input[type="number"], .dual-input select, .dual-input input[type="text"] {
-      width: 100%; padding: 7px 9px; font-size: 0.88rem; font-weight: 600;
-      border: 1px solid var(--border-color); border-radius: 8px;
-      box-sizing: border-box; background-color: var(--bg-color); color: var(--text-color);
-    }
+    .dual-input input[type="number"] { width: 100%; padding: 9px 10px; font-size: 0.9rem; font-weight: 600; border: 1px solid var(--border-color); border-radius: 8px; box-sizing: border-box; background-color: var(--bg-color); color: var(--text-color); }
+    .dual-input input[type="number"]:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15); }
     .dual-input input[type="range"] { width: 100%; accent-color: var(--primary-color); cursor: pointer; margin: 2px 0; height: 5px; border-radius: 3px; }
 
-    .custom-item-list { display: flex; flex-direction: column; gap: 10px; }
-    .custom-item-row {
-      display: grid;
-      grid-template-columns: 1.2fr 1fr auto;
-      gap: 10px;
-      align-items: center;
-      background: var(--card-bg);
-      padding: 10px 12px;
-      border-radius: 10px;
-      border: 1px solid var(--border-color);
-      box-shadow: var(--shadow-sm);
-    }
-    .del-btn {
-      background: rgba(255, 59, 48, 0.1);
-      border: none;
-      color: var(--danger-color);
-      font-size: 1rem;
-      font-weight: bold;
-      cursor: pointer;
-      padding: 6px 10px;
-      border-radius: 6px;
-    }
+    .tax-select, .field { width: 100%; padding: 10px 11px; font-size: 0.88rem; font-weight: 600; border: 1px solid var(--border-color); border-radius: 10px; background-color: var(--bg-color); color: var(--text-color); font-family: inherit; }
+    .tax-select:focus, .field:focus { border-color: var(--primary-color); outline: none; box-shadow: 0 0 0 3px rgba(0, 122, 255, 0.15); }
+    textarea.field { resize: vertical; min-height: 64px; }
+    .option-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; align-items: end; background: var(--card-bg); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 10px; }
+    .note-text { font-size: 0.72rem; opacity: 0.72; line-height: 1.5; margin-top: 6px; }
 
-    .add-item-btn {
-      width: 100%;
-      padding: 10px;
-      background: rgba(0, 122, 255, 0.08);
-      border: 1px dashed var(--primary-color);
-      color: var(--primary-color);
-      border-radius: 10px;
-      font-size: 0.82rem;
-      font-weight: 700;
-      cursor: pointer;
-      margin-top: 12px;
-    }
+    .custom-item-list { display: flex; flex-direction: column; gap: 10px; }
+    .custom-item-row { display: grid; grid-template-columns: 1.2fr 1fr auto; gap: 10px; align-items: center; background: var(--card-bg); padding: 10px 12px; border-radius: 10px; border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); }
+    .del-btn { background: rgba(255, 59, 48, 0.1); border: none; color: var(--danger-color); font-size: 1rem; font-weight: bold; cursor: pointer; padding: 8px 12px; border-radius: 6px; }
+    .add-item-btn { width: 100%; padding: 12px; background: rgba(0, 122, 255, 0.08); border: 1px dashed var(--primary-color); color: var(--primary-color); border-radius: 10px; font-size: 0.85rem; font-weight: 700; cursor: pointer; margin-top: 12px; }
 
     .result-box { background-color: var(--bg-color); border-radius: 12px; padding: 14px; margin-top: 12px; border: 1px solid var(--border-color); }
-    .result-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.82rem; }
+    .result-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; font-size: 0.82rem; gap: 8px; }
     .result-value { font-weight: 700; font-size: 0.95rem; }
+    .pulse-anim { animation: pulse 0.3s ease-in-out; }
+    @keyframes pulse { 0% { transform: scale(1); } 50% { transform: scale(1.1); color: var(--primary-color); } 100% { transform: scale(1); } }
 
     .comparison-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-top: 10px; }
     .comp-card { border: 1px solid var(--border-color); border-radius: 12px; padding: 12px; background-color: var(--card-bg); box-shadow: var(--shadow-sm); }
     .comp-title { font-size: 0.8rem; font-weight: 700; margin-bottom: 8px; text-align: center; padding-bottom: 4px; border-bottom: 1px solid var(--border-color); }
+    .triple-grid { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px; margin-top: 10px; }
+    @media (max-width: 600px) { .triple-grid { grid-template-columns: 1fr; } }
 
-    .chart-container { position: relative; height: 260px; width: 100%; margin-top: 10px; }
+    .chart-container { position: relative; height: 280px; width: 100%; margin-top: 10px; }
     .save-badge { font-size: 0.65rem; background-color: rgba(52, 199, 89, 0.15); color: var(--secondary-color); padding: 3px 8px; border-radius: 12px; font-weight: 700; }
+    .alert-banner { background-color: rgba(255, 149, 0, 0.12); border: 1px solid var(--orange-color); color: var(--orange-color); padding: 12px 14px; border-radius: 12px; font-size: 0.82rem; margin-bottom: 14px; display: none; }
+    .alert-banner.show { display: block; }
 
-    /* OCR・設備リスト表示 */
-    .ocr-item-card {
-      background: var(--card-bg);
-      border: 1px solid var(--border-color);
-      border-radius: 12px;
-      padding: 12px;
-      margin-bottom: 12px;
-      box-shadow: var(--shadow-sm);
-    }
-    .ocr-item-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
-    .status-btn {
-      font-size: 0.72rem; padding: 4px 8px; border-radius: 12px; font-weight: 700; border: none; cursor: pointer;
-    }
-    .status-confirmed { background: rgba(52, 199, 89, 0.15); color: var(--secondary-color); }
-    .status-pending { background: rgba(255, 149, 0, 0.15); color: var(--orange-color); }
+    .table-wrapper { overflow-x: auto; max-height: 400px; margin-top: 10px; border: 1px solid var(--border-color); border-radius: 12px; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.78rem; text-align: right; white-space: nowrap; }
+    th, td { padding: 9px 11px; border-bottom: 1px solid var(--border-color); }
+    th { background-color: var(--bg-color); position: sticky; top: 0; font-weight: 700; text-align: center; z-index: 2; }
+    tr:nth-child(even) { background-color: rgba(128,128,128,0.03); }
+    .event-text { text-align: left; color: var(--primary-color); font-weight: 700; }
+    .minus-val { color: var(--danger-color); font-weight: 700; }
 
-    .img-preview { width: 100%; max-height: 180px; object-fit: cover; border-radius: 8px; margin-bottom: 8px; }
-
-    /* モーダル (ヘルプ用) */
-    .modal-overlay {
-      position: fixed; top: 0; left: 0; width: 100%; height: 100%;
-      background: rgba(0,0,0,0.5); display: none; justify-content: center; align-items: center; z-index: 1000;
-    }
-    .modal-overlay.open { display: flex; }
-    .modal-content {
-      background: var(--card-bg); color: var(--text-color); padding: 20px; border-radius: 16px;
-      max-width: 500px; width: 90%; max-height: 80vh; overflow-y: auto; box-shadow: var(--shadow-hover);
-    }
-
-    .toast {
-      position: fixed; bottom: 20px; left: 50%; transform: translateX(-50%) translateY(100px);
-      background: #1c1c1e; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 0.82rem;
-      box-shadow: 0 6px 20px rgba(0,0,0,0.3); transition: transform 0.3s ease; z-index: 999;
-    }
+    .toast { position: fixed; bottom: calc(90px + env(safe-area-inset-bottom)); left: 50%; transform: translateX(-50%) translateY(120px); background: #1c1c1e; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 0.82rem; box-shadow: 0 6px 20px rgba(0,0,0,0.3); transition: transform 0.3s ease; z-index: 999; max-width: 90vw; text-align: center; }
     .toast.show { transform: translateX(-50%) translateY(0); }
+
+    /* ===== 共通ボタン・チップ ===== */
+    .btn { border: 0; border-radius: 14px; padding: 14px 14px; font-size: 0.95rem; font-weight: 700; cursor: pointer; font-family: inherit; display: inline-flex; align-items: center; justify-content: center; gap: 6px; text-align: center; }
+    .btn:active { transform: scale(0.98); }
+    .btn-p { background: var(--primary-gradient); color: #fff; }
+    .btn-g { background: var(--secondary-color); color: #fff; }
+    .btn-s { background: var(--bg-color); color: var(--text-color); border: 1px solid var(--border-color); }
+    .btn-d { background: rgba(255,59,48,0.1); color: var(--danger-color); }
+    .chip { padding: 9px 13px; border-radius: 20px; border: 1px solid var(--border-color); background: var(--bg-color); font-size: 0.82rem; font-weight: 700; cursor: pointer; color: var(--text-color); font-family: inherit; white-space: nowrap; }
+    .chip.on { background: var(--primary-color); color: #fff; border-color: var(--primary-color); }
+    .chip .x { margin-left: 6px; opacity: 0.6; }
+
+    /* ===== ホーム ===== */
+    .hub { display: flex; flex-direction: column; gap: 4px; text-align: left; padding: 16px; border-radius: 18px; background: var(--card-bg); border: 1px solid var(--border-color); box-shadow: var(--shadow-sm); cursor: pointer; color: var(--text-color); min-height: 124px; font-family: inherit; }
+    .hub:active { transform: scale(0.98); }
+    .hub .ic { font-size: 2rem; line-height: 1.1; }
+    .hub .tt { font-size: 0.95rem; font-weight: 800; margin-top: 4px; }
+    .hub .sb { font-size: 0.72rem; opacity: 0.7; }
+    .hub .st { font-size: 0.82rem; font-weight: 800; color: var(--primary-color); margin-top: auto; }
+
+    /* ===== 下部ナビ ===== */
+    #bottomNav { position: fixed; left: 0; right: 0; bottom: 0; display: flex; justify-content: center; background: var(--card-bg); border-top: 1px solid var(--border-color); padding-bottom: env(safe-area-inset-bottom); z-index: 50; }
+    #bottomNav .inner { display: grid; grid-template-columns: repeat(5, 1fr); width: 100%; max-width: 760px; }
+    .nav-btn { border: 0; background: none; padding: 8px 2px 6px; font-size: 0.62rem; font-weight: 700; color: #8e8e93; display: flex; flex-direction: column; align-items: center; gap: 2px; cursor: pointer; font-family: inherit; }
+    .nav-btn .ic { font-size: 1.3rem; line-height: 1; }
+    .nav-btn.active { color: var(--primary-color); }
+
+    /* ===== モーダル（ボトムシート） ===== */
+    .overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.5); z-index: 100; display: none; align-items: flex-end; justify-content: center; }
+    .overlay.show { display: flex; }
+    .sheet { background: var(--card-bg); width: 100%; max-width: 760px; max-height: 92vh; overflow-y: auto; border-radius: 24px 24px 0 0; padding: 18px 16px calc(18px + env(safe-area-inset-bottom)); border: 1px solid var(--border-color); }
+    .sheet-head { display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px; }
+    .sheet-title { font-size: 1.05rem; font-weight: 800; }
+    .sheet-close { border: 0; background: var(--bg-color); color: var(--text-color); width: 32px; height: 32px; border-radius: 50%; font-size: 1rem; cursor: pointer; }
+    .lbl { display: block; font-size: 0.78rem; font-weight: 700; margin: 12px 0 5px; opacity: 0.9; white-space: normal; }
+
+    /* ===== 設備台帳 ===== */
+    .item { display: flex; gap: 12px; align-items: center; background: var(--card-bg); border: 1px solid var(--border-color); border-radius: 16px; padding: 12px; margin-bottom: 10px; box-shadow: var(--shadow-sm); cursor: pointer; }
+    .item .th { width: 64px; height: 64px; border-radius: 12px; background: var(--bg-color); flex-shrink: 0; display: flex; align-items: center; justify-content: center; font-size: 1.6rem; overflow: hidden; }
+    .item .th img { width: 100%; height: 100%; object-fit: cover; }
+    .stbadge { border: 0; border-radius: 14px; padding: 6px 10px; font-size: 0.74rem; font-weight: 800; cursor: pointer; font-family: inherit; white-space: nowrap; }
+    .st-fixed { background: rgba(52,199,89,0.15); color: var(--secondary-color); }
+    .st-pending { background: rgba(255,149,0,0.15); color: var(--orange-color); }
+    .st-ask { background: rgba(255,59,48,0.13); color: var(--danger-color); }
+    .photo-btn { display: flex; align-items: center; justify-content: center; gap: 8px; border-radius: 16px; padding: 18px 10px; font-size: 1rem; font-weight: 800; color: #fff; background: var(--primary-gradient); cursor: pointer; box-shadow: var(--shadow-sm); text-align: center; }
+    .photo-btn.alt { background: var(--purple-color); }
+    .photo-btn:active { transform: scale(0.98); }
+    .ocr-bar { height: 8px; border-radius: 4px; background: var(--border-color); overflow: hidden; margin-top: 6px; }
+    .ocr-bar > div { height: 100%; width: 0; background: var(--primary-gradient); transition: width 0.25s ease; }
+    pre.code { background: #1c1c1e; color: #e5e5ea; padding: 12px; border-radius: 12px; font-size: 0.7rem; overflow-x: auto; max-height: 260px; line-height: 1.45; white-space: pre; }
+    .help-list { padding-left: 18px; margin: 6px 0; font-size: 0.85rem; line-height: 1.7; }
   </style>
 </head>
 <body data-theme="light">
   <div class="container">
+
+    <!-- ===== ヘッダー ===== -->
     <div class="top-header">
-      <h1 onclick="switchTab('home')">🏠 マイホーム＆ライフプラン</h1>
+      <div class="title-wrap" onclick="openScreen('home')">
+        <img src="app-icon.jpg" alt="アプリアイコン" class="app-icon" onerror="this.style.display='none'">
+        <h1>マイホーム ライフプラン</h1>
+      </div>
       <div class="header-actions">
-        <button class="action-btn" onclick="openHelpModal('global')">❓ ヘルプ</button>
-        <button class="action-btn line-btn" onclick="shareToLine()">💬 LINE共有</button>
+        <button class="action-btn line-btn" onclick="shareToLine()">💬 LINE</button>
         <button class="action-btn" onclick="exportJsonFile()">💾 保存</button>
         <button class="action-btn" onclick="document.getElementById('importFile').click()">📂 読込</button>
         <input type="file" id="importFile" style="display:none" accept=".json" onchange="importJsonFile(event)">
         <button class="action-btn" onclick="toggleTheme()">🌙</button>
+        <button class="action-btn" onclick="openSync()">☁️</button>
+        <button class="action-btn" onclick="openScreen('guide')">❓</button>
       </div>
     </div>
 
-    <!-- クラウド自動同期ステータスバー -->
-    <div class="sync-status-bar">
-      <div class="sync-info">
-        <span id="syncDot" class="sync-dot"></span>
-        <span id="syncText">クラウド自動同期中（接続完了）</span>
-      </div>
-      <div class="room-input-box">
-        <label for="roomInput" style="margin:0; font-size:0.72rem;">共有ID:</label>
-        <input type="text" id="roomInput" value="our-home-2026" onchange="changeRoom(this.value)">
-      </div>
+    <!-- 同期ステータス -->
+    <div class="sync-status-bar" onclick="openSync()">
+      <div class="sync-info"><span id="syncDot" class="sync-dot"></span><span id="syncText">端末のみ保存中</span></div>
+      <span style="opacity:.6;">設定 ›</span>
     </div>
 
-    <!-- ナビゲーションタブ -->
-    <div class="tab-container">
-      <button class="tab-button active" onclick="switchTab('home')">🏠 ホーム</button>
-      <button class="tab-button" onclick="switchTab('loan')">1. 住宅ローン</button>
-      <button class="tab-button" onclick="switchTab('tax')">2. 固定資産税</button>
-      <button class="tab-button" onclick="switchTab('ocr')">3. 設備・OCR</button>
-      <button class="tab-button" onclick="switchTab('income')">4. 家計・収支</button>
-      <button class="tab-button" onclick="switchTab('sim')">5. 将来シミュ</button>
-    </div>
+    <!-- サブタブ（ツール内の切替） -->
+    <div id="subTabBar" class="tab-container hidden"></div>
 
-    <!-- ===== シート0: ホーム（ダッシュボード） ===== -->
-    <div id="tab-home" class="tab-content active">
-      <div class="card" style="background: linear-gradient(135deg, rgba(0, 122, 255, 0.08), rgba(52, 199, 89, 0.08)); border: 1.5px solid var(--primary-color);">
-        <div style="display:flex; justify-content:space-between; align-items:center;">
-          <div>
-            <h2 style="font-size: 1.05rem; margin:0 0 4px 0; color: var(--primary-color);">👋 ようこそ！マイホーム総合管理へ</h2>
-            <p style="font-size: 0.75rem; opacity:0.8; margin:0;">夫婦で理想の住まいと安心の資金計画をリアルタイム共有。</p>
-          </div>
-          <button class="action-btn" onclick="openHelpModal('home')" style="font-size: 0.7rem;">❓ 使い方ガイド</button>
-        </div>
-      </div>
+    <!-- ===== 計算ツール本体（ローン／家計／ライフイベント／将来／税） ===== -->
+    <div id="tabArea" class="hidden">
 
-      <div class="home-grid">
-        <div class="home-card" onclick="switchTab('loan')">
-          <div class="home-card-icon">🏦</div>
-          <div class="home-card-title">1. 住宅ローン比較</div>
-          <div class="home-card-desc">借入額・金利・繰り上げ返済の試算・短縮コース比較</div>
-        </div>
-
-        <div class="home-card" onclick="switchTab('tax')">
-          <div class="home-card-icon">🏛️</div>
-          <div class="home-card-title">2. 固定資産税＆オプション</div>
-          <div class="home-card-desc">建物・土地評価額、新築特例、太陽光や断熱の税額連動</div>
-        </div>
-
-        <div class="home-card" onclick="switchTab('ocr')">
-          <div class="home-card-icon">📷</div>
-          <div class="home-card-title">3. 設備・写真OCR台帳</div>
-          <div class="home-card-desc">ショールーム写真を撮影！寸法・金額・確定/未確定を自動管理</div>
-        </div>
-
-        <div class="home-card" onclick="switchTab('income')">
-          <div class="home-card-icon">💰</div>
-          <div class="home-card-title">4. 世帯収入＆家計</div>
-          <div class="home-card-desc">夫婦手取り・ボーナス・生活費詳細内訳・平均比較診断</div>
-        </div>
-
-        <div class="home-card" onclick="switchTab('sim')" style="grid-column: span 2;">
-          <div class="home-card-icon">📈</div>
-          <div class="home-card-title">5. 30年〜40年 将来キャッシュフロー</div>
-          <div class="home-card-desc">車買い替え、リフォーム、資産運用（3パターン比較）を網羅した統合年表</div>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== シート1: 住宅ローン ===== -->
-    <div id="tab-loan" class="tab-content">
-      <div class="card">
-        <div class="card-title">
-          <span>ローン基本条件</span>
-          <button class="action-btn" onclick="openHelpModal('loan')">❓ ヘルプ</button>
-        </div>
-        <div class="input-grid">
-          <div class="input-group">
-            <label for="amount">借入額 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="amount" value="3500" step="100" min="0" max="10000" oninput="syncVal('amount', this.value)">
-              <input type="range" id="amount_range" value="3500" step="50" min="1000" max="8000" oninput="syncVal('amount_range', this.value)">
-            </div>
-          </div>
-          <div class="input-group">
-            <label for="rate">借入金利 (%)</label>
-            <div class="dual-input">
-              <input type="number" id="rate" value="0.5" step="0.05" min="0" max="5" oninput="syncVal('rate', this.value)">
-              <input type="range" id="rate_range" value="0.5" step="0.05" min="0.1" max="3.0" oninput="syncVal('rate_range', this.value)">
-            </div>
-          </div>
-          <div class="input-group">
-            <label for="years">返済期間 (年)</label>
-            <div class="dual-input">
-              <input type="number" id="years" value="35" step="1" min="1" max="50" oninput="syncVal('years', this.value)">
-              <input type="range" id="years_range" value="35" step="1" min="10" max="40" oninput="syncVal('years_range', this.value)">
-            </div>
-          </div>
-          <div class="input-group">
-            <label for="bonus">ボーナス返済 (万円/回)</label>
-            <div class="dual-input">
-              <input type="number" id="bonus" value="0" step="1" min="0" max="200" oninput="syncVal('bonus', this.value)">
-              <input type="range" id="bonus_range" value="0" step="10" min="0" max="100" oninput="syncVal('bonus_range', this.value)">
-            </div>
-          </div>
-        </div>
-        <div class="result-box" style="margin-top: 10px;">
-          <div class="result-row">
-            <span style="font-weight: 700;">毎月の返済額目安:</span>
-            <span class="result-value" id="cardMonthlyPayment" style="color: var(--primary-color); font-size: 1.1rem;">0 円</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">繰り上げ返済比較</div>
-        <div class="input-grid">
-          <div class="input-group">
-            <label for="prepayYear">繰り上げ時期 (年後)</label>
-            <div class="dual-input">
-              <input type="number" id="prepayYear" value="10" step="1" min="1" max="35" oninput="syncVal('prepayYear', this.value)">
-              <input type="range" id="prepayYear_range" value="10" step="1" min="1" max="30" oninput="syncVal('prepayYear_range', this.value)">
-            </div>
-          </div>
-          <div class="input-group">
-            <label for="prepayAmount">繰り上げ額 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="prepayAmount" value="300" step="50" min="10" max="3000" oninput="syncVal('prepayAmount', this.value)">
-              <input type="range" id="prepayAmount_range" value="300" step="50" min="50" max="1500" oninput="syncVal('prepayAmount_range', this.value)">
-            </div>
-          </div>
-        </div>
-
-        <div class="comparison-grid" style="margin-top: 12px;">
-          <div class="comp-card" style="border-top: 3px solid var(--primary-color);">
-            <div class="comp-title" style="color: var(--primary-color);">① 期間短縮コース</div>
-            <div class="result-row"><span>毎月返済:</span><span id="shortMonthly" class="result-value">0 円</span></div>
-            <div class="result-row"><span>完済の早まり:</span><span id="shortSavedTime" class="result-value" style="color:var(--secondary-color);">0 ヶ月</span></div>
-            <div class="result-row"><span>軽減利息:</span><span id="shortSavedInterest" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
-          </div>
-          <div class="comp-card" style="border-top: 3px solid var(--purple-color);">
-            <div class="comp-title" style="color: var(--purple-color);">② 返済額軽減コース</div>
-            <div class="result-row"><span>新毎月返済:</span><span id="reduceMonthly" class="result-value" style="color:var(--purple-color);">0 円</span></div>
-            <div class="result-row"><span>月減額幅:</span><span id="reduceMonthlyDiff" class="result-value" style="color:var(--secondary-color);">0 円</span></div>
-            <div class="result-row"><span>軽減利息:</span><span id="reduceSavedInterest" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">ローン残高推移グラフ</div>
-        <div class="chart-container"><canvas id="loanChart"></canvas></div>
-      </div>
-    </div>
-
-    <!-- ===== シート2: 固定資産税・オプション ===== -->
-    <div id="tab-tax" class="tab-content">
-      <div class="card">
-        <div class="card-title">
-          <span>🏛️ 固定資産税・都市計画税シミュレーション</span>
-          <button class="action-btn" onclick="openHelpModal('tax')">❓ ヘルプ</button>
-        </div>
-        <div class="input-grid">
-          <div class="input-group">
-            <label for="buildingEval">建物想定評価額 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="buildingEval" value="1500" step="50" min="0" max="10000" oninput="syncVal('buildingEval', this.value)">
-              <input type="range" id="buildingEval_range" value="1500" step="50" min="500" max="5000" oninput="syncVal('buildingEval_range', this.value)">
-            </div>
-            <div style="font-size:0.68rem; opacity:0.7; margin-top:2px;">※建築費の約50〜60%が目安</div>
-          </div>
-
-          <div class="input-group">
-            <label for="landEval">土地想定評価額 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="landEval" value="600" step="50" min="0" max="10000" oninput="syncVal('landEval', this.value)">
-              <input type="range" id="landEval_range" value="600" step="50" min="100" max="3000" oninput="syncVal('landEval_range', this.value)">
-            </div>
-            <div style="font-size:0.68rem; opacity:0.7; margin-top:2px;">※公示地価の約7割が目安</div>
-          </div>
-        </div>
-
-        <div class="result-box" style="margin-top: 12px; background: rgba(0, 122, 255, 0.04); border: 1.5px solid var(--primary-color);">
-          <div class="result-row">
-            <span>年間税額（新築特例 1〜3年目 1/2軽減）:</span>
-            <span class="result-value" id="taxResultFirst3" style="color: var(--primary-color); font-size: 1.1rem;">0 万円/年</span>
-          </div>
-          <div class="result-row" style="margin-top: 6px;">
-            <span>軽減終了後（4年目以降の年間税額）:</span>
-            <span class="result-value" id="taxResultNormal" style="color: var(--text-color);">0 万円/年</span>
-          </div>
-          <div style="font-size: 0.7rem; opacity: 0.75; margin-top: 6px;">
-            ※固定資産税1.4%＋都市計画税0.3%、小規模住宅用地特例（土地1/6減額）を反映
-          </div>
-        </div>
-      </div>
-
-      <div class="card">
-        <div class="card-title">✨ オプション・設備（評価額連動）</div>
-        <div style="display:flex; flex-direction:column; gap:8px;">
-          <label style="display:flex; align-items:center; gap:8px; font-size:0.82rem; cursor:pointer;" onclick="calculate(); saveToCloud();">
-            <input type="checkbox" id="optSolar" checked style="width:18px; height:18px;">
-            <span>太陽光発電システム (初期 +60万円 / 建物評価額 +30万円)</span>
-          </label>
-          <label style="display:flex; align-items:center; gap:8px; font-size:0.82rem; cursor:pointer;" onclick="calculate(); saveToCloud();">
-            <input type="checkbox" id="optZeh" checked style="width:18px; height:18px;">
-            <span>高断熱・ZEH対応 (初期 +80万円 / 建物評価額 +40万円)</span>
-          </label>
-          <label style="display:flex; align-items:center; gap:8px; font-size:0.82rem; cursor:pointer;" onclick="calculate(); saveToCloud();">
-            <input type="checkbox" id="optCarport" style="width:18px; height:18px;">
-            <span>外構・カーポートプラン (初期 +120万円 / 建物評価額 +20万円)</span>
-          </label>
-        </div>
-      </div>
-    </div>
-
-    <!-- ===== シート3: 設備・写真OCR台帳 ===== -->
-    <div id="tab-ocr" class="tab-content">
-      <div class="card">
-        <div class="card-title">
-          <span>📷 写真OCR・設備サンプル登録</span>
-          <button class="action-btn" onclick="openHelpModal('ocr')">❓ ヘルプ</button>
-        </div>
-
-        <div style="margin-bottom: 12px;">
-          <label>ショールーム等の写真をアップロード</label>
-          <input type="file" id="ocrFileInput" accept="image/*" capture="environment" onchange="handleImageUpload(event)" style="margin-top:4px; font-size:0.8rem;">
-        </div>
-
-        <!-- プレビューと入力フォーム -->
-        <div id="ocrFormArea" style="display:none; background:var(--bg-color); padding:12px; border-radius:12px; margin-bottom:12px; border:1px solid var(--border-color);">
-          <img id="ocrImgPreview" class="img-preview" src="" alt="プレビュー">
-          
+      <!-- ===== シート1: 住宅ローン ===== -->
+      <div id="tab-loan" class="tab-content active">
+        <div class="card">
+          <div class="card-title"><span>ローン条件<button type="button" class="help-btn" onclick="helpClick(event,'loan')" aria-label="ヘルプ">❓</button></span><span class="save-badge">● 自動保存</span></div>
           <div class="input-grid">
             <div class="input-group">
-              <label>メーカー名</label>
-              <input type="text" id="ocrMaker" placeholder="例: LIXIL / Panasonic">
+              <label for="amount">借入額 (万円)</label>
+              <div class="dual-input">
+                <input type="number" id="amount" inputmode="decimal" value="3500" step="100" min="0" max="10000" oninput="syncVal('amount', this.value)">
+                <input type="range" id="amount_range" value="3500" step="50" min="1000" max="8000" oninput="syncVal('amount_range', this.value)">
+              </div>
             </div>
             <div class="input-group">
-              <label>設備名</label>
-              <input type="text" id="ocrName" placeholder="例: システムキッチン">
+              <label for="rate">金利 (%)</label>
+              <div class="dual-input">
+                <input type="number" id="rate" inputmode="decimal" value="0.5" step="0.05" min="0" max="5" oninput="syncVal('rate', this.value)">
+                <input type="range" id="rate_range" value="0.5" step="0.05" min="0.1" max="3.0" oninput="syncVal('rate_range', this.value)">
+              </div>
             </div>
             <div class="input-group">
-              <label>想定寸法 (W×D×H mm)</label>
-              <input type="text" id="ocrSize" placeholder="例: W2550×D650">
+              <label for="years">返済期間 (年)</label>
+              <div class="dual-input">
+                <input type="number" id="years" inputmode="numeric" value="35" step="1" min="1" max="50" oninput="syncVal('years', this.value)">
+                <input type="range" id="years_range" value="35" step="1" min="10" max="40" oninput="syncVal('years_range', this.value)">
+              </div>
             </div>
             <div class="input-group">
-              <label>見込み金額 (万円)</label>
-              <input type="number" id="ocrPrice" value="50">
+              <label for="bonus">ボーナス返済 (万円/回)</label>
+              <div class="dual-input">
+                <input type="number" id="bonus" inputmode="decimal" value="0" step="1" min="0" max="200" oninput="syncVal('bonus', this.value)">
+                <input type="range" id="bonus_range" value="0" step="10" min="0" max="100" oninput="syncVal('bonus_range', this.value)">
+              </div>
+            </div>
+          </div>
+          <div class="result-box" style="margin-top: 10px;">
+            <div class="result-row">
+              <span style="font-weight: 700;">毎月の返済額:</span>
+              <span class="result-value" id="cardMonthlyPayment" style="color: var(--primary-color); font-size: 1.15rem;">0 円</span>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>繰り上げ返済 比較<button type="button" class="help-btn" onclick="helpClick(event,'prepay')" aria-label="ヘルプ">❓</button></span></div>
+          <div class="input-grid">
+            <div class="input-group">
+              <label for="prepayYear">時期 (年後)</label>
+              <div class="dual-input">
+                <input type="number" id="prepayYear" inputmode="numeric" value="10" step="1" min="1" max="35" oninput="syncVal('prepayYear', this.value)">
+                <input type="range" id="prepayYear_range" value="10" step="1" min="1" max="30" oninput="syncVal('prepayYear_range', this.value)">
+              </div>
             </div>
             <div class="input-group">
-              <label>ステータス</label>
-              <select id="ocrStatus">
-                <option value="pending">🟡 未確定 (検討中)</option>
-                <option value="confirmed">🟢 確定 (採用)</option>
+              <label for="prepayAmount">金額 (万円)</label>
+              <div class="dual-input">
+                <input type="number" id="prepayAmount" inputmode="decimal" value="300" step="50" min="10" max="3000" oninput="syncVal('prepayAmount', this.value)">
+                <input type="range" id="prepayAmount_range" value="300" step="50" min="50" max="1500" oninput="syncVal('prepayAmount_range', this.value)">
+              </div>
+            </div>
+          </div>
+
+          <div class="comparison-grid" style="margin-top: 12px;">
+            <div class="comp-card" style="border-top: 3px solid var(--primary-color);">
+              <div class="comp-title" style="color: var(--primary-color);">① 期間短縮</div>
+              <div class="result-row"><span>毎月:</span><span id="shortMonthly" class="result-value">0 円</span></div>
+              <div class="result-row"><span>早まる:</span><span id="shortSavedTime" class="result-value" style="color:var(--secondary-color);">0 ヶ月</span></div>
+              <div class="result-row"><span>利息減:</span><span id="shortSavedInterest" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
+            </div>
+            <div class="comp-card" style="border-top: 3px solid var(--purple-color);">
+              <div class="comp-title" style="color: var(--purple-color);">② 返済額軽減</div>
+              <div class="result-row"><span>毎月:</span><span id="reduceMonthly" class="result-value" style="color:var(--purple-color);">0 円</span></div>
+              <div class="result-row"><span>月の減額:</span><span id="reduceMonthlyDiff" class="result-value" style="color:var(--secondary-color);">0 円</span></div>
+              <div class="result-row"><span>利息減:</span><span id="reduceSavedInterest" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>ローン残高の推移<button type="button" class="help-btn" onclick="helpClick(event,'loanChart')" aria-label="ヘルプ">❓</button></span></div>
+          <div class="chart-container"><canvas id="loanChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ===== シート2: 世帯収入＆家計 ===== -->
+      <div id="tab-income" class="tab-content">
+        <div class="card" style="border: 2px solid var(--primary-color); background: rgba(0, 122, 255, 0.03);">
+          <div class="card-title" style="border-bottom-color: var(--primary-color);">
+            <span>💰 いまの貯蓄<button type="button" class="help-btn" onclick="helpClick(event,'assets')" aria-label="ヘルプ">❓</button></span>
+            <span class="save-badge">● 同期</span>
+          </div>
+          <div class="input-grid" style="grid-template-columns: 1fr;">
+            <div class="input-group">
+              <label for="initAsset">貯蓄総額 (万円)</label>
+              <div class="dual-input">
+                <input type="number" id="initAsset" inputmode="decimal" value="500" step="50" min="0" max="20000" oninput="syncVal('initAsset', this.value)" style="font-size: 1.05rem; font-weight: bold; color: var(--primary-color);">
+                <input type="range" id="initAsset_range" value="500" step="50" min="0" max="5000" oninput="syncVal('initAsset_range', this.value)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>夫婦の年収<button type="button" class="help-btn" onclick="helpClick(event,'income')" aria-label="ヘルプ">❓</button></span></div>
+          <div class="input-grid">
+            <div class="input-group">
+              <label for="inc_husband_gross">夫 額面 (万円)</label>
+              <div class="dual-input">
+                <input type="number" id="inc_husband_gross" inputmode="decimal" value="500" step="10" min="0" max="3000" oninput="syncVal('inc_husband_gross', this.value)">
+                <input type="range" id="inc_husband_gross_range" value="500" step="50" min="200" max="1500" oninput="syncVal('inc_husband_gross_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="inc_husband_net">夫 手取り (万円)</label>
+              <div class="dual-input">
+                <input type="number" id="inc_husband_net" inputmode="decimal" value="390" step="10" min="0" max="2500" oninput="syncVal('inc_husband_net', this.value)">
+                <input type="range" id="inc_husband_net_range" value="390" step="50" min="150" max="1200" oninput="syncVal('inc_husband_net_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="inc_wife_gross">妻 額面 (万円)</label>
+              <div class="dual-input">
+                <input type="number" id="inc_wife_gross" inputmode="decimal" value="200" step="10" min="0" max="2000" oninput="syncVal('inc_wife_gross', this.value)">
+                <input type="range" id="inc_wife_gross_range" value="200" step="50" min="0" max="1000" oninput="syncVal('inc_wife_gross_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="inc_wife_net">妻 手取り (万円)</label>
+              <div class="dual-input">
+                <input type="number" id="inc_wife_net" inputmode="decimal" value="150" step="10" min="0" max="1500" oninput="syncVal('inc_wife_net', this.value)">
+                <input type="range" id="inc_wife_net_range" value="150" step="50" min="0" max="800" oninput="syncVal('inc_wife_net_range', this.value)">
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <details class="accordion-section" open>
+          <summary>
+            <span>📋 毎月の生活費＆ボーナス<button type="button" class="help-btn" onclick="helpClick(event,'living')" aria-label="ヘルプ">❓</button></span>
+            <span id="accordionLivingTotal" style="font-weight: bold; font-size: 0.85rem; color: var(--primary-color);">計 0 万円/月</span>
+          </summary>
+
+          <div style="margin-bottom: 12px;">
+            <div class="input-group">
+              <label for="inc_hand">世帯 手取り月収 (万円)</label>
+              <div class="dual-input">
+                <input type="number" id="inc_hand" inputmode="decimal" value="45" step="1" min="0" max="200" oninput="syncVal('inc_hand', this.value)">
+                <input type="range" id="inc_hand_range" value="45" step="1" min="10" max="100" oninput="syncVal('inc_hand_range', this.value)">
+              </div>
+            </div>
+          </div>
+
+          <div style="background: var(--card-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 14px;">
+            <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;">🎁 ボーナス（手取り）</div>
+            <div class="input-grid">
+              <div class="input-group">
+                <label for="bonus_husband_summer">夫 夏 (万円)</label>
+                <div class="dual-input"><input type="number" id="bonus_husband_summer" inputmode="decimal" value="40" step="5" min="0" max="500" oninput="syncVal('bonus_husband_summer', this.value)"></div>
+              </div>
+              <div class="input-group">
+                <label for="bonus_husband_winter">夫 冬 (万円)</label>
+                <div class="dual-input"><input type="number" id="bonus_husband_winter" inputmode="decimal" value="40" step="5" min="0" max="500" oninput="syncVal('bonus_husband_winter', this.value)"></div>
+              </div>
+              <div class="input-group">
+                <label for="bonus_wife_summer">妻 夏 (万円)</label>
+                <div class="dual-input"><input type="number" id="bonus_wife_summer" inputmode="decimal" value="10" step="5" min="0" max="500" oninput="syncVal('bonus_wife_summer', this.value)"></div>
+              </div>
+              <div class="input-group">
+                <label for="bonus_wife_winter">妻 冬 (万円)</label>
+                <div class="dual-input"><input type="number" id="bonus_wife_winter" inputmode="decimal" value="10" step="5" min="0" max="500" oninput="syncVal('bonus_wife_winter', this.value)"></div>
+              </div>
+            </div>
+            <div style="font-size: 0.75rem; opacity: 0.75; text-align: right; margin-top: 4px;">
+              年間ボーナス計: <span id="totalAnnualBonusDisplay" style="font-weight: bold; color: var(--primary-color);">0 万円</span>
+            </div>
+          </div>
+
+          <div class="custom-item-list" id="customExpenseContainer"></div>
+          <button type="button" class="add-item-btn" onclick="addCustomExpenseItem('新しい支出項目', 1)">＋ 支出項目を追加</button>
+        </details>
+
+        <div class="card" style="background: rgba(52, 199, 89, 0.04); border: 1.5px solid var(--secondary-color);">
+          <div class="card-title" style="border-bottom-color: var(--secondary-color); margin-bottom: 10px;">
+            <span style="color: var(--secondary-color);">💡 生活費の診断<button type="button" class="help-btn" onclick="helpClick(event,'advice')" aria-label="ヘルプ">❓</button></span>
+          </div>
+          <div id="expenseAdviceText" style="font-size: 0.82rem; line-height: 1.6;">診断中...</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>家計の収支<button type="button" class="help-btn" onclick="helpClick(event,'summary')" aria-label="ヘルプ">❓</button></span></div>
+          <div class="result-box">
+            <div class="result-row"><span>世帯 額面年収:</span><span id="totalGrossIncome" class="result-value">0 万円</span></div>
+            <div class="result-row"><span>世帯 手取り年収:</span><span id="totalNetIncome" class="result-value" style="color:var(--primary-color);">0 万円</span></div>
+            <div class="result-row"><span>生活費 (月):</span><span id="totalLivingCost" class="result-value">0 万円</span></div>
+            <div class="result-row"><span>ローン後の月の余り:</span><span id="netMonthlySavings" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
+            <div class="result-row"><span>年の余り (賞与込):</span><span id="netAnnualSavings" class="result-value" style="color:var(--primary-color);">0 万円/年</span></div>
+            <div id="cashflowHealthAdvice" style="font-size: 0.82rem; margin-top: 8px; padding-top: 6px; border-top: 1px dashed var(--border-color); color: var(--secondary-color); line-height: 1.4;">チェック中...</div>
+          </div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="flex-wrap:wrap; gap:8px;">
+            <span>📈 余剰金の貯蓄推移<button type="button" class="help-btn" onclick="helpClick(event,'incomeChart')" aria-label="ヘルプ">❓</button></span>
+            <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem;">
+              <label for="incomeTabMaxYears" style="margin:0; font-weight:600;">年数:</label>
+              <select id="incomeTabMaxYears" onchange="calculate()" style="padding:6px 8px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-color); font-weight:bold;">
+                <option value="20">20年</option>
+                <option value="30">30年</option>
+                <option value="40" selected>40年</option>
+              </select>
+            </div>
+          </div>
+          <div style="font-size: 0.75rem; opacity: 0.7; margin-bottom: 6px;">※ 今の年間余剰金（月余り×12＋賞与）を5年ごとに積み上げ</div>
+          <div class="chart-container"><canvas id="incomeTabAssetChart"></canvas></div>
+        </div>
+      </div>
+
+      <!-- ===== シート3: ライフイベント ===== -->
+      <div id="tab-life" class="tab-content">
+        <div class="card">
+          <div class="card-title"><span>基本・運用・維持費<button type="button" class="help-btn" onclick="helpClick(event,'life')" aria-label="ヘルプ">❓</button></span></div>
+          <div class="input-grid">
+            <div class="input-group">
+              <label for="myAge">いまの年齢 (歳)</label>
+              <div class="dual-input">
+                <input type="number" id="myAge" inputmode="numeric" value="34" step="1" min="18" max="80" oninput="syncVal('myAge', this.value)">
+                <input type="range" id="myAge_range" value="34" step="1" min="20" max="60" oninput="syncVal('myAge_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="assetYield">運用利回り (%)</label>
+              <div class="dual-input">
+                <input type="number" id="assetYield" inputmode="decimal" value="3.0" step="0.5" min="0" max="10" oninput="syncVal('assetYield', this.value)">
+                <input type="range" id="assetYield_range" value="3.0" step="0.5" min="0" max="7" oninput="syncVal('assetYield_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="wifeRetireYear">妻の退職 (年後)</label>
+              <div class="dual-input">
+                <input type="number" id="wifeRetireYear" inputmode="numeric" value="10" step="1" min="1" max="40" oninput="syncVal('wifeRetireYear', this.value)">
+                <input type="range" id="wifeRetireYear_range" value="10" step="1" min="1" max="30" oninput="syncVal('wifeRetireYear_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="wifePension">妻の年金 (万円/月)</label>
+              <div class="dual-input">
+                <input type="number" id="wifePension" inputmode="decimal" value="6" step="0.5" min="0" max="25" oninput="syncVal('wifePension', this.value)">
+                <input type="range" id="wifePension_range" value="6" step="0.5" min="0" max="15" oninput="syncVal('wifePension_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="houseTax">固定資産税 (万円/年)</label>
+              <div class="dual-input">
+                <input type="number" id="houseTax" inputmode="decimal" value="12" step="1" min="0" max="50" oninput="syncVal('houseTax', this.value)">
+                <input type="range" id="houseTax_range" value="12" step="1" min="0" max="30" oninput="syncVal('houseTax_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="houseRepair">修繕積立 (万円/年)</label>
+              <div class="dual-input">
+                <input type="number" id="houseRepair" inputmode="decimal" value="10" step="1" min="0" max="50" oninput="syncVal('houseRepair', this.value)">
+                <input type="range" id="houseRepair_range" value="10" step="1" min="0" max="30" oninput="syncVal('houseRepair_range', this.value)">
+              </div>
+            </div>
+          </div>
+          <div class="note-text">※ 「固定資産税」ツールで連動ONの間は、この欄ではなく自動計算の税額を使います。</div>
+        </div>
+
+        <details class="accordion-section">
+          <summary><span>🚗 車の買い替え・ローン<button type="button" class="help-btn" onclick="helpClick(event,'car')" aria-label="ヘルプ">❓</button></span></summary>
+          <div class="input-grid" style="margin-top: 8px;">
+            <div class="input-group">
+              <label for="carLoanYears">車ローン期間 (年)</label>
+              <div class="dual-input">
+                <input type="number" id="carLoanYears" inputmode="numeric" value="5" step="1" min="1" max="10" oninput="syncVal('carLoanYears', this.value)">
+                <input type="range" id="carLoanYears_range" value="5" step="1" min="1" max="7" oninput="syncVal('carLoanYears_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="carLoanRate">車ローン金利 (%)</label>
+              <div class="dual-input">
+                <input type="number" id="carLoanRate" inputmode="decimal" value="2.0" step="0.1" min="0" max="10" oninput="syncVal('carLoanRate', this.value)">
+                <input type="range" id="carLoanRate_range" value="2.0" step="0.5" min="0" max="6" oninput="syncVal('carLoanRate_range', this.value)">
+              </div>
+            </div>
+          </div>
+
+          <div style="font-size: 0.8rem; font-weight: bold; color: var(--primary-color); margin: 12px 0 6px 0;">1回目</div>
+          <div class="input-grid">
+            <div class="input-group"><label for="car1Year">時期 (年後)</label><div class="dual-input"><input type="number" id="car1Year" inputmode="numeric" value="5" step="1" min="1" max="40" oninput="syncVal('car1Year', this.value)"></div></div>
+            <div class="input-group"><label for="car1Price">価格 (万円)</label><div class="dual-input"><input type="number" id="car1Price" inputmode="decimal" value="300" step="10" min="50" max="1000" oninput="syncVal('car1Price', this.value)"></div></div>
+            <div class="input-group"><label for="car1Down">頭金 (万円)</label><div class="dual-input"><input type="number" id="car1Down" inputmode="decimal" value="50" step="10" min="0" max="500" oninput="syncVal('car1Down', this.value)"></div></div>
+          </div>
+
+          <div style="font-size: 0.8rem; font-weight: bold; color: var(--primary-color); margin: 12px 0 6px 0;">2回目</div>
+          <div class="input-grid">
+            <div class="input-group"><label for="car2Year">時期 (年後)</label><div class="dual-input"><input type="number" id="car2Year" inputmode="numeric" value="12" step="1" min="1" max="40" oninput="syncVal('car2Year', this.value)"></div></div>
+            <div class="input-group"><label for="car2Price">価格 (万円)</label><div class="dual-input"><input type="number" id="car2Price" inputmode="decimal" value="300" step="10" min="50" max="1000" oninput="syncVal('car2Price', this.value)"></div></div>
+            <div class="input-group"><label for="car2Down">頭金 (万円)</label><div class="dual-input"><input type="number" id="car2Down" inputmode="decimal" value="50" step="10" min="0" max="500" oninput="syncVal('car2Down', this.value)"></div></div>
+          </div>
+
+          <div style="font-size: 0.8rem; font-weight: bold; color: var(--primary-color); margin: 12px 0 6px 0;">3回目</div>
+          <div class="input-grid">
+            <div class="input-group"><label for="car3Year">時期 (年後)</label><div class="dual-input"><input type="number" id="car3Year" inputmode="numeric" value="20" step="1" min="1" max="40" oninput="syncVal('car3Year', this.value)"></div></div>
+            <div class="input-group"><label for="car3Price">価格 (万円)</label><div class="dual-input"><input type="number" id="car3Price" inputmode="decimal" value="300" step="10" min="50" max="1000" oninput="syncVal('car3Price', this.value)"></div></div>
+            <div class="input-group"><label for="car3Down">頭金 (万円)</label><div class="dual-input"><input type="number" id="car3Down" inputmode="decimal" value="50" step="10" min="0" max="500" oninput="syncVal('car3Down', this.value)"></div></div>
+          </div>
+        </details>
+
+        <details class="accordion-section">
+          <summary><span>✈️ 旅行・リフォーム<button type="button" class="help-btn" onclick="helpClick(event,'travel')" aria-label="ヘルプ">❓</button></span></summary>
+          <div class="input-grid" style="margin-top: 8px;">
+            <div class="input-group">
+              <label for="travelAnnual">毎年の旅行 (万円/年)</label>
+              <div class="dual-input">
+                <input type="number" id="travelAnnual" inputmode="decimal" value="20" step="5" min="0" max="100" oninput="syncVal('travelAnnual', this.value)">
+                <input type="range" id="travelAnnual_range" value="20" step="5" min="0" max="50" oninput="syncVal('travelAnnual_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="specialTravelYear">特別旅行 (年後)</label>
+              <div class="dual-input">
+                <input type="number" id="specialTravelYear" inputmode="numeric" value="10" step="1" min="1" max="40" oninput="syncVal('specialTravelYear', this.value)">
+                <input type="range" id="specialTravelYear_range" value="10" step="1" min="1" max="30" oninput="syncVal('specialTravelYear_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="specialTravelCost">特別旅行の予算 (万円)</label>
+              <div class="dual-input">
+                <input type="number" id="specialTravelCost" inputmode="decimal" value="100" step="10" min="0" max="500" oninput="syncVal('specialTravelCost', this.value)">
+                <input type="range" id="specialTravelCost_range" value="100" step="10" min="0" max="300" oninput="syncVal('specialTravelCost_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="reformYear">大規模リフォーム (年後)</label>
+              <div class="dual-input">
+                <input type="number" id="reformYear" inputmode="numeric" value="20" step="1" min="1" max="40" oninput="syncVal('reformYear', this.value)">
+                <input type="range" id="reformYear_range" value="20" step="1" min="5" max="35" oninput="syncVal('reformYear_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="reformCost">リフォーム予算 (万円)</label>
+              <div class="dual-input">
+                <input type="number" id="reformCost" inputmode="decimal" value="250" step="10" min="0" max="1000" oninput="syncVal('reformCost', this.value)">
+                <input type="range" id="reformCost_range" value="250" step="50" min="50" max="600" oninput="syncVal('reformCost_range', this.value)">
+              </div>
+            </div>
+          </div>
+        </details>
+
+        <details class="accordion-section">
+          <summary><span>📈 積立投資 3パターン比較<button type="button" class="help-btn" onclick="helpClick(event,'invest')" aria-label="ヘルプ">❓</button></span></summary>
+          <div class="input-grid" style="margin-top: 8px;">
+            <div class="input-group">
+              <label for="monthlyInvest">毎月の積立 (万円/月)</label>
+              <div class="dual-input">
+                <input type="number" id="monthlyInvest" inputmode="decimal" value="3" step="0.5" min="0" max="20" oninput="syncVal('monthlyInvest', this.value)">
+                <input type="range" id="monthlyInvest_range" value="3" step="0.5" min="0" max="10" oninput="syncVal('monthlyInvest_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="investYears">積立期間 (年)</label>
+              <div class="dual-input">
+                <input type="number" id="investYears" inputmode="numeric" value="20" step="1" min="1" max="40" oninput="syncVal('investYears', this.value)">
+                <input type="range" id="investYears_range" value="20" step="1" min="1" max="40" oninput="syncVal('investYears_range', this.value)">
+              </div>
+            </div>
+          </div>
+
+          <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary-color); margin: 12px 0 6px 0;">利回り別の成果</div>
+          <div class="triple-grid">
+            <div class="comp-card" style="border-top: 3px solid var(--secondary-color);">
+              <div class="comp-title" style="color: var(--secondary-color);">① 保守 (2.0%)</div>
+              <div class="result-row"><span>成果:</span><span id="yield1Total" class="result-value">0 万円</span></div>
+              <div class="result-row"><span>運用益:</span><span id="yield1Gain" class="result-value" style="color:var(--secondary-color);">+0 万円</span></div>
+            </div>
+            <div class="comp-card" style="border-top: 3px solid var(--primary-color);">
+              <div class="comp-title" style="color: var(--primary-color);">② 標準 (4.0%)</div>
+              <div class="result-row"><span>成果:</span><span id="yield2Total" class="result-value">0 万円</span></div>
+              <div class="result-row"><span>運用益:</span><span id="yield2Gain" class="result-value" style="color:var(--secondary-color);">+0 万円</span></div>
+            </div>
+            <div class="comp-card" style="border-top: 3px solid var(--purple-color);">
+              <div class="comp-title" style="color: var(--purple-color);">③ 積極 (6.0%)</div>
+              <div class="result-row"><span>成果:</span><span id="yield3Total" class="result-value">0 万円</span></div>
+              <div class="result-row"><span>運用益:</span><span id="yield3Gain" class="result-value" style="color:var(--secondary-color);">+0 万円</span></div>
+            </div>
+          </div>
+          <div class="chart-container" style="margin-top: 14px;"><canvas id="investCompareChart"></canvas></div>
+        </details>
+      </div>
+
+      <!-- ===== シート4: 将来シミュレーション ===== -->
+      <div id="tab-sim" class="tab-content">
+        <div id="riskAlertBanner" class="alert-banner">
+          ⚠️ <b>注意:</b> <span id="riskAlertText">資金が生活防衛資金を下回る時期があります。</span>
+        </div>
+
+        <div class="card" style="background: rgba(0, 122, 255, 0.04); border: 1.5px solid var(--primary-color);">
+          <div class="card-title" style="border-bottom-color: var(--primary-color); margin-bottom: 10px;">
+            <span style="color: var(--primary-color);">🎓 将来の診断<button type="button" class="help-btn" onclick="helpClick(event,'simAdvice')" aria-label="ヘルプ">❓</button></span>
+          </div>
+          <div id="simExpertAdviceText" style="font-size: 0.88rem; line-height: 1.5;">分析中...</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title" style="flex-wrap:wrap; gap:8px;">
+            <span>資産の推移<button type="button" class="help-btn" onclick="helpClick(event,'sim')" aria-label="ヘルプ">❓</button></span>
+            <div style="display:flex; align-items:center; gap:6px; font-size:0.75rem;">
+              <label for="simMaxYears" style="margin:0; font-weight:600;">年数:</label>
+              <select id="simMaxYears" onchange="calculate()" style="padding:6px 8px; border-radius:6px; border:1px solid var(--border-color); background:var(--card-bg); color:var(--text-color); font-weight:bold;">
+                <option value="20">20年</option>
+                <option value="30">30年</option>
+                <option value="40" selected>40年</option>
+              </select>
+            </div>
+          </div>
+          <div style="font-size: 0.75rem; opacity: 0.7; margin-bottom: 6px;">※ 緑：月収ベース ｜ 青：源泉徴収ベース ｜ 紫：運用込み（貯蓄＋毎月積立）</div>
+          <div class="chart-container"><canvas id="assetChart"></canvas></div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>キャッシュフロー年表<button type="button" class="help-btn" onclick="helpClick(event,'cf')" aria-label="ヘルプ">❓</button></span></div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>経過年</th>
+                  <th>年齢</th>
+                  <th>主なイベント</th>
+                  <th>手取り年収(+控除)</th>
+                  <th>年間支出</th>
+                  <th>年間収支</th>
+                  <th>運用込み資産</th>
+                </tr>
+              </thead>
+              <tbody id="cashflowTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+
+      <!-- ===== シート5: 固定資産税・都市計画税 ===== -->
+      <div id="tab-tax" class="tab-content">
+        <div class="card" style="background: rgba(0, 122, 255, 0.04); border: 1.5px solid var(--primary-color);">
+          <div class="card-title" style="border-bottom-color: var(--primary-color); margin-bottom: 10px;">
+            <span style="color: var(--primary-color);">🏠 初年度の税額<button type="button" class="help-btn" onclick="helpClick(event,'taxSummary')" aria-label="ヘルプ">❓</button></span>
+            <span class="save-badge">● 同期</span>
+          </div>
+          <div class="comparison-grid" style="margin-top: 0;">
+            <div class="comp-card" style="border-top: 3px solid var(--primary-color);">
+              <div class="comp-title" style="color: var(--primary-color);">初年度 合計</div>
+              <div class="result-row"><span>年額:</span><span id="taxY1Total" class="result-value" style="color:var(--primary-color);">0 万円</span></div>
+              <div class="result-row"><span>月額:</span><span id="taxY1Monthly" class="result-value">0 円</span></div>
+              <div class="result-row"><span>固定資産税:</span><span id="taxY1FAT" class="result-value">0 万円</span></div>
+              <div class="result-row"><span>都市計画税:</span><span id="taxY1CPT" class="result-value">0 万円</span></div>
+            </div>
+            <div class="comp-card" style="border-top: 3px solid var(--secondary-color);">
+              <div class="comp-title" style="color: var(--secondary-color);">新築軽減</div>
+              <div class="result-row"><span>初年度の軽減:</span><span id="taxY1Reduce" class="result-value" style="color:var(--secondary-color);">0 万円</span></div>
+              <div class="result-row"><span>軽減期間:</span><span id="taxReduceYears" class="result-value">0 年</span></div>
+              <div class="result-row"><span>終了後の年額:</span><span id="taxAfterReduce" class="result-value" style="color:var(--orange-color);">0 万円</span></div>
+              <div class="result-row"><span>10年平均:</span><span id="taxAvg10" class="result-value">0 万円/年</span></div>
+            </div>
+          </div>
+          <div class="result-box">
+            <div class="result-row"><span>設備オプションの税増（初年度）:</span><span id="taxOptEffect" class="result-value" style="color:var(--danger-color);">+0 万円/年</span></div>
+            <div class="result-row"><span>表示期間の累計:</span><span id="taxTotalN" class="result-value">0 万円</span></div>
+            <div class="result-row"><span>建物の課税標準（初年度）:</span><span id="taxBldAssessed" class="result-value">0 万円</span></div>
+          </div>
+        </div>
+
+        <div class="card" style="background: rgba(52, 199, 89, 0.04); border: 1.5px solid var(--secondary-color);">
+          <div class="card-title" style="border-bottom-color: var(--secondary-color); margin-bottom: 10px;">
+            <span style="color: var(--secondary-color);">💡 税の診断</span>
+          </div>
+          <div id="taxAdviceText" style="font-size: 0.82rem; line-height: 1.6;">診断中...</div>
+        </div>
+
+        <div class="card">
+          <div class="card-title"><span>評価額・土地建物の条件<button type="button" class="help-btn" onclick="helpClick(event,'taxCond')" aria-label="ヘルプ">❓</button></span></div>
+          <div class="input-grid">
+            <div class="input-group">
+              <label for="tax_landValue">土地の評価額 (万円)</label>
+              <div class="dual-input">
+                <input type="number" id="tax_landValue" inputmode="decimal" value="1200" step="50" min="0" max="20000" oninput="syncVal('tax_landValue', this.value)">
+                <input type="range" id="tax_landValue_range" value="1200" step="50" min="0" max="5000" oninput="syncVal('tax_landValue_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="tax_landArea">土地面積 (㎡)</label>
+              <div class="dual-input">
+                <input type="number" id="tax_landArea" inputmode="decimal" value="150" step="5" min="1" max="2000" oninput="syncVal('tax_landArea', this.value)">
+                <input type="range" id="tax_landArea_range" value="150" step="5" min="30" max="500" oninput="syncVal('tax_landArea_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="tax_bldValue">建物の評価額 (万円)</label>
+              <div class="dual-input">
+                <input type="number" id="tax_bldValue" inputmode="decimal" value="1500" step="50" min="0" max="20000" oninput="syncVal('tax_bldValue', this.value)">
+                <input type="range" id="tax_bldValue_range" value="1500" step="50" min="0" max="5000" oninput="syncVal('tax_bldValue_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="tax_floorArea">延床面積 (㎡)</label>
+              <div class="dual-input">
+                <input type="number" id="tax_floorArea" inputmode="decimal" value="100" step="5" min="10" max="500" oninput="syncVal('tax_floorArea', this.value)">
+                <input type="range" id="tax_floorArea_range" value="100" step="5" min="30" max="300" oninput="syncVal('tax_floorArea_range', this.value)">
+              </div>
+            </div>
+            <div class="input-group">
+              <label for="tax_structure">構造</label>
+              <select id="tax_structure" class="tax-select" onchange="syncVal('tax_structure', this.value)">
+                <option value="wood" selected>木造（軽減3年）</option>
+                <option value="ls">軽量鉄骨（軽減3年）</option>
+                <option value="ref">3階建以上の耐火（軽減5年）</option>
               </select>
             </div>
             <div class="input-group">
-              <label>確認・不明点メモ</label>
-              <input type="text" id="ocrMemo" placeholder="例: 食洗機の深型変更可否">
+              <label for="tax_ltq">長期優良住宅</label>
+              <select id="tax_ltq" class="tax-select" onchange="syncVal('tax_ltq', this.value)">
+                <option value="0" selected>なし</option>
+                <option value="1">あり（軽減 +2年）</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="tax_landSpecial">住宅用地の特例</label>
+              <select id="tax_landSpecial" class="tax-select" onchange="syncVal('tax_landSpecial', this.value)">
+                <option value="1" selected>適用する</option>
+                <option value="0">適用しない</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="tax_cpEnabled">都市計画税</label>
+              <select id="tax_cpEnabled" class="tax-select" onchange="syncVal('tax_cpEnabled', this.value)">
+                <option value="1" selected>かかる（市街化区域）</option>
+                <option value="0">かからない</option>
+              </select>
+            </div>
+            <div class="input-group">
+              <label for="tax_fatRate">固定資産税率 (%)</label>
+              <div class="dual-input"><input type="number" id="tax_fatRate" inputmode="decimal" value="1.4" step="0.05" min="0" max="3" oninput="syncVal('tax_fatRate', this.value)"></div>
+            </div>
+            <div class="input-group">
+              <label for="tax_cptRate">都市計画税率 (%)</label>
+              <div class="dual-input"><input type="number" id="tax_cptRate" inputmode="decimal" value="0.3" step="0.05" min="0" max="0.3" oninput="syncVal('tax_cptRate', this.value)"></div>
             </div>
           </div>
-          <button type="button" class="add-item-btn" onclick="saveOcrItem()" style="margin-top:10px; background:var(--primary-color); color:white; border:none;">＋ 台帳に追加保存</button>
+          <div class="note-text">※ 評価額は毎年5〜6月の「納税通知書」か「評価証明書」で確認。建物評価額は新築時で建築費の5〜6割が目安。</div>
         </div>
 
-        <!-- 登録済みアイテム一覧 -->
-        <div id="ocrItemContainer">
-          <div style="font-size:0.8rem; opacity:0.7; text-align:center; padding:20px;">登録された設備・オプション写真はまだありません。</div>
-        </div>
-      </div>
-    </div>
+        <details class="accordion-section" open>
+          <summary><span>☀️ 設備オプション（評価額に加算）<button type="button" class="help-btn" onclick="helpClick(event,'taxOpt')" aria-label="ヘルプ">❓</button></span></summary>
+          <div class="note-text" style="margin-top:0; margin-bottom:10px;">「あり」にすると建物評価額に加算され、税額へ自動反映。加算額は見積の5〜6割が目安。</div>
 
-    <!-- ===== シート4: 世帯収入＆家計 ===== -->
-    <div id="tab-income" class="tab-content">
-      <div class="card" style="border: 2px solid var(--primary-color); background: rgba(0, 122, 255, 0.03);">
-        <div class="card-title">
-          <span>💰 現在の保有資産</span>
-          <button class="action-btn" onclick="openHelpModal('income')">❓ ヘルプ</button>
-        </div>
-        <div class="input-grid" style="grid-template-columns: 1fr;">
-          <div class="input-group">
-            <label for="initAsset">手元の貯蓄総額 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="initAsset" value="500" step="50" min="0" max="20000" oninput="syncVal('initAsset', this.value)" style="font-size: 1.05rem; font-weight: bold; color: var(--primary-color);">
-              <input type="range" id="initAsset_range" value="500" step="50" min="0" max="5000" oninput="syncVal('initAsset_range', this.value)">
+          <div class="option-row">
+            <div class="input-group" style="margin:0;">
+              <label for="tax_optSolar">☀️ 太陽光発電</label>
+              <select id="tax_optSolar" class="tax-select" onchange="syncVal('tax_optSolar', this.value)"><option value="0" selected>なし</option><option value="1">あり</option></select>
+            </div>
+            <div class="input-group" style="margin:0;">
+              <label for="tax_solarAdd">評価額の加算 (万円)</label>
+              <div class="dual-input"><input type="number" id="tax_solarAdd" inputmode="decimal" value="80" step="5" min="0" max="500" oninput="syncVal('tax_solarAdd', this.value)"></div>
             </div>
           </div>
-        </div>
-      </div>
 
-      <div class="card">
-        <div class="card-title">夫婦の年収設定</div>
-        <div class="input-grid">
-          <div class="input-group">
-            <label for="inc_husband_gross">夫 額面年収 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="inc_husband_gross" value="500" step="10" min="0" max="3000" oninput="syncVal('inc_husband_gross', this.value)">
-              <input type="range" id="inc_husband_gross_range" value="500" step="50" min="200" max="1500" oninput="syncVal('inc_husband_gross_range', this.value)">
+          <div class="option-row">
+            <div class="input-group" style="margin:0;">
+              <label for="tax_optInsul">🧱 高断熱（等級6以上など）</label>
+              <select id="tax_optInsul" class="tax-select" onchange="syncVal('tax_optInsul', this.value)"><option value="0" selected>なし</option><option value="1">あり</option></select>
+            </div>
+            <div class="input-group" style="margin:0;">
+              <label for="tax_insulAdd">評価額の加算 (万円)</label>
+              <div class="dual-input"><input type="number" id="tax_insulAdd" inputmode="decimal" value="50" step="5" min="0" max="500" oninput="syncVal('tax_insulAdd', this.value)"></div>
             </div>
           </div>
-          <div class="input-group">
-            <label for="inc_husband_net">夫 手取り年収 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="inc_husband_net" value="390" step="10" min="0" max="2500" oninput="syncVal('inc_husband_net', this.value)">
-              <input type="range" id="inc_husband_net_range" value="390" step="50" min="150" max="1200" oninput="syncVal('inc_husband_net_range', this.value)">
-            </div>
-          </div>
-          <div class="input-group">
-            <label for="inc_wife_gross">妻 額面年収 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="inc_wife_gross" value="200" step="10" min="0" max="2000" oninput="syncVal('inc_wife_gross', this.value)">
-              <input type="range" id="inc_wife_gross_range" value="200" step="50" min="0" max="1000" oninput="syncVal('inc_wife_gross_range', this.value)">
-            </div>
-          </div>
-          <div class="input-group">
-            <label for="inc_wife_net">妻 手取り年収 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="inc_wife_net" value="150" step="10" min="0" max="1500" oninput="syncVal('inc_wife_net', this.value)">
-              <input type="range" id="inc_wife_net_range" value="150" step="50" min="0" max="800" oninput="syncVal('inc_wife_net_range', this.value)">
-            </div>
-          </div>
-        </div>
-      </div>
 
-      <details class="accordion-section" open>
-        <summary>
-          <span>📋 毎月の生活費内訳＆ボーナス設定</span>
-          <span id="accordionLivingTotal" style="font-weight: bold; font-size: 0.85rem; color: var(--primary-color);">計 0 万円/月</span>
-        </summary>
-        
-        <div style="margin-bottom: 12px; margin-top: 8px;">
-          <div class="input-group">
-            <label for="inc_hand">世帯手取り月収 (万円)</label>
-            <div class="dual-input">
-              <input type="number" id="inc_hand" value="45" step="1" min="0" max="200" oninput="syncVal('inc_hand', this.value)">
-              <input type="range" id="inc_hand_range" value="45" step="1" min="10" max="100" oninput="syncVal('inc_hand_range', this.value)">
+          <div class="option-row">
+            <div class="input-group" style="margin:0;">
+              <label for="tax_optFloorHeat">♨️ 床暖房・蓄熱暖房</label>
+              <select id="tax_optFloorHeat" class="tax-select" onchange="syncVal('tax_optFloorHeat', this.value)"><option value="0" selected>なし</option><option value="1">あり</option></select>
+            </div>
+            <div class="input-group" style="margin:0;">
+              <label for="tax_floorHeatAdd">評価額の加算 (万円)</label>
+              <div class="dual-input"><input type="number" id="tax_floorHeatAdd" inputmode="decimal" value="20" step="5" min="0" max="300" oninput="syncVal('tax_floorHeatAdd', this.value)"></div>
             </div>
           </div>
-        </div>
 
-        <div style="background: var(--card-bg); padding: 12px; border-radius: 10px; border: 1px solid var(--border-color); margin-bottom: 14px;">
-          <div style="font-size: 0.8rem; font-weight: 700; color: var(--primary-color); margin-bottom: 8px;">🎁 夏・冬ボーナス設定 (手取り額)</div>
+          <div class="option-row" style="margin-bottom:0;">
+            <div class="input-group" style="margin:0;">
+              <label for="tax_optAC">❄️ 全館空調・全熱交換</label>
+              <select id="tax_optAC" class="tax-select" onchange="syncVal('tax_optAC', this.value)"><option value="0" selected>なし</option><option value="1">あり</option></select>
+            </div>
+            <div class="input-group" style="margin:0;">
+              <label for="tax_acAdd">評価額の加算 (万円)</label>
+              <div class="dual-input"><input type="number" id="tax_acAdd" inputmode="decimal" value="40" step="5" min="0" max="300" oninput="syncVal('tax_acAdd', this.value)"></div>
+            </div>
+          </div>
+        </details>
+
+        <div class="card">
+          <div class="card-title"><span>連動・表示<button type="button" class="help-btn" onclick="helpClick(event,'taxLink')" aria-label="ヘルプ">❓</button></span></div>
           <div class="input-grid">
             <div class="input-group">
-              <label for="bonus_husband_summer">夫 夏ボーナス (万円)</label>
-              <div class="dual-input"><input type="number" id="bonus_husband_summer" value="40" step="5" min="0" max="500" oninput="syncVal('bonus_husband_summer', this.value)"></div>
+              <label for="tax_link">将来シミュに反映</label>
+              <select id="tax_link" class="tax-select" onchange="syncVal('tax_link', this.value)">
+                <option value="1" selected>反映する（年ごとの税額）</option>
+                <option value="0">反映しない（固定額）</option>
+              </select>
             </div>
             <div class="input-group">
-              <label for="bonus_husband_winter">夫 冬ボーナス (万円)</label>
-              <div class="dual-input"><input type="number" id="bonus_husband_winter" value="40" step="5" min="0" max="500" oninput="syncVal('bonus_husband_winter', this.value)"></div>
+              <label for="tax_years">表示年数</label>
+              <select id="tax_years" class="tax-select" onchange="syncVal('tax_years', this.value)">
+                <option value="20">20年</option>
+                <option value="30" selected>30年</option>
+                <option value="40">40年</option>
+              </select>
             </div>
-            <div class="input-group">
-              <label for="bonus_wife_summer">妻 夏ボーナス (万円)</label>
-              <div class="dual-input"><input type="number" id="bonus_wife_summer" value="10" step="5" min="0" max="500" oninput="syncVal('bonus_wife_summer', this.value)"></div>
-            </div>
-            <div class="input-group">
-              <label for="bonus_wife_winter">妻 冬ボーナス (万円)</label>
-              <div class="dual-input"><input type="number" id="bonus_wife_winter" value="10" step="5" min="0" max="500" oninput="syncVal('bonus_wife_winter', this.value)"></div>
-            </div>
+          </div>
+          <div class="note-text">
+            ※ 概算です。建物は20%まで線形に下がる簡易モデル。土地は据え置き（負担調整・評価替えは非考慮）。<br>
+            ※ 新築の固定資産税1/2減額は120㎡分まで（床面積50〜280㎡）。期限・要件は税制改正で変わるため、市区町村で最新を確認。<br>
+            ※ 都市計画税に新築軽減はありません。
           </div>
         </div>
 
-        <div class="custom-item-list" id="customExpenseContainer"></div>
-        <button type="button" class="add-item-btn" onclick="addCustomExpenseItem('新しい支出項目', 1)">＋ 独自の支出項目を追加する</button>
-      </details>
-
-      <div class="card" style="background: rgba(52, 199, 89, 0.04); border: 1.5px solid var(--secondary-color);">
-        <div class="card-title" style="border-bottom-color: var(--secondary-color); margin-bottom: 10px;">
-          <span style="color: var(--secondary-color);">💡 二人暮らし世帯の平均比較診断</span>
+        <div class="card">
+          <div class="card-title"><span>年間税額の内訳<button type="button" class="help-btn" onclick="helpClick(event,'taxChart')" aria-label="ヘルプ">❓</button></span></div>
+          <div class="chart-container"><canvas id="taxChart"></canvas></div>
         </div>
-        <div id="expenseAdviceText" style="font-size: 0.82rem; line-height: 1.6;">
-          診断中...
+
+        <div class="card">
+          <div class="card-title"><span>税の年表<button type="button" class="help-btn" onclick="helpClick(event,'taxTable')" aria-label="ヘルプ">❓</button></span></div>
+          <div class="table-wrapper">
+            <table>
+              <thead>
+                <tr>
+                  <th>経過年</th>
+                  <th>建物課税標準</th>
+                  <th>建物 固定資産税</th>
+                  <th>土地 固定資産税</th>
+                  <th>都市計画税</th>
+                  <th>新築軽減</th>
+                  <th>年間合計</th>
+                  <th>累計</th>
+                </tr>
+              </thead>
+              <tbody id="taxTableBody"></tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
+    </div><!-- /tabArea -->
 
-    <!-- ===== シート5: 将来シミュレーション ===== -->
-    <div id="tab-sim" class="tab-content">
+    <!-- ===== ホーム（ハブ） ===== -->
+    <section id="screen-home" class="screen">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <div class="text-lg font-extrabold">🏠 ホーム</div>
+          <div class="text-xs opacity-70">使うツールをタップ</div>
+        </div>
+        <button type="button" class="help-btn" style="width:30px;height:30px;font-size:1rem;" onclick="helpClick(event,'home')" aria-label="ヘルプ">❓</button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3">
+        <button class="hub" onclick="openScreen('loan')">
+          <span class="ic">💴</span><span class="tt">① ローン・家計</span><span class="sb">返済・収入・生活費</span><span class="st" id="homeStatLoan">—</span>
+        </button>
+        <button class="hub" onclick="openScreen('tax')">
+          <span class="ic">🏡</span><span class="tt">② 固定資産税</span><span class="sb">特例・設備オプション</span><span class="st" id="homeStatTax">—</span>
+        </button>
+        <button class="hub" onclick="openScreen('plan')">
+          <span class="ic">📈</span><span class="tt">③ 将来CF・ライフ</span><span class="sb">車・旅行・運用・年表</span><span class="st" id="homeStatPlan">—</span>
+        </button>
+        <button class="hub" onclick="openScreen('ledger')">
+          <span class="ic">📷</span><span class="tt">④ 設備台帳</span><span class="sb">写真で自動入力</span><span class="st" id="homeStatLedger">—</span>
+        </button>
+        <button class="hub" onclick="openScreen('guide')">
+          <span class="ic">📖</span><span class="tt">⑤ 使い方</span><span class="sb">操作ガイド・設定</span><span class="st">見る ›</span>
+        </button>
+        <button class="hub" onclick="openSync()">
+          <span class="ic">☁️</span><span class="tt">夫婦で同期</span><span class="sb">ログイン・世帯設定</span><span class="st" id="homeStatSync">—</span>
+        </button>
+      </div>
+
+      <button id="homeAlert" class="btn btn-s w-full mt-4 hidden" onclick="openScreen('ledger')" style="justify-content:flex-start;"></button>
+    </section>
+
+    <!-- ===== ④ 設備台帳 ===== -->
+    <section id="screen-ledger" class="screen hidden">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <div class="text-lg font-extrabold">📷 設備台帳</div>
+          <div class="text-xs opacity-70">撮る → 自動入力 → 確定</div>
+        </div>
+        <button type="button" class="help-btn" style="width:30px;height:30px;font-size:1rem;" onclick="helpClick(event,'ledger')" aria-label="ヘルプ">❓</button>
+      </div>
+
+      <div class="grid grid-cols-2 gap-3 mb-3">
+        <label class="photo-btn">📷 撮影
+          <input type="file" accept="image/*" capture="environment" class="hidden" id="ledgerCam" onchange="onPhotoPicked(event)">
+        </label>
+        <label class="photo-btn alt">🖼 写真を選ぶ
+          <input type="file" accept="image/*" class="hidden" id="ledgerFile" onchange="onPhotoPicked(event)">
+        </label>
+      </div>
+      <button class="btn btn-s w-full mb-3" onclick="openItem(newItem(), true)">✏️ 手入力で追加</button>
+
+      <div class="card" style="padding:12px;">
+        <div class="grid grid-cols-3 gap-2 text-center">
+          <div><div class="text-xs opacity-70">✅ 確定</div><div class="font-extrabold" id="ledSumFixed" style="color:var(--secondary-color);">0万</div></div>
+          <div><div class="text-xs opacity-70">⏳ 未確定</div><div class="font-extrabold" id="ledSumPending" style="color:var(--orange-color);">0万</div></div>
+          <div><div class="text-xs opacity-70">❓ 要確認</div><div class="font-extrabold" id="ledSumAsk" style="color:var(--danger-color);">0件</div></div>
+        </div>
+      </div>
+
+      <div class="flex gap-2 mb-3 overflow-x-auto" id="ledgerFilters"></div>
+      <div id="ledgerList"></div>
+    </section>
+
+    <!-- ===== ⑤ 操作ガイド ===== -->
+    <section id="screen-guide" class="screen hidden">
+      <div class="flex items-center justify-between mb-3">
+        <div>
+          <div class="text-lg font-extrabold">📖 使い方</div>
+          <div class="text-xs opacity-70">困ったらここ</div>
+        </div>
+      </div>
+
       <div class="card">
-        <div class="card-title">
-          <span>📈 30年〜40年 将来キャッシュフロー</span>
-          <button class="action-btn" onclick="openHelpModal('sim')">❓ ヘルプ</button>
-        </div>
-        <div class="chart-container"><canvas id="assetChart"></canvas></div>
+        <div class="card-title">📱 ホーム画面に追加（iPhone）</div>
+        <ol class="help-list">
+          <li>Safariでこのページを開く</li>
+          <li>共有ボタン □↑ をタップ</li>
+          <li>「ホーム画面に追加」→「追加」</li>
+          <li>以後はアイコンから起動</li>
+        </ol>
       </div>
 
       <div class="card">
-        <div class="card-title">詳細キャッシュフロー年表</div>
-        <div style="overflow-x: auto; max-height: 380px;">
-          <table style="width:100%; font-size:0.75rem; border-collapse:collapse; text-align:right;">
-            <thead>
-              <tr style="background:var(--bg-color);">
-                <th style="padding:8px;">経過年</th>
-                <th style="padding:8px;">年齢</th>
-                <th style="padding:8px; text-align:left;">主なイベント</th>
-                <th style="padding:8px;">手取り年収</th>
-                <th style="padding:8px;">年間支出</th>
-                <th style="padding:8px;">運用込資産残高</th>
-              </tr>
-            </thead>
-            <tbody id="cashflowTableBody"></tbody>
-          </table>
+        <div class="card-title">☁️ 夫婦で同期する（無料）</div>
+        <ol class="help-list">
+          <li>Supabaseで無料プロジェクトを作成</li>
+          <li>下のSQLをSQL Editorで実行（RLS設定込み）</li>
+          <li>Authentication → Providers → Email で「Confirm email」をOFF（任意）</li>
+          <li>Settings → API の <b>URL</b> と <b>anon / publishable キー</b> をコピー</li>
+          <li>アプリの ☁️ で入力 → 新規登録 → 世帯を作成</li>
+          <li>パートナーも登録し、「招待コード」で参加</li>
+        </ol>
+        <div class="note-text">⚠️ <b>service_role / secret キーは絶対に入力しない</b>（アプリが検知して拒否します）。無料枠は1週間アクセスがないと一時停止されることがあります（ダッシュボードで再開）。</div>
+        <div class="flex gap-2 mt-3">
+          <button class="btn btn-s" style="flex:1;" onclick="copySql()">📋 SQLをコピー</button>
         </div>
+        <pre class="code mt-3" id="sqlBox"></pre>
       </div>
-    </div>
+
+      <div class="card">
+        <div class="card-title">❓ 各ツールの説明</div>
+        <div id="guideList"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title">🔒 安全性メモ</div>
+        <ul class="help-list">
+          <li>キーはコードに書かず、端末内にのみ保存</li>
+          <li>DBはRLSで「世帯メンバーのみ」読み書き可</li>
+          <li>入力・同期データはHTMLエスケープして表示</li>
+          <li>写真は端末内で縮小。OCRも端末内で実行（画像は外部送信なし）</li>
+        </ul>
+      </div>
+    </section>
 
   </div>
 
-  <!-- モーダル（ヘルプ用） -->
-  <div id="helpModal" class="modal-overlay">
-    <div class="modal-content">
-      <h3 id="helpModalTitle" style="margin-top:0; color:var(--primary-color);">操作ヘルプ</h3>
-      <div id="helpModalBody" style="font-size:0.82rem; line-height:1.6; margin-bottom:16px;"></div>
-      <button class="action-btn" onclick="closeHelpModal()" style="width:100%; padding:10px; background:var(--primary-color); color:white; border:none; font-size:0.85rem;">閉じる</button>
+  <!-- ===== 下部ナビ ===== -->
+  <nav id="bottomNav">
+    <div class="inner">
+      <button class="nav-btn active" data-nav="home" onclick="openScreen('home')"><span class="ic">🏠</span>ホーム</button>
+      <button class="nav-btn" data-nav="loan" onclick="openScreen('loan')"><span class="ic">💴</span>ローン家計</button>
+      <button class="nav-btn" data-nav="tax" onclick="openScreen('tax')"><span class="ic">🏡</span>税</button>
+      <button class="nav-btn" data-nav="plan" onclick="openScreen('plan')"><span class="ic">📈</span>将来</button>
+      <button class="nav-btn" data-nav="ledger" onclick="openScreen('ledger')"><span class="ic">📷</span>台帳</button>
+    </div>
+  </nav>
+
+  <!-- ===== ヘルプモーダル ===== -->
+  <div id="helpModal" class="overlay" onclick="if(event.target===this)closeModal('helpModal')">
+    <div class="sheet">
+      <div class="sheet-head">
+        <div class="sheet-title" id="helpTitle">ヘルプ</div>
+        <button class="sheet-close" onclick="closeModal('helpModal')" aria-label="閉じる">✕</button>
+      </div>
+      <div id="helpBody"></div>
+      <button class="btn btn-p w-full mt-4" onclick="closeModal('helpModal')">OK</button>
     </div>
   </div>
 
-  <div id="toast" class="toast">クラウド同期完了</div>
+  <!-- ===== 設備 編集モーダル ===== -->
+  <div id="itemModal" class="overlay" onclick="if(event.target===this)closeItem()">
+    <div class="sheet">
+      <div class="sheet-head">
+        <div class="sheet-title">📷 設備の登録<button type="button" class="help-btn" onclick="helpClick(event,'item')" aria-label="ヘルプ">❓</button></div>
+        <button class="sheet-close" onclick="closeItem()" aria-label="閉じる">✕</button>
+      </div>
+
+      <div id="itPhotoBox" class="hidden">
+        <img id="itPreview" alt="プレビュー" style="width:100%; max-height:220px; object-fit:contain; border-radius:14px; background:var(--bg-color);">
+        <div class="flex gap-2 mt-2">
+          <button class="btn btn-s" style="flex:1;" onclick="runOcr(true)">🔍 読み取り直す</button>
+          <label class="btn btn-s" style="flex:1; cursor:pointer;">🔄 写真を変更
+            <input type="file" accept="image/*" class="hidden" onchange="onPhotoPicked(event, true)">
+          </label>
+        </div>
+        <div class="ocr-bar"><div id="ocrBar"></div></div>
+        <div class="note-text" id="ocrMsg"></div>
+      </div>
+
+      <label class="lbl" for="it_name">名称</label>
+      <input class="field" id="it_name" type="text" maxlength="60" placeholder="例：ダイキン エアコン">
+      <label class="lbl" for="it_maker">メーカー</label>
+      <input class="field" id="it_maker" type="text" maxlength="40" placeholder="例：ダイキン">
+      <label class="lbl" for="it_feature">特徴</label>
+      <textarea class="field" id="it_feature" maxlength="200" placeholder="例：静音・省エネ・自動掃除"></textarea>
+      <div class="grid grid-cols-2 gap-3">
+        <div>
+          <label class="lbl" for="it_size">想定寸法</label>
+          <input class="field" id="it_size" type="text" maxlength="40" placeholder="例：800×295×215mm">
+        </div>
+        <div>
+          <label class="lbl" for="it_price">金額（万円）</label>
+          <input class="field" id="it_price" type="text" inputmode="decimal" maxlength="10" placeholder="例：18.5">
+        </div>
+      </div>
+      <label class="lbl" for="it_note">備考</label>
+      <textarea class="field" id="it_note" maxlength="200" placeholder="型番・設置場所など"></textarea>
+      <label class="lbl" for="it_ask">❓ 確認・不明点</label>
+      <textarea class="field" id="it_ask" maxlength="200" placeholder="例：施工費込みか？"></textarea>
+
+      <div class="lbl">ステータス</div>
+      <div class="flex gap-2 flex-wrap" id="itStatusChips"></div>
+
+      <div class="lbl">仕様の選択肢</div>
+      <div class="flex gap-2 flex-wrap" id="itChoiceChips"></div>
+      <div class="flex gap-2 mt-2">
+        <input class="field" id="it_newChoice" type="text" maxlength="20" placeholder="選択肢を追加" style="flex:1;">
+        <button class="btn btn-s" onclick="addChoice()">＋</button>
+      </div>
+
+      <div class="flex gap-2 mt-5">
+        <button class="btn btn-d" id="itDeleteBtn" onclick="deleteItem()">🗑</button>
+        <button class="btn btn-p" style="flex:1;" onclick="saveItem()">保存</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 同期設定モーダル ===== -->
+  <div id="syncModal" class="overlay" onclick="if(event.target===this)closeModal('syncModal')">
+    <div class="sheet">
+      <div class="sheet-head">
+        <div class="sheet-title">☁️ 夫婦で同期<button type="button" class="help-btn" onclick="helpClick(event,'sync')" aria-label="ヘルプ">❓</button></div>
+        <button class="sheet-close" onclick="closeModal('syncModal')" aria-label="閉じる">✕</button>
+      </div>
+      <div class="note-text" style="margin-top:0;" id="syncStateLine"></div>
+
+      <div class="lbl">① 接続先（Supabase）</div>
+      <input class="field" id="sb_url" type="url" placeholder="https://xxxx.supabase.co" autocomplete="off" autocapitalize="off">
+      <input class="field" id="sb_key" type="password" placeholder="anon / publishable キー" autocomplete="off" style="margin-top:8px;">
+      <button class="btn btn-s w-full mt-2" onclick="saveSbConfig()">接続先を保存</button>
+
+      <div class="lbl">② ログイン</div>
+      <input class="field" id="sb_email" type="email" placeholder="メールアドレス" autocomplete="email" autocapitalize="off">
+      <input class="field" id="sb_pass" type="password" placeholder="パスワード（8文字以上）" autocomplete="current-password" style="margin-top:8px;">
+      <div class="flex gap-2 mt-2">
+        <button class="btn btn-p" style="flex:1;" onclick="authAction('in')">ログイン</button>
+        <button class="btn btn-s" style="flex:1;" onclick="authAction('up')">新規登録</button>
+      </div>
+      <button class="btn btn-d w-full mt-2" onclick="authAction('out')">ログアウト</button>
+
+      <div class="lbl">③ 世帯（夫婦で共有）</div>
+      <button class="btn btn-g w-full" onclick="createHousehold()">🏠 世帯を新規作成</button>
+      <div class="note-text" id="inviteLine"></div>
+      <div class="flex gap-2 mt-2">
+        <input class="field" id="sb_code" type="text" maxlength="16" placeholder="招待コードで参加" autocapitalize="off" autocomplete="off" style="flex:1;">
+        <button class="btn btn-s" onclick="joinHousehold()">参加</button>
+      </div>
+      <div class="note-text">※ 参加すると、この端末のデータは世帯のデータで置き換わります。</div>
+      <button class="btn btn-s w-full mt-3" onclick="closeModal('syncModal')">閉じる</button>
+    </div>
+  </div>
+
+  <div id="toast" class="toast">完了</div>
 
   <script>
-    // ===== Supabase設定 =====
-    const SUPABASE_URL = 'https://pdaiohiduxfgbohppqxq.supabase.co';
-    const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkYWlvaGlkdXhmZ2JvaHBwcXhxIkwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4MTExMzAsImV4cCI6MjEwNzM4NzEzMH0.N-OTunpFeENEI7y-WEcJwSEhqsvAxa45SQ7_4leCN5E';
-    
-    const { createClient } = supabase;
-    const db = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+    // =====================================================================
+    //  設定：キー類はコードに書かない（端末のlocalStorageにのみ保存）
+    // =====================================================================
+    const LS = {
+      url: 'lp_sb_url', key: 'lp_sb_key', household: 'lp_household',
+      data: 'lp_data', theme: 'loan_sim_theme'
+    };
+    const CLIENT_ID = Math.random().toString(36).slice(2, 10);
 
-    let currentRoomId = 'our-home-2026';
-    let isSavingToCloud = false;
+    let sb = null;               // Supabaseクライアント
+    let session = null;          // ログイン状態
+    let householdId = localStorage.getItem(LS.household) || null;
     let realtimeChannel = null;
+    let realtimeState = 'off';   // off | ok | retry
+    let saveTimer = null;
 
-    let loanChart = null;
-    let assetChart = null;
+    let loanChart = null, assetChart = null, incomeTabAssetChart = null, investCompareChart = null, taxChart = null;
     let customExpenseItems = [
       { id: 'exp_food', name: '食費・日用品', val: 8 },
       { id: 'exp_util', name: '水道光熱費', val: 2.5 },
@@ -772,200 +1159,1402 @@
       { id: 'exp_play', name: '娯楽・小遣い', val: 5 },
       { id: 'exp_other', name: 'その他雑費', val: 3 }
     ];
-    let ocrItems = [];
-    let currentUploadedImgData = "";
 
-    function toggleTheme() {
-      const body = document.body;
-      const current = body.getAttribute('data-theme');
-      const next = current === 'dark' ? 'light' : 'dark';
-      body.setAttribute('data-theme', next);
-      localStorage.setItem('loan_sim_theme', next);
-      calculate();
+    // ===== 安全対策：HTMLエスケープ =====
+    function esc(s) {
+      return String(s == null ? '' : s).replace(/[&<>"']/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]));
+    }
+
+    // =====================================================================
+    //  ヘルプ内容（目的＋かんたん操作）
+    // =====================================================================
+    const HELP = {
+      home: { t: 'ホーム', p: '使いたいツールを選ぶ入口です。', s: ['カードをタップでツールへ', '下のバーでも移動できる', '右上 ☁️ で夫婦の同期設定', '赤い「要確認」は台帳へ移動'] },
+      loan: { t: 'ローン条件', p: '毎月の返済額を知る。', s: ['借入額・金利・年数を入力', '数字入力かスライダーで変更', '結果はすぐ更新される'] },
+      prepay: { t: '繰り上げ返済', p: '早く返すと得か比べる。', s: ['時期（何年後）と金額を入力', '① 期間短縮：返済が早く終わる', '② 返済額軽減：毎月が楽になる', '利息減が大きい方が得'] },
+      loanChart: { t: 'ローン残高', p: '残高の減り方を見る。', s: ['灰：繰り上げなし', '青：期間短縮 / 紫：返済額軽減', '線が早く0になるほど完済が早い'] },
+      assets: { t: 'いまの貯蓄', p: '将来シミュの出発点。', s: ['夫婦の貯蓄の合計を入力', '全シミュレーションに反映'] },
+      income: { t: '夫婦の年収', p: '世帯の収入を設定する。', s: ['額面と手取りを入力', '手取りを変えると月収が自動計算', '妻の退職は「将来」で設定'] },
+      living: { t: '生活費・ボーナス', p: '毎月の支出と賞与を入れる。', s: ['手取り月収を入力', 'ボーナスは手取り額で入力', '項目名は直接書き換えOK', '「＋」で追加、「✕」で削除'] },
+      advice: { t: '生活費の診断', p: '平均と比べて高い・低いを知る。', s: ['入力すると自動で診断', '項目名に「食」「光熱」などを含めると比較される'] },
+      summary: { t: '家計の収支', p: 'ローン後にいくら残るか。', s: ['月の余り＝手取り－生活費－返済', '年の余りはボーナス込み', '赤字なら生活費やローンを見直す'] },
+      incomeChart: { t: '余剰金の推移', p: '今のペースで貯まる額。', s: ['年数を切り替えて確認', '5年ごとの積み上げ'] },
+      life: { t: '基本・運用・維持費', p: '将来計算の前提を決める。', s: ['年齢・利回り・妻の退職・年金', '固定資産税・修繕積立（年額）', '結果は「将来」に反映'] },
+      car: { t: '車の買い替え', p: '車の出費を将来に入れる。', s: ['ローン期間と金利を設定', '最大3回まで、時期・価格・頭金', '使わない回は価格を0に'] },
+      travel: { t: '旅行・リフォーム', p: '大きな出費を入れる。', s: ['毎年の旅行費', '特別旅行・リフォームの時期と金額'] },
+      invest: { t: '積立投資の比較', p: '利回り別の増え方を見る。', s: ['毎月の積立額と期間を入力', '2% / 4% / 6% を同時に比較'] },
+      simAdvice: { t: '将来の診断', p: '資金が持つかを一言で。', s: ['🔴注意 / 🟡堅実 / 🟢順調', '赤なら車・積立・生活費を調整'] },
+      sim: { t: '資産の推移', p: '将来の貯蓄の増減を見る。', s: ['紫が運用込みの実質ライン', '赤い警告は資金不足の時期', '年数は右上で切替'] },
+      cf: { t: 'キャッシュフロー年表', p: '年ごとの収支と出来事。', s: ['左右にスクロールできる', '赤字の年は赤く表示', 'イベント欄に車・退職・完済など'] },
+      taxSummary: { t: '税の概要', p: '固定資産税＋都市計画税の目安。', s: ['初年度の年額・月額', '軽減が終わると増える点に注意', '10年平均で家計に入れる'] },
+      taxCond: { t: '評価額・条件', p: '税額計算の元データを入れる。', s: ['評価額は納税通知書で確認', '面積・構造・長期優良を選択', '住宅用地の特例は通常「適用」'] },
+      taxOpt: { t: '設備オプション', p: '設備で税がいくら増えるか知る。', s: ['太陽光・高断熱などを「あり」に', '評価額の加算額は見積の5〜6割目安', '「初年度の税増」で影響を確認'] },
+      taxLink: { t: '連動・表示', p: '税を将来シミュに反映する。', s: ['反映ON：年ごとの自動税額を使用', 'OFF：「将来」の固定額を使用'] },
+      taxChart: { t: '税の内訳', p: '年ごとの税負担の形を見る。', s: ['青：建物 / 緑：土地 / 紫：都市計画税', '軽減終了の年に段差ができる'] },
+      taxTable: { t: '税の年表', p: '年別の税額を一覧する。', s: ['軽減額・累計も確認できる'] },
+      ledger: { t: '設備台帳', p: '設備・オプションの仕様を写真で管理。', s: ['📷撮影／🖼選ぶ で写真を追加', '自動で文字を読み取り、各項目に入力', '内容を直して「保存」', 'ステータスは一覧のバッジをタップで切替', '二人で同期されるので相談に使える'] },
+      item: { t: '設備の登録', p: '読み取り結果を確認して保存。', s: ['読み取りは端末内で実行（初回は少し待つ）', '間違いは直接書き換える', '不明点は「確認・不明点」へ', '選択肢をタップで仕様を決める', 'ステータス：✅確定 / ⏳未確定 / ❓要確認'] },
+      sync: { t: '夫婦で同期', p: '二人のスマホで同じデータを使う。', s: ['① 接続先（URL・キー）を保存', '② 登録→ログイン', '③ 片方が世帯を作成し、招待コードを共有', '④ もう片方が招待コードで参加', '未設定でも、この端末だけで使える'] }
+    };
+
+    function helpClick(e, key) { if (e) { e.preventDefault(); e.stopPropagation(); } showHelp(key); }
+
+    function showHelp(key) {
+      const h = HELP[key]; if (!h) return;
+      document.getElementById('helpTitle').textContent = '❓ ' + h.t;
+      document.getElementById('helpBody').innerHTML =
+        `<div style="font-size:.78rem;font-weight:800;color:var(--primary-color);">🎯 目的</div>` +
+        `<div style="font-size:.9rem;margin:4px 0 12px;">${esc(h.p)}</div>` +
+        `<div style="font-size:.78rem;font-weight:800;color:var(--primary-color);">📖 使い方</div>` +
+        `<ol class="help-list">${h.s.map(x => `<li>${esc(x)}</li>`).join('')}</ol>`;
+      openModal('helpModal');
+    }
+
+    function openModal(id) { document.getElementById(id).classList.add('show'); }
+    function closeModal(id) { document.getElementById(id).classList.remove('show'); }
+
+    // =====================================================================
+    //  画面遷移（ホーム／各ツール／下部ナビ）
+    // =====================================================================
+    const SCREENS = {
+      loan: { tabs: [['loan', '住宅ローン'], ['income', '世帯収入＆家計']] },
+      tax:  { tabs: [['tax', '固定資産税・都市計画税']] },
+      plan: { tabs: [['life', 'ライフイベント'], ['sim', '将来シミュ']] }
+    };
+    let currentScreen = 'home';
+
+    function openScreen(name) {
+      currentScreen = name;
+      ['home', 'ledger', 'guide'].forEach(s => document.getElementById('screen-' + s).classList.toggle('hidden', s !== name));
+      const isCalc = !!SCREENS[name];
+      document.getElementById('tabArea').classList.toggle('hidden', !isCalc);
+      const bar = document.getElementById('subTabBar');
+      if (isCalc) {
+        const tabs = SCREENS[name].tabs;
+        bar.innerHTML = tabs.map(t => `<button class="tab-button" data-tab="${t[0]}" onclick="switchTab('${t[0]}')">${esc(t[1])}</button>`).join('');
+        bar.classList.toggle('hidden', tabs.length < 2);
+        switchTab(tabs[0][0]);
+      } else {
+        bar.classList.add('hidden');
+      }
+      document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.nav === name));
+      if (name === 'ledger') renderLedger();
+      window.scrollTo(0, 0);
     }
 
     function switchTab(tabName) {
-      document.querySelectorAll('.tab-button').forEach(b => b.classList.remove('active'));
       document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-      
-      const buttons = document.querySelectorAll('.tab-button');
-      const tabMap = { 'home': 0, 'loan': 1, 'tax': 2, 'ocr': 3, 'income': 4, 'sim': 5 };
-      if (buttons[tabMap[tabName]]) buttons[tabMap[tabName]].classList.add('active');
-      document.getElementById(`tab-${tabName}`).classList.add('active');
-
+      const el = document.getElementById('tab-' + tabName);
+      if (el) el.classList.add('active');
+      document.querySelectorAll('#subTabBar .tab-button').forEach(b => b.classList.toggle('active', b.dataset.tab === tabName));
       setTimeout(() => {
-        if (loanChart) loanChart.resize();
-        if (assetChart) assetChart.resize();
+        [loanChart, assetChart, incomeTabAssetChart, investCompareChart, taxChart].forEach(c => { if (c) c.resize(); });
       }, 50);
     }
 
+    // =====================================================================
+    //  テーマ
+    // =====================================================================
+    function toggleTheme() {
+      const body = document.body;
+      const next = body.getAttribute('data-theme') === 'dark' ? 'light' : 'dark';
+      body.setAttribute('data-theme', next);
+      localStorage.setItem(LS.theme, next);
+      calculate();
+    }
+    (function () {
+      const t = localStorage.getItem(LS.theme);
+      if (t === 'dark' || t === 'light') document.body.setAttribute('data-theme', t);
+    })();
+
+    // =====================================================================
+    //  入力連動
+    // =====================================================================
     function syncVal(sourceId, val) {
       let baseId = sourceId.replace('_range', '');
       let numInput = document.getElementById(baseId);
       let rangeInput = document.getElementById(baseId + '_range');
 
       if (numInput && rangeInput) {
-        if (sourceId.includes('_range')) { numInput.value = val; }
-        else { rangeInput.value = val; }
+        if (sourceId.includes('_range')) numInput.value = val;
+        else rangeInput.value = val;
       }
 
+      if (baseId === 'inc_husband_net' || baseId === 'inc_wife_net') {
+        const hNet = parseFloat(document.getElementById('inc_husband_net').value) || 0;
+        const wNet = parseFloat(document.getElementById('inc_wife_net').value) || 0;
+        const monthlyComputed = (hNet + wNet) / 12;
+        const handNum = document.getElementById('inc_hand');
+        const handRange = document.getElementById('inc_hand_range');
+        if (handNum) handNum.value = monthlyComputed.toFixed(1);
+        if (handRange) handRange.value = monthlyComputed.toFixed(1);
+      }
+
+      triggerPulse();
       calculate();
       saveToCloud();
     }
 
-    // 写真アップロード＆簡易OCR処理
-    function handleImageUpload(e) {
-      const file = e.target.files[0];
-      if (!file) return;
-
-      const reader = new FileReader();
-      reader.onload = function(evt) {
-        currentUploadedImgData = evt.target.result;
-        document.getElementById('ocrImgPreview').src = currentUploadedImgData;
-        document.getElementById('ocrFormArea').style.display = 'block';
-
-        // スマホ側での解析イメージ初期値代入
-        document.getElementById('ocrName').value = "システム設備サンプル";
-        document.getElementById('ocrSize').value = "W2550 × D650 mm";
-        document.getElementById('ocrPrice').value = "60";
-      };
-      reader.readAsDataURL(file);
-    }
-
-    function saveOcrItem() {
-      const maker = document.getElementById('ocrMaker').value || "メーカー未指定";
-      const name = document.getElementById('ocrName').value || "設備アイテム";
-      const size = document.getElementById('ocrSize').value || "-";
-      const price = parseFloat(document.getElementById('ocrPrice').value) || 0;
-      const status = document.getElementById('ocrStatus').value;
-      const memo = document.getElementById('ocrMemo').value || "";
-
-      ocrItems.push({
-        id: 'ocr_' + Date.now(),
-        img: currentUploadedImgData,
-        maker, name, size, price, status, memo
+    function triggerPulse() {
+      document.querySelectorAll('.result-value').forEach(v => {
+        v.classList.remove('pulse-anim');
+        void v.offsetWidth;
+        v.classList.add('pulse-anim');
       });
-
-      renderOcrItems();
-      document.getElementById('ocrFormArea').style.display = 'none';
-      document.getElementById('ocrFileInput').value = "";
-      saveToCloud();
-      showToast('設備を台帳に追加保存しました！');
     }
 
-    function renderOcrItems() {
-      const container = document.getElementById('ocrItemContainer');
-      if (ocrItems.length === 0) {
-        container.innerHTML = '<div style="font-size:0.8rem; opacity:0.7; text-align:center; padding:20px;">登録された設備・オプション写真はまだありません。</div>';
+    // =====================================================================
+    //  生活費の独自項目
+    // =====================================================================
+    function renderExpenseItems() {
+      const container = document.getElementById('customExpenseContainer');
+      container.innerHTML = '';
+      customExpenseItems.forEach((item, index) => {
+        const row = document.createElement('div');
+        row.className = 'custom-item-row';
+        row.innerHTML = `
+          <input type="text" class="custom-label-input" maxlength="40" value="${esc(item.name)}" oninput="updateItemName(${index}, this.value)">
+          <div class="dual-input">
+            <input type="number" inputmode="decimal" value="${Number(item.val) || 0}" step="0.5" min="0" max="100" oninput="updateItemVal(${index}, this.value)">
+          </div>
+          <button type="button" class="del-btn" onclick="removeExpenseItem(${index})" aria-label="削除">✕</button>
+        `;
+        container.appendChild(row);
+      });
+    }
+    function addCustomExpenseItem(defaultName, defaultVal) {
+      customExpenseItems.push({ id: 'custom_' + Date.now(), name: defaultName, val: defaultVal });
+      renderExpenseItems(); calculate(); saveToCloud();
+    }
+    function removeExpenseItem(index) {
+      customExpenseItems.splice(index, 1);
+      renderExpenseItems(); calculate(); saveToCloud();
+    }
+    function updateItemName(index, name) { customExpenseItems[index].name = String(name).slice(0, 40); calculate(); saveToCloud(); }
+    function updateItemVal(index, val) { customExpenseItems[index].val = parseFloat(val) || 0; calculate(); saveToCloud(); }
+
+    // =====================================================================
+    //  データの出入口（保存・復元・サニタイズ）
+    // =====================================================================
+    function getAllDataObj() {
+      const data = { items: customExpenseItems, ledger: ledger };
+      document.querySelectorAll('#tabArea input[type="number"], #tabArea select').forEach(el => {
+        if (el.id) data[el.id] = el.value;
+      });
+      return data;
+    }
+
+    function sanitizeItem(it) {
+      it = it || {};
+      const str = (v, n) => String(v == null ? '' : v).slice(0, n);
+      const st = ['fixed', 'pending', 'ask'].includes(it.status) ? it.status : 'pending';
+      const thumb = (typeof it.thumb === 'string' && /^data:image\/jpeg;base64,[A-Za-z0-9+/=]+$/.test(it.thumb) && it.thumb.length < 120000) ? it.thumb : '';
+      const price = (it.price === '' || it.price == null) ? '' : (isFinite(parseFloat(it.price)) ? parseFloat(it.price) : '');
+      const choices = Array.isArray(it.choices) ? it.choices.slice(0, 12).map(c => str(c, 20)).filter(Boolean) : ['標準', 'オプション', 'なし'];
+      return {
+        id: /^[\w-]{1,24}$/.test(String(it.id)) ? String(it.id) : 'it_' + Math.random().toString(36).slice(2, 10),
+        name: str(it.name, 60), maker: str(it.maker, 40), feature: str(it.feature, 200), size: str(it.size, 40),
+        price: price, note: str(it.note, 200), ask: str(it.ask, 200), status: st,
+        choices: choices, choice: str(it.choice, 20), thumb: thumb, updated: Number(it.updated) || Date.now()
+      };
+    }
+
+    function applyData(p) {
+      if (!p || typeof p !== 'object') return;
+      if (Array.isArray(p.items)) {
+        customExpenseItems = p.items.slice(0, 50).map((i, n) => ({
+          id: String((i && i.id) || 'c' + n).slice(0, 30),
+          name: String((i && i.name) || '').slice(0, 40),
+          val: parseFloat(i && i.val) || 0
+        }));
+      }
+      if (Array.isArray(p.ledger)) ledger = p.ledger.slice(0, 200).map(sanitizeItem);
+      Object.keys(p).forEach(k => {
+        if (k === 'items' || k === 'ledger' || k[0] === '_') return;
+        const el = document.getElementById(k);
+        if (!el || !el.closest('#tabArea') || document.activeElement === el) return;
+        const v = p[k];
+        if (el.tagName === 'SELECT') {
+          if ([...el.options].some(o => o.value === String(v))) el.value = String(v);
+        } else if (el.type === 'number') {
+          const n = parseFloat(v);
+          if (isFinite(n)) {
+            el.value = n;
+            const rg = document.getElementById(k + '_range');
+            if (rg) rg.value = n;
+          }
+        }
+      });
+      renderExpenseItems();
+      renderLedger();
+    }
+
+    function saveLocal() {
+      try { localStorage.setItem(LS.data, JSON.stringify(getAllDataObj())); } catch (e) { console.warn('local save failed', e); }
+    }
+
+    // 保存：まず端末に即保存 → 少し待ってクラウドへ
+    function saveToCloud() {
+      saveLocal();
+      clearTimeout(saveTimer);
+      saveTimer = setTimeout(pushCloud, 700);
+    }
+
+    // =====================================================================
+    //  Supabase：接続・認証・世帯・同期
+    // =====================================================================
+    function checkKey(key) {
+      if (/^sb_secret_/.test(key)) return 'secretキーは使えません';
+      if (/^eyJ/.test(key)) {
+        try {
+          const payload = JSON.parse(atob(key.split('.')[1].replace(/-/g, '+').replace(/_/g, '/')));
+          if (payload.role === 'service_role') return 'service_roleキーは使えません（anonキーを使う）';
+        } catch (e) { return 'キーの形式が不正です'; }
+      }
+      return '';
+    }
+
+    function initSupabase() {
+      const url = localStorage.getItem(LS.url), key = localStorage.getItem(LS.key);
+      if (!url || !key || !window.supabase || !/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url) || checkKey(key)) { sb = null; return false; }
+      sb = window.supabase.createClient(url, key, { auth: { persistSession: true, autoRefreshToken: true, detectSessionInUrl: false } });
+      sb.auth.onAuthStateChange((_e, s) => {
+        session = s;
+        updateSyncUI();
+        if (s && householdId && !realtimeChannel) startSync();
+      });
+      return true;
+    }
+
+    async function connectCloud() {
+      if (!initSupabase()) { updateSyncUI(); return; }
+      const { data } = await sb.auth.getSession();
+      session = data.session;
+      updateSyncUI();
+      if (session && householdId) startSync();
+    }
+
+    async function startSync() {
+      await loadFromCloud();
+      subscribeRealtime();
+    }
+
+    async function loadFromCloud() {
+      if (!sb || !session || !householdId) return;
+      try {
+        const { data, error } = await sb.from('households').select('data, invite_code').eq('id', householdId).single();
+        if (error) {
+          if (error.code === 'PGRST116') { householdId = null; localStorage.removeItem(LS.household); updateSyncUI(); toast('世帯が見つかりません'); }
+          else console.error('load error', error);
+          return;
+        }
+        window.__invite = data.invite_code;
+        if (data.data && Object.keys(data.data).length > 1) {
+          applyData(data.data);
+          saveLocal();
+          calculate();
+          toast('☁️ 最新データを同期');
+        } else {
+          await pushCloud();
+        }
+        updateSyncUI();
+      } catch (e) { console.error('load exception', e); }
+    }
+
+    async function pushCloud() {
+      if (!sb || !session || !householdId) return;
+      const obj = getAllDataObj();
+      obj._client = CLIENT_ID; obj._ts = Date.now();
+      try {
+        const { error } = await sb.from('households').update({ data: obj, updated_at: new Date().toISOString() }).eq('id', householdId);
+        if (error) { console.error('save error', error); realtimeState = 'retry'; updateSyncUI(); }
+      } catch (e) { console.error('save exception', e); }
+    }
+
+    function subscribeRealtime() {
+      if (!sb || !householdId) return;
+      if (realtimeChannel) { sb.removeChannel(realtimeChannel); realtimeChannel = null; }
+      realtimeChannel = sb.channel('hh:' + householdId)
+        .on('postgres_changes', { event: 'UPDATE', schema: 'public', table: 'households', filter: `id=eq.${householdId}` }, payload => {
+          const d = payload.new && payload.new.data;
+          if (!d || d._client === CLIENT_ID) return;   // 自分の更新は無視
+          applyData(d);
+          saveLocal();
+          calculate();
+          toast('🔄 パートナーの変更を反映');
+        })
+        .subscribe(status => {
+          realtimeState = status === 'SUBSCRIBED' ? 'ok' : 'retry';
+          updateSyncUI();
+        });
+    }
+
+    function unsubscribeRealtime() {
+      if (sb && realtimeChannel) sb.removeChannel(realtimeChannel);
+      realtimeChannel = null; realtimeState = 'off';
+    }
+
+    function updateSyncUI() {
+      const dot = document.getElementById('syncDot');
+      const txt = document.getElementById('syncText');
+      const home = document.getElementById('homeStatSync');
+      let msg, color, short;
+      if (!sb) { msg = '端末のみ保存（タップで同期設定）'; color = '#8e8e93'; short = '未設定'; }
+      else if (!session) { msg = 'ログインすると同期できます'; color = 'var(--orange-color)'; short = '要ログイン'; }
+      else if (!householdId) { msg = '世帯を作成／参加してください'; color = 'var(--orange-color)'; short = '世帯なし'; }
+      else if (realtimeState === 'ok') { msg = '☁️ 夫婦で同期中'; color = 'var(--secondary-color)'; short = '同期中 ✓'; }
+      else { msg = '再接続中...'; color = 'var(--orange-color)'; short = '接続中…'; }
+      dot.style.backgroundColor = color;
+      txt.textContent = msg;
+      if (home) home.textContent = short;
+      const line = document.getElementById('syncStateLine');
+      if (line) line.textContent = '状態：' + msg + (session && session.user ? '（' + session.user.email + '）' : '');
+      const inv = document.getElementById('inviteLine');
+      if (inv) inv.textContent = (householdId && window.__invite) ? '招待コード：' + window.__invite + '（パートナーに伝える）' : '';
+    }
+
+    function openSync() {
+      document.getElementById('sb_url').value = localStorage.getItem(LS.url) || '';
+      document.getElementById('sb_key').value = '';
+      document.getElementById('sb_key').placeholder = localStorage.getItem(LS.key) ? '保存済み（変更する時のみ入力）' : 'anon / publishable キー';
+      updateSyncUI();
+      openModal('syncModal');
+    }
+
+    async function saveSbConfig() {
+      const url = document.getElementById('sb_url').value.trim().replace(/\/+$/, '');
+      let key = document.getElementById('sb_key').value.trim() || localStorage.getItem(LS.key) || '';
+      if (!/^https:\/\/[a-z0-9-]+\.supabase\.co$/.test(url)) return toast('URLの形式が違います');
+      if (!key) return toast('キーを入力してください');
+      const bad = checkKey(key);
+      if (bad) return toast('⚠️ ' + bad);
+      localStorage.setItem(LS.url, url);
+      localStorage.setItem(LS.key, key);
+      document.getElementById('sb_key').value = '';
+      unsubscribeRealtime();
+      await connectCloud();
+      toast('接続先を保存しました');
+    }
+
+    async function authAction(kind) {
+      if (!sb) return toast('先に接続先を保存してください');
+      if (kind === 'out') {
+        unsubscribeRealtime();
+        await sb.auth.signOut();
+        session = null; updateSyncUI(); toast('ログアウトしました');
         return;
       }
-
-      container.innerHTML = ocrItems.map((item, idx) => `
-        <div class="ocr-item-card">
-          <div class="ocr-item-header">
-            <span style="font-weight:700; font-size:0.88rem;">${item.maker} / ${item.name}</span>
-            <button class="status-btn ${item.status === 'confirmed' ? 'status-confirmed' : 'status-pending'}" onclick="toggleOcrStatus(${idx})">
-              ${item.status === 'confirmed' ? '🟢 確定' : '🟡 未確定'}
-            </button>
-          </div>
-          ${item.img ? `<img src="\${item.img}" class="img-preview">` : ''}
-          <div style="font-size:0.78rem; line-height:1.4;">
-            <div><b>寸法:</b> ${item.size}</div>
-            <div><b>見込み金額:</b> <span style="font-weight:700; color:var(--primary-color);">${item.price} 万円</span></div>
-            ${item.memo ? `<div style="opacity:0.8; margin-top:4px;"><b>メモ:</b> \${item.memo}</div>` : ''}
-          </div>
-          <button style="margin-top:8px; font-size:0.7rem; color:var(--danger-color); border:none; background:none; cursor:pointer;" onclick="deleteOcrItem(${idx})">🗑 削除</button>
-        </div>
-      `).join('');
+      const email = document.getElementById('sb_email').value.trim();
+      const pass = document.getElementById('sb_pass').value;
+      if (!email || pass.length < 8) return toast('メールと8文字以上のパスワード');
+      try {
+        if (kind === 'up') {
+          const { data, error } = await sb.auth.signUp({ email, password: pass });
+          if (error) return toast('登録失敗：' + error.message);
+          if (!data.session) return toast('確認メールを開いてからログイン');
+          session = data.session; toast('登録しました');
+        } else {
+          const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+          if (error) return toast('ログイン失敗：' + error.message);
+          session = data.session; toast('ログインしました');
+        }
+        document.getElementById('sb_pass').value = '';
+        updateSyncUI();
+        if (householdId) startSync();
+      } catch (e) { toast('通信エラー'); }
     }
 
-    function toggleOcrStatus(idx) {
-      ocrItems[idx].status = ocrItems[idx].status === 'confirmed' ? 'pending' : 'confirmed';
-      renderOcrItems();
-      saveToCloud();
+    async function createHousehold() {
+      if (!sb || !session) return toast('先にログインしてください');
+      if (householdId && !confirm('すでに世帯があります。新しく作りますか？')) return;
+      const { data, error } = await sb.rpc('create_household');
+      if (error) return toast('作成失敗：SQL設定を確認');
+      const row = Array.isArray(data) ? data[0] : data;
+      householdId = row.id;
+      window.__invite = row.invite_code;
+      localStorage.setItem(LS.household, householdId);
+      await pushCloud();
+      subscribeRealtime();
+      updateSyncUI();
+      toast('世帯を作成しました');
     }
 
-    function deleteOcrItem(idx) {
-      ocrItems.splice(idx, 1);
-      renderOcrItems();
-      saveToCloud();
+    async function joinHousehold() {
+      if (!sb || !session) return toast('先にログインしてください');
+      const code = document.getElementById('sb_code').value.trim().toLowerCase();
+      if (!/^[a-f0-9]{16}$/.test(code)) return toast('招待コードが違います');
+      if (!confirm('この端末のデータは世帯のデータで置き換わります。参加しますか？')) return;
+      const { data, error } = await sb.rpc('join_household', { code: code });
+      if (error) return toast('参加失敗：コードを確認');
+      householdId = data;
+      localStorage.setItem(LS.household, householdId);
+      document.getElementById('sb_code').value = '';
+      await startSync();
+      toast('世帯に参加しました');
     }
 
-    // ヘルプモーダル
-    function openHelpModal(type) {
-      const modal = document.getElementById('helpModal');
-      const title = document.getElementById('helpModalTitle');
-      const body = document.getElementById('helpModalBody');
+    // =====================================================================
+    //  共有・保存・読込
+    // =====================================================================
+    function shareToLine() {
+      const shareUrl = window.location.origin + window.location.pathname;
+      const code = (householdId && window.__invite) ? `\n招待コード：${window.__invite}` : '';
+      const text = `【マイホーム ライフプラン】\n一緒に確認・編集しよう：\n${shareUrl}${code}`;
+      window.open(`https://line.me/R/msg/text/?${encodeURIComponent(text)}`, '_blank', 'noopener');
+    }
 
-      if (type === 'global' || type === 'home') {
-        title.innerText = '🏠 アプリ全体の目的と使い方';
-        body.innerHTML = `
-          <b>【目的】</b><br>夫婦2人で理想のマイホーム・オプション・生活費・30年将来の資産残高をリアルタイムで同期・可視化するための総合ツールです。<br><br>
-          <b>【主な機能】</b><br>
-          ・共有IDを合わせるだけでリアルタイム同期<br>
-          ・ホーム画面から目的のシミュレーションへ一発遷移<br>
-          ・写真アップロードによる設備・寸法管理台帳<br>
-          ・完全無料で高セキュリティ運用
-        `;
-      } else if (type === 'loan') {
-        title.innerText = '🏦 住宅ローン比較の使い方';
-        body.innerHTML = `借入額・金利・返済期間を設定すると、毎月返済額と「繰り上げ返済時の期間短縮/返済額軽減効果」を自動試算・比較します。`;
-      } else if (type === 'tax') {
-        title.innerText = '🏛️ 固定資産税＆オプションの使い方';
-        body.innerHTML = `建物・土地の想定評価額を入力。新築特例（3年間の半減）や太陽光・ZEH・外構などのオプションの固定資産税への影響を同時に試算します。`;
-      } else if (type === 'ocr') {
-        title.innerText = '📷 設備・写真OCR台帳の使い方';
-        body.innerHTML = `ショールームやカタログの写真をスマホで撮影！メーカー名、寸法、価格、確定/未確定ステータスを一覧カードで一元管理できます。`;
-      } else if (type === 'income') {
-        title.innerText = '💰 世帯収入＆家計の使い方';
-        body.innerHTML = `夫婦の年収・手取り・ボーナス・生活費内訳を設定。二人暮らし全国平均値との比較診断コメントが自動表示されます。`;
-      } else if (type === 'sim') {
-        title.innerText = '📈 将来シミュレーションの使い方';
-        body.innerHTML = `30〜40年先までの資産残高推移をグラフと詳細年表で確認できます。`;
+    function exportJsonFile() {
+      const dataStr = 'data:text/json;charset=utf-8,' + encodeURIComponent(JSON.stringify(getAllDataObj(), null, 2));
+      const a = document.createElement('a');
+      a.setAttribute('href', dataStr);
+      a.setAttribute('download', 'life_plan_simulation_data.json');
+      document.body.appendChild(a); a.click(); a.remove();
+      toast('JSONで保存しました');
+    }
+
+    function importJsonFile(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      if (file.size > 8 * 1024 * 1024) return toast('ファイルが大きすぎます');
+      const reader = new FileReader();
+      reader.onload = function (e) {
+        try {
+          applyData(JSON.parse(e.target.result));
+          calculate();
+          saveToCloud();
+          toast('読み込みました');
+        } catch (err) { alert('読み込みに失敗しました。'); }
+        event.target.value = '';
+      };
+      reader.readAsText(file);
+    }
+
+    function showToast(msg) {
+      const t = document.getElementById('toast');
+      t.textContent = msg;
+      t.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => t.classList.remove('show'), 3200);
+    }
+    function toast(msg) { showToast(msg); }
+
+    // =====================================================================
+    //  設備台帳（写真 → OCR → 自動入力）
+    // =====================================================================
+    const STATUS = {
+      fixed:   { ic: '✅', l: '確定' },
+      pending: { ic: '⏳', l: '未確定' },
+      ask:     { ic: '❓', l: '要確認' }
+    };
+    let ledger = [];
+    let ledgerFilter = 'all';
+    let editing = null;       // 編集中の設備
+    let editingIsNew = false;
+    let ocrSource = null;     // OCR用canvas
+    let ocrWorker = null;
+    let tessPromise = null;
+
+    function newItem() {
+      return {
+        id: 'it_' + Date.now().toString(36) + Math.random().toString(36).slice(2, 6),
+        name: '', maker: '', feature: '', size: '', price: '', note: '', ask: '',
+        status: 'pending', choices: ['標準', 'オプション', 'なし'], choice: '', thumb: '', updated: Date.now()
+      };
+    }
+
+    function fmtMan(n) { return (Math.round(n * 10) / 10).toLocaleString() + '万'; }
+
+    function renderLedger() {
+      const list = document.getElementById('ledgerList');
+      if (!list) return;
+      let fixed = 0, pending = 0, ask = 0;
+      ledger.forEach(it => {
+        const p = parseFloat(it.price) || 0;
+        if (it.status === 'fixed') fixed += p; else pending += p;
+        if (it.status === 'ask') ask++;
+      });
+      document.getElementById('ledSumFixed').textContent = fmtMan(fixed);
+      document.getElementById('ledSumPending').textContent = fmtMan(pending);
+      document.getElementById('ledSumAsk').textContent = ask + '件';
+
+      const counts = { all: ledger.length, fixed: 0, pending: 0, ask: 0 };
+      ledger.forEach(it => counts[it.status]++);
+      const filters = [['all', 'すべて'], ['fixed', '✅確定'], ['pending', '⏳未確定'], ['ask', '❓要確認']];
+      document.getElementById('ledgerFilters').innerHTML = filters.map(f =>
+        `<button class="chip ${ledgerFilter === f[0] ? 'on' : ''}" onclick="setLedgerFilter('${f[0]}')">${f[1]} ${counts[f[0]]}</button>`).join('');
+
+      const shown = ledger.filter(it => ledgerFilter === 'all' || it.status === ledgerFilter)
+        .sort((a, b) => b.updated - a.updated);
+      if (!shown.length) {
+        list.innerHTML = `<div class="card" style="text-align:center; padding:28px 12px;">
+          <div style="font-size:2.4rem;">📷</div>
+          <div style="font-weight:800; margin-top:6px;">まだ設備がありません</div>
+          <div class="note-text">上の「撮影」か「写真を選ぶ」から追加</div></div>`;
+      } else {
+        list.innerHTML = shown.map(it => {
+          const st = STATUS[it.status];
+          const price = it.price === '' ? '—' : fmtMan(parseFloat(it.price));
+          const thumb = it.thumb ? `<div class="th"><img src="${it.thumb}" alt=""></div>` : `<div class="th">🧰</div>`;
+          const sub = [it.maker, it.size].filter(Boolean).map(esc).join('・');
+          const choice = it.choice ? `<span class="chip on" style="padding:3px 9px; font-size:.7rem; cursor:default;">${esc(it.choice)}</span>` : '';
+          const ask = it.ask ? `<div style="font-size:.72rem; color:var(--danger-color); margin-top:4px;">❓ ${esc(it.ask)}</div>` : '';
+          return `<div class="item" onclick="editItem('${it.id}')">
+            ${thumb}
+            <div style="flex:1; min-width:0;">
+              <div style="font-weight:800; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${esc(it.name || '名称未入力')}</div>
+              <div style="font-size:.74rem; opacity:.7; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;">${sub || '—'}</div>
+              <div style="margin-top:4px;">${choice}</div>
+              ${ask}
+            </div>
+            <div style="text-align:right; display:flex; flex-direction:column; gap:8px; align-items:flex-end;">
+              <div style="font-weight:800;">${price}</div>
+              <button class="stbadge st-${it.status}" onclick="event.stopPropagation(); cycleStatus('${it.id}')">${st.ic} ${st.l}</button>
+            </div>
+          </div>`;
+        }).join('');
+      }
+      updateHomeLedger();
+    }
+
+    function setLedgerFilter(f) { ledgerFilter = f; renderLedger(); }
+
+    function cycleStatus(id) {
+      const it = ledger.find(x => x.id === id); if (!it) return;
+      const order = ['pending', 'fixed', 'ask'];
+      it.status = order[(order.indexOf(it.status) + 1) % order.length];
+      it.updated = Date.now();
+      renderLedger(); saveToCloud();
+    }
+
+    function updateHomeLedger() {
+      const fixed = ledger.filter(i => i.status === 'fixed').length;
+      const ask = ledger.filter(i => i.status === 'ask').length;
+      const pend = ledger.filter(i => i.status === 'pending').length;
+      const st = document.getElementById('homeStatLedger');
+      if (st) st.textContent = ledger.length ? `確定 ${fixed} / 全${ledger.length}` : '写真を追加';
+      const al = document.getElementById('homeAlert');
+      if (al) {
+        if (ask + pend > 0) {
+          al.classList.remove('hidden');
+          al.textContent = `📌 要確認 ${ask}件・未確定 ${pend}件 ›`;
+        } else al.classList.add('hidden');
+      }
+    }
+
+    // ----- 編集モーダル -----
+    function editItem(id) {
+      const it = ledger.find(x => x.id === id); if (!it) return;
+      openItem(JSON.parse(JSON.stringify(it)), false);
+    }
+
+    function openItem(item, isNew) {
+      editing = item; editingIsNew = isNew;
+      document.getElementById('it_name').value = item.name;
+      document.getElementById('it_maker').value = item.maker;
+      document.getElementById('it_feature').value = item.feature;
+      document.getElementById('it_size').value = item.size;
+      document.getElementById('it_price').value = item.price === '' ? '' : item.price;
+      document.getElementById('it_note').value = item.note;
+      document.getElementById('it_ask').value = item.ask;
+      document.getElementById('it_newChoice').value = '';
+      const box = document.getElementById('itPhotoBox');
+      if (item.thumb) {
+        box.classList.remove('hidden');
+        document.getElementById('itPreview').src = item.thumb;
+      } else box.classList.add('hidden');
+      document.getElementById('itDeleteBtn').style.display = isNew ? 'none' : '';
+      setOcr(0, '');
+      renderItemChips();
+      openModal('itemModal');
+    }
+
+    function closeItem() { closeModal('itemModal'); editing = null; ocrSource = null; }
+
+    function renderItemChips() {
+      if (!editing) return;
+      document.getElementById('itStatusChips').innerHTML = Object.keys(STATUS).map(k =>
+        `<button class="chip ${editing.status === k ? 'on' : ''}" onclick="setItemStatus('${k}')">${STATUS[k].ic} ${STATUS[k].l}</button>`).join('');
+      document.getElementById('itChoiceChips').innerHTML = editing.choices.map((c, i) =>
+        `<button class="chip ${editing.choice === c ? 'on' : ''}" onclick="pickChoice(${i})">${esc(c)}<span class="x" onclick="event.stopPropagation(); removeChoice(${i})">✕</span></button>`).join('') ||
+        '<span class="note-text">選択肢なし</span>';
+    }
+    function setItemStatus(k) { editing.status = k; renderItemChips(); }
+    function pickChoice(i) { const c = editing.choices[i]; editing.choice = (editing.choice === c) ? '' : c; renderItemChips(); }
+    function removeChoice(i) {
+      const c = editing.choices[i];
+      editing.choices.splice(i, 1);
+      if (editing.choice === c) editing.choice = '';
+      renderItemChips();
+    }
+    function addChoice() {
+      const inp = document.getElementById('it_newChoice');
+      const v = inp.value.trim().slice(0, 20);
+      if (!v) return;
+      if (!editing.choices.includes(v) && editing.choices.length < 12) editing.choices.push(v);
+      editing.choice = v; inp.value = '';
+      renderItemChips();
+    }
+
+    function readItemForm() {
+      const g = id => document.getElementById(id).value.trim();
+      const priceRaw = g('it_price').replace(/[^\d.]/g, '');
+      editing.name = g('it_name').slice(0, 60) || '名称未入力';
+      editing.maker = g('it_maker').slice(0, 40);
+      editing.feature = g('it_feature').slice(0, 200);
+      editing.size = g('it_size').slice(0, 40);
+      editing.price = priceRaw === '' || !isFinite(parseFloat(priceRaw)) ? '' : parseFloat(priceRaw);
+      editing.note = g('it_note').slice(0, 200);
+      editing.ask = g('it_ask').slice(0, 200);
+      editing.updated = Date.now();
+    }
+
+    function saveItem() {
+      if (!editing) return;
+      readItemForm();
+      const clean = sanitizeItem(editing);
+      const idx = ledger.findIndex(x => x.id === clean.id);
+      if (idx >= 0) ledger[idx] = clean; else ledger.push(clean);
+      closeItem();
+      renderLedger(); saveToCloud();
+      toast('保存しました');
+    }
+
+    function deleteItem() {
+      if (!editing || editingIsNew) return;
+      if (!confirm('この設備を削除しますか？')) return;
+      ledger = ledger.filter(x => x.id !== editing.id);
+      closeItem(); renderLedger(); saveToCloud();
+      toast('削除しました');
+    }
+
+    // ----- 写真の取り込み -----
+    function loadImageFile(file) {
+      return new Promise((resolve, reject) => {
+        const url = URL.createObjectURL(file);
+        const img = new Image();
+        img.onload = () => { URL.revokeObjectURL(url); resolve(img); };
+        img.onerror = () => { URL.revokeObjectURL(url); reject(new Error('image')); };
+        img.src = url;
+      });
+    }
+
+    function drawScaled(img, maxSide) {
+      const r = Math.min(1, maxSide / Math.max(img.naturalWidth, img.naturalHeight));
+      const c = document.createElement('canvas');
+      c.width = Math.max(1, Math.round(img.naturalWidth * r));
+      c.height = Math.max(1, Math.round(img.naturalHeight * r));
+      const x = c.getContext('2d');
+      x.fillStyle = '#fff'; x.fillRect(0, 0, c.width, c.height);
+      x.drawImage(img, 0, 0, c.width, c.height);
+      return c;
+    }
+
+    async function onPhotoPicked(event, replaceCurrent) {
+      const file = event.target.files && event.target.files[0];
+      event.target.value = '';
+      if (!file) return;
+      if (!/^image\//.test(file.type)) return toast('画像を選んでください');
+      if (file.size > 20 * 1024 * 1024) return toast('画像が大きすぎます（20MBまで）');
+      try {
+        const img = await loadImageFile(file);
+        ocrSource = drawScaled(img, 1600);
+        const thumb = drawScaled(img, 320).toDataURL('image/jpeg', 0.6);
+        if (replaceCurrent && editing) {
+          editing.thumb = thumb;
+          document.getElementById('itPhotoBox').classList.remove('hidden');
+          document.getElementById('itPreview').src = thumb;
+        } else {
+          const item = newItem(); item.thumb = thumb;
+          openItem(item, true);
+        }
+        runOcr(false);
+      } catch (e) { toast('画像を読み込めませんでした'); }
+    }
+
+    // ----- OCR（端末内：Tesseract.js） -----
+    function setOcr(pct, msg) {
+      const bar = document.getElementById('ocrBar');
+      if (bar) bar.style.width = Math.max(0, Math.min(100, pct)) + '%';
+      const m = document.getElementById('ocrMsg');
+      if (m) m.textContent = msg;
+    }
+
+    function loadTesseract() {
+      if (window.Tesseract) return Promise.resolve();
+      if (tessPromise) return tessPromise;
+      tessPromise = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdn.jsdelivr.net/npm/tesseract.js@5.1.1/dist/tesseract.min.js';
+        s.onload = resolve;
+        s.onerror = () => { tessPromise = null; reject(new Error('load')); };
+        document.head.appendChild(s);
+      });
+      return tessPromise;
+    }
+
+    async function runOcr(force) {
+      if (!ocrSource) { toast('先に写真を追加してください'); return; }
+      setOcr(5, '読み取り準備中…（初回は数MB取得）');
+      try {
+        await loadTesseract();
+        if (!ocrWorker) {
+          ocrWorker = await Tesseract.createWorker('jpn', 1, {
+            langPath: 'https://cdn.jsdelivr.net/npm/@tesseract.js-data/jpn/4.0.0_best_int',
+            logger: m => {
+              if (m.status === 'recognizing text') setOcr(30 + m.progress * 70, '読み取り中…');
+              else setOcr(10 + (m.progress || 0) * 20, '準備中…');
+            }
+          });
+        }
+        const res = await ocrWorker.recognize(ocrSource);
+        const parsed = parseOcrText(res.data.text || '');
+        if (!parsed.any) { setOcr(100, '文字を読み取れませんでした。手入力できます'); return; }
+        fillFromOcr(parsed, force);
+        setOcr(100, '✅ 自動入力しました。内容を確認してください');
+      } catch (e) {
+        console.error(e);
+        setOcr(0, '⚠️ 読み取りに失敗。手入力できます（通信を確認）');
+      }
+    }
+
+    const MAKERS = ['パナソニック', 'Panasonic', 'TOTO', 'LIXIL', 'リクシル', 'YKK AP', 'YKK', 'ダイキン', 'DAIKIN', '三菱電機', '三菱', '日立', 'シャープ', 'SHARP', '東芝', 'リンナイ', 'ノーリツ', 'パロマ', 'タカラスタンダード', 'クリナップ', 'トクラス', 'サンワカンパニー', '大建工業', 'DAIKEN', 'ニチベイ', 'タチカワ', 'トーソー', 'コロナ', 'CORONA', '京セラ', 'Kyocera', 'カナディアン・ソーラー', 'ニチコン', 'アイリスオーヤマ', 'ニトリ', '無印良品', 'IKEA', 'イケア'];
+
+    function parseOcrText(raw) {
+      // 日本語の間の余分な空白を詰める
+      const text = raw.replace(/([\u3000-\u9fff\uff00-\uffef])[ \t]+(?=[\u3000-\u9fff\uff00-\uffef])/g, '$1');
+      const lines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 1);
+      const out = { name: '', maker: '', feature: '', size: '', price: '', note: '', ask: '', any: false };
+      if (!lines.length) return out;
+
+      // 金額（万円に換算）
+      const prices = [];
+      let m;
+      const rePrice1 = /(?:¥|￥)\s*([\d,]{3,})/g;
+      const rePrice2 = /([\d,]{3,})\s*円/g;
+      const rePrice3 = /([\d.]+)\s*万円/g;
+      while ((m = rePrice1.exec(text))) prices.push(parseFloat(m[1].replace(/,/g, '')) / 10000);
+      while ((m = rePrice2.exec(text))) prices.push(parseFloat(m[1].replace(/,/g, '')) / 10000);
+      while ((m = rePrice3.exec(text))) prices.push(parseFloat(m[1]));
+      const valid = prices.filter(p => isFinite(p) && p > 0 && p < 100000);
+      if (valid.length) out.price = Math.round(Math.max.apply(null, valid) * 10) / 10;
+
+      // 寸法
+      const sz = text.match(/(\d{2,4})\s*[x×Ｘ✕*]\s*(\d{2,4})(?:\s*[x×Ｘ✕*]\s*(\d{2,4}))?\s*(mm|cm|ミリ)?/i);
+      if (sz) {
+        const unit = (sz[4] || 'mm').toLowerCase().replace('ミリ', 'mm');
+        out.size = [sz[1], sz[2], sz[3]].filter(Boolean).join('×') + unit;
       }
 
-      modal.classList.add('open');
+      // メーカー
+      const low = text.toLowerCase();
+      const found = MAKERS.find(k => low.includes(k.toLowerCase()));
+      if (found) out.maker = found;
+      else {
+        const mk = text.match(/(?:メーカー|製造元|製造者|発売元)\s*[:：]?\s*([^\s\n]{2,20})/);
+        if (mk) out.maker = mk[1];
+      }
+
+      // 名称
+      const nm = text.match(/(?:品名|商品名|製品名|名称)\s*[:：]?\s*([^\n]{2,40})/);
+      if (nm) out.name = nm[1].trim();
+      else {
+        const cand = lines.find(l => l.length >= 3 && l.length <= 40 && !/[¥￥円]/.test(l) && !/^\d+[\d\s.,x×*]*$/.test(l) && !/(mm|cm)$/i.test(l));
+        if (cand) out.name = cand;
+      }
+
+      // 特徴
+      const kw = /(機能|対応|省エネ|静音|防水|防汚|断熱|耐震|保証|容量|出力|自動|節水|節電|抗菌|ZEH|kW|寿命|サイズ|素材|カラー|色)/;
+      const feats = lines.filter(l => kw.test(l) && l !== out.name).slice(0, 3);
+      if (feats.length) out.feature = feats.join('・').slice(0, 200);
+
+      // 型番 → 備考
+      const model = text.match(/\b([A-Z]{1,6}[-\s]?[A-Z0-9]{2,}(?:-[A-Z0-9]+)+|[A-Z]{2,}\d{2,}[A-Z0-9-]*)\b/);
+      if (model) out.note = '型番：' + model[1];
+
+      // 確認・不明点
+      const miss = [];
+      if (out.price === '') miss.push('金額');
+      if (!out.size) miss.push('寸法');
+      if (!out.maker) miss.push('メーカー');
+      if (miss.length) out.ask = miss.join('・') + 'が不明';
+
+      out.any = !!(out.name || out.price !== '' || out.size || out.maker || out.feature);
+      return out;
     }
 
-    function closeHelpModal() {
-      document.getElementById('helpModal').classList.remove('open');
+    function fillFromOcr(r, force) {
+      const set = (id, v) => {
+        const el = document.getElementById(id);
+        if (!el || v === '' || v == null) return;
+        if (force || !el.value.trim()) el.value = v;
+      };
+      set('it_name', r.name); set('it_maker', r.maker); set('it_feature', r.feature);
+      set('it_size', r.size); set('it_price', r.price); set('it_note', r.note); set('it_ask', r.ask);
+      if (editing && r.ask && editing.status === 'pending') { editing.status = 'ask'; renderItemChips(); }
     }
 
-    // 計算メイン処理
+    // =====================================================================
+    //  ガイド画面・SQL
+    // =====================================================================
+    const SQL_TEXT = [
+      '-- ① テーブル',
+      'create table if not exists public.households (',
+      '  id uuid primary key default gen_random_uuid(),',
+      "  invite_code text unique not null default substr(replace(gen_random_uuid()::text,'-',''),1,16),",
+      "  data jsonb not null default '{}'::jsonb,",
+      '  updated_at timestamptz not null default now()',
+      ');',
+      'create table if not exists public.household_members (',
+      '  household_id uuid not null references public.households(id) on delete cascade,',
+      '  user_id uuid not null references auth.users(id) on delete cascade,',
+      '  primary key (household_id, user_id)',
+      ');',
+      '',
+      '-- ② RLS（メンバーだけが読み書きできる）',
+      'alter table public.households enable row level security;',
+      'alter table public.household_members enable row level security;',
+      '',
+      'create policy "members can read" on public.households for select to authenticated',
+      '  using (exists (select 1 from public.household_members m',
+      '                 where m.household_id = households.id and m.user_id = auth.uid()));',
+      '',
+      'create policy "members can update" on public.households for update to authenticated',
+      '  using (exists (select 1 from public.household_members m',
+      '                 where m.household_id = households.id and m.user_id = auth.uid()))',
+      '  with check (exists (select 1 from public.household_members m',
+      '                 where m.household_id = households.id and m.user_id = auth.uid()));',
+      '',
+      'create policy "read own membership" on public.household_members for select to authenticated',
+      '  using (user_id = auth.uid());',
+      '-- ※ insert/delete のポリシーは作らない（下の関数経由でのみ追加）',
+      '',
+      '-- ③ 世帯の作成・参加（RLSを守ったまま安全に実行）',
+      'create or replace function public.create_household()',
+      'returns table (id uuid, invite_code text)',
+      'language plpgsql security definer set search_path = public as $$',
+      'declare h public.households;',
+      'begin',
+      "  if auth.uid() is null then raise exception 'login required'; end if;",
+      '  insert into public.households default values returning * into h;',
+      '  insert into public.household_members (household_id, user_id) values (h.id, auth.uid());',
+      '  return query select h.id, h.invite_code;',
+      'end $$;',
+      '',
+      'create or replace function public.join_household(code text)',
+      'returns uuid',
+      'language plpgsql security definer set search_path = public as $$',
+      'declare h_id uuid;',
+      'begin',
+      "  if auth.uid() is null then raise exception 'login required'; end if;",
+      '  select id into h_id from public.households where invite_code = code;',
+      "  if h_id is null then raise exception 'invalid code'; end if;",
+      '  insert into public.household_members (household_id, user_id) values (h_id, auth.uid())',
+      '    on conflict do nothing;',
+      '  return h_id;',
+      'end $$;',
+      '',
+      'revoke all on function public.create_household() from public, anon;',
+      'revoke all on function public.join_household(text) from public, anon;',
+      'grant execute on function public.create_household() to authenticated;',
+      'grant execute on function public.join_household(text) to authenticated;',
+      '',
+      '-- ④ リアルタイム同期を有効化',
+      'alter publication supabase_realtime add table public.households;'
+    ].join('\n');
+
+    function renderGuide() {
+      document.getElementById('sqlBox').textContent = SQL_TEXT;
+      const order = ['home', 'loan', 'prepay', 'living', 'summary', 'life', 'car', 'invest', 'sim', 'cf', 'taxSummary', 'taxCond', 'taxOpt', 'ledger', 'item', 'sync'];
+      document.getElementById('guideList').innerHTML = order.map(k => {
+        const h = HELP[k];
+        return `<details class="accordion-section" style="margin-bottom:8px;">
+          <summary>${esc(h.t)}</summary>
+          <div style="font-size:.85rem; margin-bottom:4px;">🎯 ${esc(h.p)}</div>
+          <ol class="help-list">${h.s.map(x => `<li>${esc(x)}</li>`).join('')}</ol>
+        </details>`;
+      }).join('');
+    }
+
+    function copySql() {
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(SQL_TEXT).then(() => toast('SQLをコピーしました'), () => toast('コピーできません'));
+      } else toast('長押しで選択してコピーしてください');
+    }
+
+    function updateHomeStats(s) {
+      const set = (id, v) => { const el = document.getElementById(id); if (el) el.textContent = v; };
+      set('homeStatLoan', `月 ${s.pmt.toFixed(1)}万円`);
+      set('homeStatTax', `初年度 ${s.tax1.toFixed(1)}万/年`);
+      set('homeStatPlan', `${s.years}年後 ${Math.round(s.finalAsset).toLocaleString()}万`);
+    }
+
+    // =====================================================================
+    //  固定資産税・都市計画税 計算
+    // =====================================================================
+    const TAX_STRUCT = {
+      wood: { red: 3, dep: 33, label: '木造' },
+      ls:   { red: 3, dep: 30, label: '軽量鉄骨造' },
+      ref:  { red: 5, dep: 50, label: '耐火・準耐火(3階建以上)' }
+    };
+
+    function calcPropertyTax() {
+      const g = id => parseFloat(document.getElementById(id).value) || 0;
+      const s = id => document.getElementById(id).value;
+
+      const landValue = g('tax_landValue');
+      const landArea = Math.max(g('tax_landArea'), 0.0001);
+      const bldValue = g('tax_bldValue');
+      const floorArea = Math.max(g('tax_floorArea'), 0.0001);
+      const fatRate = g('tax_fatRate') / 100;
+      const cptRate = s('tax_cpEnabled') === '1' ? g('tax_cptRate') / 100 : 0;
+      const landSpecial = s('tax_landSpecial') === '1';
+      const ltq = s('tax_ltq') === '1';
+      const struct = TAX_STRUCT[s('tax_structure')] || TAX_STRUCT.wood;
+      const dispYears = parseInt(s('tax_years')) || 30;
+
+      const optDefs = [
+        { on: 'tax_optSolar', add: 'tax_solarAdd', name: '太陽光発電' },
+        { on: 'tax_optInsul', add: 'tax_insulAdd', name: '高断熱仕様' },
+        { on: 'tax_optFloorHeat', add: 'tax_floorHeatAdd', name: '床暖房' },
+        { on: 'tax_optAC', add: 'tax_acAdd', name: '全館空調' }
+      ];
+      let addTotal = 0;
+      const activeOptNames = [];
+      optDefs.forEach(o => {
+        if (s(o.on) === '1') { addTotal += g(o.add); activeOptNames.push(o.name); }
+      });
+
+      const redYears = struct.red + (ltq ? 2 : 0);
+      const reduceRatio = Math.min(floorArea, 120) / floorArea; // 120㎡までの部分が対象
+
+      const unit = landValue / landArea;
+      let landFatBase = landValue, landCptBase = landValue;
+      if (landSpecial) {
+        const eligible = Math.min(landArea, floorArea * 10);
+        const small = Math.min(eligible, 200);
+        const general = Math.max(0, eligible - small);
+        const none = Math.max(0, landArea - eligible);
+        landFatBase = unit * (small / 6 + general / 3 + none);
+        landCptBase = unit * (small / 3 + general * 2 / 3 + none);
+      }
+      const landFAT = landFatBase * fatRate;
+      const landCPT = landCptBase * cptRate;
+
+      function calcYear(n, add) {
+        const depFactor = Math.max(0.2, 1 - 0.8 * (n - 1) / struct.dep);
+        const bldBase = (bldValue + add) * depFactor;
+        const bldFATfull = bldBase * fatRate;
+        const reduce = (n <= redYears) ? bldFATfull * 0.5 * reduceRatio : 0;
+        const bldFAT = bldFATfull - reduce;
+        const bldCPT = bldBase * cptRate;
+        const cpt = landCPT + bldCPT;
+        const total = bldFAT + landFAT + cpt;
+        return { n, bldBase, bldFATfull, bldFAT, landFAT, cpt, reduce, total };
+      }
+
+      const schedule = [0];
+      const rows = [];
+      for (let n = 1; n <= 50; n++) {
+        const r = calcYear(n, addTotal);
+        schedule[n] = r.total;
+        rows.push(r);
+      }
+
+      const y1 = rows[0];
+      const y1NoOpt = calcYear(1, 0);
+      const afterReduce = rows[Math.min(redYears, 49)];
+      const avg10 = rows.slice(0, 10).reduce((a, r) => a + r.total, 0) / 10;
+      const totalN = rows.slice(0, dispYears).reduce((a, r) => a + r.total, 0);
+      const optEffect = y1.total - y1NoOpt.total;
+
+      const fmt1 = v => v.toFixed(1);
+      const T = (id, v) => { document.getElementById(id).innerText = v; };
+      T('taxY1Total', fmt1(y1.total) + ' 万円');
+      T('taxY1Monthly', Math.round(y1.total * 10000 / 12).toLocaleString() + ' 円');
+      T('taxY1FAT', fmt1(y1.bldFAT + y1.landFAT) + ' 万円');
+      T('taxY1CPT', fmt1(y1.cpt) + ' 万円');
+      T('taxY1Reduce', '-' + fmt1(y1.reduce) + ' 万円');
+      T('taxReduceYears', redYears + ' 年');
+      T('taxAfterReduce', fmt1(afterReduce.total) + ' 万円');
+      T('taxAvg10', fmt1(avg10) + ' 万円/年');
+      T('taxOptEffect', (optEffect >= 0 ? '+' : '') + fmt1(optEffect) + ' 万円/年');
+      T('taxTotalN', Math.round(totalN).toLocaleString() + ' 万円');
+      T('taxBldAssessed', Math.round(y1.bldBase).toLocaleString() + ' 万円');
+
+      const lifeTax = g('houseTax');
+      let adv = `<b>📌 前提:</b> ${struct.label}／延床${floorArea.toFixed(0)}㎡／土地${landArea.toFixed(0)}㎡${landSpecial ? '（住宅用地特例あり）' : '（特例なし）'}<br>`;
+      adv += `・<b>新築軽減:</b> ${redYears}年間、固定資産税が1/2（120㎡分）${ltq ? '※長期優良で+2年' : ''}<br>`;
+      adv += `・<b>設備:</b> ${activeOptNames.length ? esc(activeOptNames.join('、')) + `（評価額 +${addTotal.toFixed(0)}万円）` : 'なし'}<br>`;
+      adv += `・<b>軽減が終わると:</b> ${fmt1(y1.total)}万円 → ${fmt1(afterReduce.total)}万円/年`;
+      if (landSpecial && landArea > 200) adv += `<br>・200㎡超は「一般住宅用地(1/3)」で計算`;
+      if (optEffect >= 3) {
+        adv += `<div style="margin-top:6px; color:var(--orange-color); font-weight:bold;">⚠️ 設備で税が年${fmt1(optEffect)}万円増。光熱費の節約や補助金と比べて判断を。</div>`;
+      } else if (activeOptNames.length > 0) {
+        adv += `<div style="margin-top:6px; color:var(--secondary-color); font-weight:bold;">✨ 設備による税増は年${fmt1(optEffect)}万円。影響は小さめ。</div>`;
+      } else {
+        adv += `<div style="margin-top:6px; color:var(--primary-color); font-weight:bold;">👍 標準仕様の試算。設備を「あり」にすると影響が見えます。</div>`;
+      }
+      adv += `<div style="margin-top:6px; opacity:0.8;">「将来」の固定額(${lifeTax.toFixed(0)}万円)との差：初年度 ${fmt1(y1.total - lifeTax)}万円／10年平均 ${fmt1(avg10 - lifeTax)}万円</div>`;
+      document.getElementById('taxAdviceText').innerHTML = adv;
+
+      let cum = 0;
+      const rowHtml = [];
+      for (let i = 0; i < dispYears; i++) {
+        const r = rows[i];
+        cum += r.total;
+        rowHtml.push(`
+          <tr>
+            <td style="text-align:center;">${r.n}年目</td>
+            <td>${Math.round(r.bldBase)} 万円</td>
+            <td>${fmt1(r.bldFAT)} 万円</td>
+            <td>${fmt1(r.landFAT)} 万円</td>
+            <td>${fmt1(r.cpt)} 万円</td>
+            <td style="color:var(--secondary-color); font-weight:700;">${r.reduce > 0 ? '-' + fmt1(r.reduce) + ' 万円' : '-'}</td>
+            <td style="font-weight:700;">${fmt1(r.total)} 万円</td>
+            <td>${Math.round(cum).toLocaleString()} 万円</td>
+          </tr>
+        `);
+      }
+      document.getElementById('taxTableBody').innerHTML = rowHtml.join('');
+
+      updateTaxChart(rows.slice(0, dispYears));
+      return schedule;
+    }
+
+    function chartColors() {
+      const isDark = document.body.getAttribute('data-theme') === 'dark';
+      return { isDark, grid: isDark ? '#2c2c2e' : '#e5e5ea', text: isDark ? '#f2f2f7' : '#1c1c1e' };
+    }
+
+    function updateTaxChart(rows) {
+      const c = chartColors();
+      const ctx = document.getElementById('taxChart').getContext('2d');
+      if (taxChart) taxChart.destroy();
+      taxChart = new Chart(ctx, {
+        type: 'bar',
+        data: {
+          labels: rows.map(r => r.n + '年目'),
+          datasets: [
+            { label: '建物 固定資産税', data: rows.map(r => Math.round(r.bldFAT * 10) / 10), backgroundColor: '#007aff' },
+            { label: '土地 固定資産税', data: rows.map(r => Math.round(r.landFAT * 10) / 10), backgroundColor: '#34c759' },
+            { label: '都市計画税', data: rows.map(r => Math.round(r.cpt * 10) / 10), backgroundColor: '#af52de' }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: 400, easing: 'easeOutQuart' },
+          plugins: { legend: { position: 'bottom', labels: { color: c.text, font: { weight: '600' } } } },
+          scales: {
+            x: { stacked: true, grid: { color: c.grid }, ticks: { color: c.text, maxRotation: 0, autoSkip: true } },
+            y: { stacked: true, grid: { color: c.grid }, ticks: { color: c.text }, title: { display: true, text: '万円/年', color: c.text } }
+          }
+        }
+      });
+    }
+
+    // =====================================================================
+    //  メイン計算
+    // =====================================================================
     function calculate() {
-      const bEval = parseFloat(document.getElementById('buildingEval')?.value) || 1500;
-      const lEval = parseFloat(document.getElementById('landEval')?.value) || 600;
+      const taxSchedule = calcPropertyTax();
+      const taxLinked = document.getElementById('tax_link').value === '1';
 
-      let bAdd = 0;
-      if (document.getElementById('optSolar')?.checked) bAdd += 30;
-      if (document.getElementById('optZeh')?.checked) bAdd += 40;
-      if (document.getElementById('optCarport')?.checked) bAdd += 20;
+      const amountWan = parseFloat(document.getElementById('amount').value) || 0;
+      const initialRate = parseFloat(document.getElementById('rate').value) || 0;
+      const years = parseInt(document.getElementById('years').value) || 0;
+      const prepayYear = parseInt(document.getElementById('prepayYear').value) || 0;
+      const prepayAmountWan = parseFloat(document.getElementById('prepayAmount').value) || 0;
+      const monthlyInvestWan = parseFloat(document.getElementById('monthlyInvest').value) || 0;
+      const investYears = parseInt(document.getElementById('investYears').value) || 20;
+      const maxSimYears = parseInt(document.getElementById('simMaxYears').value) || 40;
+      const incomeTabMaxYears = parseInt(document.getElementById('incomeTabMaxYears').value) || 40;
 
-      const totalBEval = bEval + bAdd;
-      
-      const bTaxFirst3 = (totalBEval * 10000) * 0.014 * 0.5;
-      const bTaxNormal = (totalBEval * 10000) * 0.014;
-      const lTax = (lEval * 10000) * (0.014 * (1/6) + 0.003 * (1/3));
-
-      const first3Annual = Math.round((bTaxFirst3 + lTax) / 10000 * 10) / 10;
-      const normalAnnual = Math.round((bTaxNormal + lTax) / 10000 * 10) / 10;
-
-      if (document.getElementById('taxResultFirst3')) document.getElementById('taxResultFirst3').innerText = `${first3Annual} 万円/年`;
-      if (document.getElementById('taxResultNormal')) document.getElementById('taxResultNormal').innerText = `${normalAnnual} 万円/年`;
-
-      // ローン計算
-      const amountWan = parseFloat(document.getElementById('amount')?.value) || 3500;
-      const rate = parseFloat(document.getElementById('rate')?.value) || 0.5;
-      const years = parseInt(document.getElementById('years')?.value) || 35;
-      const mRate = (rate / 100) / 12;
       const totalMonths = years * 12;
+      const monthlyRate = (initialRate / 100) / 12;
+      const principal = amountWan * 10000;
+      const prepayVal = prepayAmountWan * 10000;
 
-      const pmt = calcPMT(amountWan * 10000, mRate, totalMonths);
-      if (document.getElementById('cardMonthlyPayment')) {
-        document.getElementById('cardMonthlyPayment').innerText = `${Math.round(pmt).toLocaleString()} 円`;
+      if (principal <= 0 || totalMonths <= 0) return;
+
+      const normalPMT = calcPMT(principal, monthlyRate, totalMonths);
+      document.getElementById('cardMonthlyPayment').innerText = Math.round(normalPMT).toLocaleString() + ' 円';
+
+      const prepayMonth = prepayYear * 12;
+      let balanceAtPrepay = principal;
+      for (let m = 1; m <= prepayMonth; m++) {
+        balanceAtPrepay -= (normalPMT - balanceAtPrepay * monthlyRate);
       }
 
-      updateLoanChart(years, amountWan * 10000, pmt, mRate);
+      const newBalShort = Math.max(0, balanceAtPrepay - prepayVal);
+      let shortMonthsLeft = 0, tempBal = newBalShort;
+      while (tempBal > 0 && shortMonthsLeft < (totalMonths - prepayMonth)) {
+        tempBal -= (normalPMT - tempBal * monthlyRate);
+        shortMonthsLeft++;
+      }
+      const savedMonths = (totalMonths - prepayMonth) - shortMonthsLeft;
+
+      let normRemInt = 0, tempNorm = balanceAtPrepay;
+      for (let m = prepayMonth + 1; m <= totalMonths; m++) {
+        const i = tempNorm * monthlyRate; normRemInt += i; tempNorm -= (normalPMT - i);
+      }
+      let shortRemInt = 0; tempBal = newBalShort;
+      for (let m = 0; m < shortMonthsLeft; m++) {
+        const i = tempBal * monthlyRate; shortRemInt += i; tempBal -= (normalPMT - i);
+      }
+
+      const newBalReduce = Math.max(0, balanceAtPrepay - prepayVal);
+      const remMonths = totalMonths - prepayMonth;
+      const newReducePMT = calcPMT(newBalReduce, monthlyRate, remMonths);
+      let redRemInt = 0; tempBal = newBalReduce;
+      for (let m = 0; m < remMonths; m++) {
+        const i = tempBal * monthlyRate; redRemInt += i; tempBal -= (newReducePMT - i);
+      }
+
+      document.getElementById('shortMonthly').innerText = Math.round(normalPMT).toLocaleString() + ' 円';
+      document.getElementById('shortSavedTime').innerText = Math.floor(savedMonths / 12) + '年 ' + (savedMonths % 12) + 'ヶ月';
+      document.getElementById('shortSavedInterest').innerText = Math.round((normRemInt - shortRemInt) / 10000).toLocaleString() + ' 万円';
+      document.getElementById('reduceMonthly').innerText = Math.round(newReducePMT).toLocaleString() + ' 円';
+      document.getElementById('reduceMonthlyDiff').innerText = '-' + Math.round(normalPMT - newReducePMT).toLocaleString() + ' 円';
+      document.getElementById('reduceSavedInterest').innerText = Math.round((normRemInt - redRemInt) / 10000).toLocaleString() + ' 万円';
+
+      const yieldRates = [0.02, 0.04, 0.06];
+      const investTotalMonths = investYears * 12;
+      const resultsByYield = yieldRates.map(yRate => {
+        const mRate = yRate / 12;
+        let curAsset = 0, totalPrincipalInvested = 0;
+        for (let m = 1; m <= investTotalMonths; m++) {
+          curAsset = (curAsset + (monthlyInvestWan * 10000)) * (1 + mRate);
+          totalPrincipalInvested += (monthlyInvestWan * 10000);
+        }
+        return { total: Math.round(curAsset / 10000), gain: Math.round((curAsset - totalPrincipalInvested) / 10000) };
+      });
+
+      document.getElementById('yield1Total').innerText = resultsByYield[0].total.toLocaleString() + ' 万円';
+      document.getElementById('yield1Gain').innerText = '+' + resultsByYield[0].gain.toLocaleString() + ' 万円';
+      document.getElementById('yield2Total').innerText = resultsByYield[1].total.toLocaleString() + ' 万円';
+      document.getElementById('yield2Gain').innerText = '+' + resultsByYield[1].gain.toLocaleString() + ' 万円';
+      document.getElementById('yield3Total').innerText = resultsByYield[2].total.toLocaleString() + ' 万円';
+      document.getElementById('yield3Gain').innerText = '+' + resultsByYield[2].gain.toLocaleString() + ' 万円';
+
+      const hGross = parseFloat(document.getElementById('inc_husband_gross').value) || 0;
+      const hNet = parseFloat(document.getElementById('inc_husband_net').value) || 0;
+      const wGross = parseFloat(document.getElementById('inc_wife_gross').value) || 0;
+      const wNet = parseFloat(document.getElementById('inc_wife_net').value) || 0;
+
+      document.getElementById('totalGrossIncome').innerText = (hGross + wGross).toFixed(0) + ' 万円';
+      document.getElementById('totalNetIncome').innerText = (hNet + wNet).toFixed(0) + ' 万円';
+
+      const handInc = parseFloat(document.getElementById('inc_hand').value) || 0;
+
+      const bHS = parseFloat(document.getElementById('bonus_husband_summer').value) || 0;
+      const bHW = parseFloat(document.getElementById('bonus_husband_winter').value) || 0;
+      const bWS = parseFloat(document.getElementById('bonus_wife_summer').value) || 0;
+      const bWW = parseFloat(document.getElementById('bonus_wife_winter').value) || 0;
+      const totalBonusAnnual = bHS + bHW + bWS + bWW;
+
+      const bonusDisp = document.getElementById('totalAnnualBonusDisplay');
+      if (bonusDisp) bonusDisp.innerText = `${totalBonusAnnual.toFixed(0)} 万円`;
+
+      let livingTotal = 0;
+      let foodVal = 0, utilVal = 0, commVal = 0, playVal = 0;
+      customExpenseItems.forEach(item => {
+        const v = (parseFloat(item.val) || 0);
+        livingTotal += v;
+        if (item.name.includes('食')) foodVal += v;
+        else if (item.name.includes('光熱') || item.name.includes('水道')) utilVal += v;
+        else if (item.name.includes('通信') || item.name.includes('スマホ')) commVal += v;
+        else if (item.name.includes('娯楽') || item.name.includes('小遣')) playVal += v;
+      });
+
+      document.getElementById('accordionLivingTotal').innerText = `計 ${livingTotal.toFixed(1)} 万円/月`;
+      document.getElementById('totalLivingCost').innerText = livingTotal.toFixed(1) + ' 万円/月';
+
+      let expAdviceHtml = `<b>📊 二人暮らし平均（総務省 家計調査）との比較</b><br>`;
+      expAdviceHtml += `・<b>食費・日用品</b>: <b>${foodVal > 0 ? foodVal.toFixed(1) : livingTotal > 0 ? '未分類' : 0}万円</b>（平均 約6.8万）<br>`;
+      expAdviceHtml += `・<b>水道光熱費</b>: <b>${utilVal > 0 ? utilVal.toFixed(1) : '未分類'}万円</b>（平均 約2.2万）<br>`;
+      expAdviceHtml += `・<b>生活費 合計</b>: <b>${livingTotal.toFixed(1)}万円</b>（住居費除く平均 約20〜24万）<br>`;
+      if (livingTotal <= 25) {
+        expAdviceHtml += `<div style="margin-top:6px; color:var(--secondary-color); font-weight:bold;">✨ 優秀：平均以下で、すっきりした家計です。</div>`;
+      } else if (livingTotal <= 32) {
+        expAdviceHtml += `<div style="margin-top:6px; color:var(--primary-color); font-weight:bold;">👍 標準：ゆとりのある水準です。</div>`;
+      } else {
+        expAdviceHtml += `<div style="margin-top:6px; color:var(--orange-color); font-weight:bold;">⚠️ やや高め：固定費・娯楽費を見直すと貯蓄が増えます。</div>`;
+      }
+      document.getElementById('expenseAdviceText').innerHTML = expAdviceHtml;
+
+      const netSavingsWan = handInc - livingTotal - (normalPMT / 10000);
+      document.getElementById('netMonthlySavings').innerText = netSavingsWan.toFixed(1) + ' 万円/月';
+
+      const netAnnualSavingsWan = (netSavingsWan * 12) + totalBonusAnnual;
+      const netAnnualElem = document.getElementById('netAnnualSavings');
+      if (netAnnualElem) netAnnualElem.innerText = `${netAnnualSavingsWan.toFixed(1)} 万円/年`;
+
+      const healthElem = document.getElementById('cashflowHealthAdvice');
+      if (netSavingsWan >= 5) {
+        healthElem.innerHTML = `🟢 <b>良好:</b> 月${netSavingsWan.toFixed(1)}万円（賞与込 年${netAnnualSavingsWan.toFixed(0)}万円）貯められます。`;
+        healthElem.style.color = "var(--secondary-color)";
+      } else if (netSavingsWan > 0) {
+        healthElem.innerHTML = `🟡 <b>注意:</b> 月の余りは${netSavingsWan.toFixed(1)}万円。予備費を確保しましょう。`;
+        healthElem.style.color = "var(--orange-color)";
+      } else {
+        healthElem.innerHTML = `🔴 <b>見直し:</b> 毎月${netSavingsWan.toFixed(1)}万円の赤字。生活費かローンを見直しましょう。`;
+        healthElem.style.color = "var(--danger-color)";
+      }
+
+      const carLoanY = parseInt(document.getElementById('carLoanYears').value) || 5;
+      const carRate = parseFloat(document.getElementById('carLoanRate').value) || 2.0;
+      const carMonthlyRate = (carRate / 100) / 12;
+
+      const cars = [
+        { y: parseInt(document.getElementById('car1Year').value) || 0, price: parseFloat(document.getElementById('car1Price').value) || 0, down: parseFloat(document.getElementById('car1Down').value) || 0 },
+        { y: parseInt(document.getElementById('car2Year').value) || 0, price: parseFloat(document.getElementById('car2Price').value) || 0, down: parseFloat(document.getElementById('car2Down').value) || 0 },
+        { y: parseInt(document.getElementById('car3Year').value) || 0, price: parseFloat(document.getElementById('car3Price').value) || 0, down: parseFloat(document.getElementById('car3Down').value) || 0 }
+      ];
+      cars.forEach(c => {
+        c.loanPrincipal = Math.max(0, c.price - c.down);
+        c.monthlyPMT = calcPMT(c.loanPrincipal * 10000, carMonthlyRate, carLoanY * 12);
+        c.annualPMT = c.monthlyPMT * 12 / 10000;
+      });
+
+      const startAge = parseInt(document.getElementById('myAge').value) || 34;
+      const initAsset = parseFloat(document.getElementById('initAsset').value) || 0;
+      const wifeRetireYear = parseInt(document.getElementById('wifeRetireYear').value) || 0;
+      const wifeMonthlyPension = parseFloat(document.getElementById('wifePension').value) || 0;
+
+      const houseTax = parseFloat(document.getElementById('houseTax').value) || 0;
+      const houseRepair = parseFloat(document.getElementById('houseRepair').value) || 0;
+      const travelAnnual = parseFloat(document.getElementById('travelAnnual').value) || 0;
+      const spTravelY = parseInt(document.getElementById('specialTravelYear').value) || 0, spTravelC = parseFloat(document.getElementById('specialTravelCost').value) || 0;
+      const reformY = parseInt(document.getElementById('reformYear').value) || 0, reformC = parseFloat(document.getElementById('reformCost').value) || 0;
+
+      const assetYield = (parseFloat(document.getElementById('assetYield').value) || 3.0) / 100;
+      let currentAssetNet = initAsset;
+      let currentAssetGross = initAsset;
+      let currentAssetYielded = initAsset;
+
+      const assetLabels = [], assetDataNet = [], assetDataGross = [], assetDataYielded = [], tableRowsHtml = [];
+
+      let hasRisk = false;
+      let riskMessage = "";
+
+      let yearlyLoanBalances = [];
+      let tempLoanBal = principal;
+      for (let y = 1; y <= 35; y++) {
+        for (let m = 1; m <= 12; m++) {
+          if (tempLoanBal > 0) tempLoanBal = Math.max(0, tempLoanBal - (normalPMT - tempLoanBal * monthlyRate));
+        }
+        yearlyLoanBalances[y] = tempLoanBal;
+      }
+
+      for (let y = 0; y <= maxSimYears; y++) {
+        const currentAge = startAge + y;
+        let events = [];
+
+        let currentWNet = wNet;
+        let currentWBonus = bWS + bWW;
+
+        if (y >= wifeRetireYear && wifeRetireYear > 0) {
+          currentWNet = (wifeMonthlyPension * 12);
+          currentWBonus = 0;
+          if (y === wifeRetireYear) events.push("妻退職(年金開始)");
+        }
+
+        const effectiveBonus = bHS + bHW + currentWBonus;
+        const currentYearlyNet = hNet + currentWNet;
+
+        let mortgageDeduction = 0;
+        if (y >= 1 && y <= 13 && yearlyLoanBalances[y] > 0) {
+          mortgageDeduction = Math.min(35, Math.round(yearlyLoanBalances[y] * 0.007 / 10000));
+          if (y === 1) events.push(`ローン控除適用`);
+        }
+
+        // 固定資産税: 連動ON＝年ごとの自動計算額 / OFF＝固定額
+        const yearHouseTax = (taxLinked && y >= 1) ? (taxSchedule[y] || 0) : houseTax;
+        if (taxLinked && y > 1 && (taxSchedule[y] - (taxSchedule[y - 1] || 0)) > 1.5) events.push("新築軽減終了(税増)");
+
+        let annualExp = (livingTotal * 12) + (y < years ? (normalPMT / 10000 * 12) : 0) + yearHouseTax + houseRepair + travelAnnual;
+
+        cars.forEach((c, idx) => {
+          if (c.y > 0) {
+            if (y === c.y) {
+              annualExp += c.down;
+              events.push(`車${idx + 1}購入(-${c.down}万頭金/月${Math.round(c.monthlyPMT).toLocaleString()}円)`);
+            }
+            if (y >= c.y && y < c.y + carLoanY) annualExp += c.annualPMT;
+          }
+        });
+
+        if (y === spTravelY && spTravelY > 0) { annualExp += spTravelC; events.push(`特別旅行(-${spTravelC}万)`); }
+        if (y === reformY && reformY > 0) { annualExp += reformC; events.push(`リフォーム(-${reformC}万)`); }
+        if (y === prepayYear && prepayYear > 0) { annualExp += prepayAmountWan; events.push(`繰り上げ返済(-${prepayAmountWan}万)`); }
+        if (y === years) { events.push("ローン完済！"); }
+
+        const effectiveNetIncome = currentYearlyNet + effectiveBonus + mortgageDeduction;
+
+        if (y === 0) {
+          events.push("スタート(現在の貯蓄)");
+        } else {
+          const annualNetDiffNet = (handInc * 12) + effectiveBonus - annualExp;
+          currentAssetNet += annualNetDiffNet;
+
+          const annualNetDiffGross = effectiveNetIncome - annualExp;
+          currentAssetGross += annualNetDiffGross;
+
+          const annualInvestAmount = monthlyInvestWan * 12;
+          currentAssetYielded = (currentAssetYielded * (1 + assetYield)) + annualNetDiffGross + annualInvestAmount;
+        }
+
+        const safetyBuffer = (livingTotal * 6) + (y < years ? (normalPMT / 10000 * 6) : 0);
+        if (y > 0 && currentAssetYielded < safetyBuffer && !hasRisk) {
+          hasRisk = true;
+          riskMessage = `${y}年後（${currentAge}歳頃）に資産が生活防衛資金（約${Math.round(safetyBuffer)}万円）を下回ります！`;
+        }
+
+        assetLabels.push(y + '年後');
+        assetDataNet.push(Math.round(currentAssetNet));
+        assetDataGross.push(Math.round(currentAssetGross));
+        assetDataYielded.push(Math.round(currentAssetYielded));
+
+        const netVal = y === 0 ? 0 : (effectiveNetIncome - annualExp);
+        const netClass = netVal < 0 ? 'minus-val' : '';
+        const assetClass = currentAssetYielded < 0 ? 'minus-val' : '';
+
+        tableRowsHtml.push(`
+          <tr>
+            <td style="text-align:center;">${y === 0 ? '現在' : y + '年後'}</td>
+            <td style="text-align:center;">${currentAge}歳</td>
+            <td class="event-text">${esc(events.join(', '))}</td>
+            <td>${Math.round(effectiveNetIncome)} 万円 ${mortgageDeduction > 0 ? '(+控除)' : ''}</td>
+            <td>${Math.round(annualExp)} 万円</td>
+            <td class="${netClass}">${y === 0 ? '-' : Math.round(netVal) + ' 万円'}</td>
+            <td class="${assetClass}">${Math.round(currentAssetYielded)} 万円</td>
+          </tr>
+        `);
+      }
+
+      const banner = document.getElementById('riskAlertBanner');
+      const bannerText = document.getElementById('riskAlertText');
+      if (hasRisk) { bannerText.innerText = riskMessage; banner.classList.add('show'); }
+      else banner.classList.remove('show');
+
+      const finalAsset = assetDataYielded[assetDataYielded.length - 1];
+      let expertHtml = "";
+      if (hasRisk) {
+        expertHtml = `🔴 <b>注意:</b> 資金が減る時期があります。車・積立・生活費を調整しましょう。`;
+      } else if (finalAsset > initAsset * 3) {
+        expertHtml = `🟢 <b>順調:</b> 利回り<b>${(assetYield * 100).toFixed(1)}%</b>と積立で、${maxSimYears}年後は約<b>${Math.round(finalAsset).toLocaleString()}万円</b>に。`;
+      } else {
+        expertHtml = `🟡 <b>堅実:</b> 資金ショートはありません。積立を増やすと、さらに余裕が出ます。`;
+      }
+      document.getElementById('simExpertAdviceText').innerHTML = expertHtml;
+      document.getElementById('cashflowTableBody').innerHTML = tableRowsHtml.join('');
+
+      updateLoanChart(years, principal, normalPMT, monthlyRate, prepayMonth, prepayVal, newReducePMT);
+      updateAssetChart(assetLabels, assetDataNet, assetDataGross, assetDataYielded);
+      updateIncomeTabAssetChart(netAnnualSavingsWan, initAsset, incomeTabMaxYears);
+      updateInvestCompareChart(investYears, monthlyInvestWan, yieldRates);
+
+      updateHomeStats({ pmt: normalPMT / 10000, tax1: taxSchedule[1] || 0, finalAsset: finalAsset, years: maxSimYears });
     }
 
     function calcPMT(pv, rate, nper) {
@@ -973,89 +2562,158 @@
       return pv * (rate * Math.pow(1 + rate, nper)) / (Math.pow(1 + rate, nper) - 1);
     }
 
-    function updateLoanChart(years, principal, pmt, mRate) {
-      const labels = [], norm = [];
-      let b = principal;
+    function updateLoanChart(years, principal, normalPMT, monthlyRate, prepayMonth, prepayVal, newReducePMT) {
+      const labels = [], norm = [], short = [], reduce = [];
+      let bN = principal, bS = principal, bR = principal;
+
       for (let y = 0; y <= years; y++) {
-        labels.push(y + '年'); norm.push(Math.round(b/10000));
+        labels.push(y + '年'); norm.push(Math.round(bN / 10000)); short.push(Math.round(bS / 10000)); reduce.push(Math.round(bR / 10000));
         for (let m = 0; m < 12; m++) {
-          if (b > 0) b = Math.max(0, b - (pmt - b*mRate));
+          const curM = y * 12 + m + 1;
+          if (bN > 0) bN = Math.max(0, bN - (normalPMT - bN * monthlyRate));
+          if (curM === prepayMonth) { bS = Math.max(0, bS - prepayVal); bR = Math.max(0, bR - prepayVal); }
+          else if (curM > prepayMonth) {
+            if (bS > 0) bS = Math.max(0, bS - (normalPMT - bS * monthlyRate));
+            if (bR > 0) bR = Math.max(0, bR - (newReducePMT - bR * monthlyRate));
+          } else {
+            if (bS > 0) bS = Math.max(0, bS - (normalPMT - bS * monthlyRate));
+            if (bR > 0) bR = Math.max(0, bR - (normalPMT - bR * monthlyRate));
+          }
         }
       }
 
-      const ctx = document.getElementById('loanChart')?.getContext('2d');
-      if (!ctx) return;
+      const c = chartColors();
+      const ctx = document.getElementById('loanChart').getContext('2d');
       if (loanChart) loanChart.destroy();
       loanChart = new Chart(ctx, {
         type: 'line',
         data: {
-          labels,
-          datasets: [{ label: 'ローン残高 (万円)', data: norm, borderColor: '#007aff', fill: false }]
+          labels: labels,
+          datasets: [
+            { label: '繰り上げなし', data: norm, borderColor: '#8e8e93', borderDash: [5, 5], fill: false, pointRadius: 0 },
+            { label: '① 期間短縮', data: short, borderColor: '#007aff', fill: false, borderWidth: 2.5, pointRadius: 0 },
+            { label: '② 返済額軽減', data: reduce, borderColor: '#af52de', fill: false, borderWidth: 2.5, pointRadius: 0 }
+          ]
         },
-        options: { responsive: true, maintainAspectRatio: false }
-      });
-    }
-
-    // クラウド保存＆同期
-    function getAllDataObj() {
-      const data = { customItems: customExpenseItems, ocrItems };
-      document.querySelectorAll('input[type="number"], input[type="text"], select').forEach(i => {
-        data[i.id] = i.value;
-      });
-      return data;
-    }
-
-    async function saveToCloud() {
-      if (isSavingToCloud) return;
-      isSavingToCloud = true;
-      try {
-        await db.from('sim_data').upsert({
-          id: currentRoomId,
-          data: getAllDataObj(),
-          updated_at: new Date()
-        });
-      } catch(e) {} finally { isSavingToCloud = false; }
-    }
-
-    async function loadFromCloud() {
-      try {
-        const { data } = await db.from('sim_data').select('data').eq('id', currentRoomId).single();
-        if (data && data.data) {
-          const parsed = data.data;
-          if (parsed.customItems) customExpenseItems = parsed.customItems;
-          if (parsed.ocrItems) { ocrItems = parsed.ocrItems; renderOcrItems(); }
-          for (let key in parsed) {
-            let el = document.getElementById(key);
-            if (el) el.value = parsed[key];
-          }
-          calculate();
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: 400, easing: 'easeOutQuart' },
+          plugins: { legend: { position: 'bottom', labels: { color: c.text, font: { weight: '600' } } } },
+          scales: { x: { grid: { color: c.grid }, ticks: { color: c.text } }, y: { grid: { color: c.grid }, ticks: { color: c.text } } }
         }
-      } catch(e) {}
-    }
-
-    function setupRealtimeSubscription() {
-      if (realtimeChannel) db.removeChannel(realtimeChannel);
-      realtimeChannel = db.channel('public:sim_data:' + currentRoomId)
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'sim_data', filter: `id=eq.${currentRoomId}` }, payload => {
-          if (payload.new && payload.new.data && !isSavingToCloud) {
-            loadFromCloud();
-            showToast('🔄 パートナーの変更をリアルタイム同期しました');
-          }
-        }).subscribe();
-    }
-
-    function showToast(msg) {
-      const t = document.getElementById('toast');
-      t.innerText = msg;
-      t.classList.add('show');
-      setTimeout(() => t.classList.remove('show'), 3000);
-    }
-
-    window.addEventListener('DOMContentLoaded', () => {
-      loadFromCloud().then(() => {
-        setupRealtimeSubscription();
-        calculate();
       });
+    }
+
+    function updateAssetChart(labels, dataNet, dataGross, dataYielded) {
+      const c = chartColors();
+      const ctx = document.getElementById('assetChart').getContext('2d');
+      if (assetChart) assetChart.destroy();
+      assetChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: '月収ベース (緑)', data: dataNet, borderColor: '#34c759', borderDash: [3, 3], fill: false, tension: 0.25, pointRadius: 0 },
+            { label: '源泉徴収ベース (青)', data: dataGross, borderColor: '#007aff', borderDash: [3, 3], fill: false, tension: 0.25, pointRadius: 0 },
+            { label: '運用込み資産 (紫)', data: dataYielded, borderColor: '#af52de', backgroundColor: c.isDark ? 'rgba(191, 90, 242, 0.15)' : 'rgba(175, 82, 222, 0.08)', fill: true, borderWidth: 2.5, tension: 0.25, pointRadius: 0 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: 400, easing: 'easeOutQuart' },
+          plugins: { legend: { position: 'bottom', labels: { color: c.text, font: { weight: '600' } } } },
+          scales: { x: { grid: { color: c.grid }, ticks: { color: c.text } }, y: { grid: { color: c.grid }, ticks: { color: c.text } } }
+        }
+      });
+    }
+
+    function updateIncomeTabAssetChart(netAnnualSavingsWan, initAsset, maxYears) {
+      const labels = [], data = [];
+      for (let i = 0; i <= maxYears; i += 5) {
+        labels.push(i === 0 ? '現在' : i + '年後');
+        data.push(Math.round(initAsset + (netAnnualSavingsWan * i)));
+      }
+      const c = chartColors();
+      const ctx = document.getElementById('incomeTabAssetChart').getContext('2d');
+      if (incomeTabAssetChart) incomeTabAssetChart.destroy();
+      incomeTabAssetChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [{
+            label: '余剰金の累積貯蓄 (万円)', data: data, borderColor: '#007aff',
+            backgroundColor: c.isDark ? 'rgba(10, 132, 255, 0.18)' : 'rgba(0, 122, 255, 0.1)',
+            fill: true, borderWidth: 2.5, tension: 0.2, pointRadius: 4, pointBackgroundColor: '#007aff'
+          }]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: 400, easing: 'easeOutQuart' },
+          plugins: { legend: { position: 'bottom', labels: { color: c.text, font: { weight: '600' } } } },
+          scales: { x: { grid: { color: c.grid }, ticks: { color: c.text } }, y: { grid: { color: c.grid }, ticks: { color: c.text } } }
+        }
+      });
+    }
+
+    function updateInvestCompareChart(investYears, monthlyInvestWan, yieldRates) {
+      const labels = [], data1 = [], data2 = [], data3 = [];
+      for (let y = 0; y <= investYears; y++) {
+        labels.push(y + '年後');
+        const months = y * 12;
+        for (let idx = 0; idx < yieldRates.length; idx++) {
+          const mRate = yieldRates[idx] / 12;
+          let cur = 0;
+          for (let m = 1; m <= months; m++) cur = (cur + (monthlyInvestWan * 10000)) * (1 + mRate);
+          const valWan = Math.round(cur / 10000);
+          if (idx === 0) data1.push(valWan);
+          else if (idx === 1) data2.push(valWan);
+          else data3.push(valWan);
+        }
+      }
+      const c = chartColors();
+      const ctx = document.getElementById('investCompareChart').getContext('2d');
+      if (investCompareChart) investCompareChart.destroy();
+      investCompareChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            { label: '保守 (2.0%)', data: data1, borderColor: '#34c759', fill: false, borderWidth: 2, pointRadius: 0 },
+            { label: '標準 (4.0%)', data: data2, borderColor: '#007aff', fill: false, borderWidth: 2.5, pointRadius: 0 },
+            { label: '積極 (6.0%)', data: data3, borderColor: '#af52de', fill: false, borderWidth: 2.5, pointRadius: 0 }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          animation: { duration: 400, easing: 'easeOutQuart' },
+          plugins: { legend: { position: 'bottom', labels: { color: c.text, font: { weight: '600' } } } },
+          scales: { x: { grid: { color: c.grid }, ticks: { color: c.text } }, y: { grid: { color: c.grid }, ticks: { color: c.text } } }
+        }
+      });
+    }
+
+    // =====================================================================
+    //  起動
+    // =====================================================================
+    window.addEventListener('DOMContentLoaded', () => {
+      // 端末内データを先に復元（オフラインでも動く）
+      try {
+        const local = localStorage.getItem(LS.data);
+        if (local) applyData(JSON.parse(local));
+      } catch (e) { console.warn('local restore failed', e); }
+      renderExpenseItems();
+      renderLedger();
+      renderGuide();
+      calculate();
+      openScreen('home');
+      updateSyncUI();
+
+      // PWA: Service Worker登録
+      if ('serviceWorker' in navigator && location.protocol.startsWith('http')) {
+        navigator.serviceWorker.register('sw.js').catch(() => {});
+      }
+      // クラウド接続（設定済みの場合のみ）
+      connectCloud();
     });
   </script>
 </body>
