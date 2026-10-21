@@ -4,9 +4,6 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
   <title>マイホーム・ライフプラン</title>
-<link rel="apple-touch-icon" href="icon.png">
-<link rel="icon" type="image/png" href="icon.png">
-
 
   <!-- ===== セキュリティ: CSP（許可した配信元以外は読み込み・通信しない） ===== -->
   <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' 'wasm-unsafe-eval' https://cdn.tailwindcss.com https://cdn.jsdelivr.net; style-src 'self' 'unsafe-inline'; img-src 'self' data: blob:; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net; worker-src 'self' blob:; manifest-src 'self'; object-src 'none'; frame-src 'none'; base-uri 'self'; form-action 'self'">
@@ -1567,12 +1564,24 @@
       } catch (e) { toast('通信エラー'); }
     }
 
+    // エラー内容を分かりやすい日本語に
+    function rpcErrText(error) {
+      const m = String((error && (error.message || error.details)) || '不明なエラー');
+      const c = String((error && error.code) || '');
+      if (c === 'PGRST202' || /could not find the function|schema cache/i.test(m)) return 'SQL未実行：関数がありません（ガイドのSQLを再実行）';
+      if (c === '42501' || /permission denied/i.test(m)) return '権限エラー：SQLの③（GRANT）を実行';
+      if (/invalid code/i.test(m)) return '招待コードが違います';
+      if (/login required|JWT|jwt/i.test(m)) return 'ログインし直してください';
+      return m.slice(0, 80);
+    }
+
     async function createHousehold() {
       if (!sb || !session) return toast('先にログインしてください');
       if (householdId && !confirm('すでに世帯があります。新しく作りますか？')) return;
       const { data, error } = await sb.rpc('create_household');
-      if (error) return toast('作成失敗：SQL設定を確認');
+      if (error) { console.error('create_household', error); return toast('作成失敗：' + rpcErrText(error)); }
       const row = Array.isArray(data) ? data[0] : data;
+      if (!row || !row.id) return toast('作成失敗：応答が不正です（SQLを再実行）');
       householdId = row.id;
       window.__invite = row.invite_code;
       localStorage.setItem(LS.household, householdId);
@@ -1588,7 +1597,7 @@
       if (!/^[a-f0-9]{16}$/.test(code)) return toast('招待コードが違います');
       if (!confirm('この端末のデータは世帯のデータで置き換わります。参加しますか？')) return;
       const { data, error } = await sb.rpc('join_household', { code: code });
-      if (error) return toast('参加失敗：コードを確認');
+      if (error) { console.error('join_household', error); return toast('参加失敗：' + rpcErrText(error)); }
       householdId = data;
       localStorage.setItem(LS.household, householdId);
       document.getElementById('sb_code').value = '';
@@ -2000,6 +2009,8 @@
     //  ガイド画面・SQL
     // =====================================================================
     const SQL_TEXT = [
+      '-- 何度実行しても安全です（再実行OK）',
+      '',
       '-- ① テーブル',
       'create table if not exists public.households (',
       '  id uuid primary key default gen_random_uuid(),',
@@ -2017,39 +2028,49 @@
       'alter table public.households enable row level security;',
       'alter table public.household_members enable row level security;',
       '',
+      'drop policy if exists "members can read" on public.households;',
       'create policy "members can read" on public.households for select to authenticated',
       '  using (exists (select 1 from public.household_members m',
       '                 where m.household_id = households.id and m.user_id = auth.uid()));',
       '',
+      'drop policy if exists "members can update" on public.households;',
       'create policy "members can update" on public.households for update to authenticated',
       '  using (exists (select 1 from public.household_members m',
       '                 where m.household_id = households.id and m.user_id = auth.uid()))',
       '  with check (exists (select 1 from public.household_members m',
       '                 where m.household_id = households.id and m.user_id = auth.uid()));',
       '',
+      'drop policy if exists "read own membership" on public.household_members;',
       'create policy "read own membership" on public.household_members for select to authenticated',
       '  using (user_id = auth.uid());',
-      '-- ※ insert/delete のポリシーは作らない（下の関数経由でのみ追加）',
       '',
-      '-- ③ 世帯の作成・参加（RLSを守ったまま安全に実行）',
-      'create or replace function public.create_household()',
-      'returns table (id uuid, invite_code text)',
+      '-- ③ API権限（ログイン済みユーザーのみ）',
+      'grant usage on schema public to authenticated;',
+      'grant select, update on public.households to authenticated;',
+      'grant select on public.household_members to authenticated;',
+      '',
+      '-- ④ 世帯の作成・参加（RLSを守ったまま安全に実行）',
+      'drop function if exists public.create_household();',
+      'create function public.create_household()',
+      'returns jsonb',
       'language plpgsql security definer set search_path = public as $$',
-      'declare h public.households;',
+      'declare h_id uuid; h_code text;',
       'begin',
       "  if auth.uid() is null then raise exception 'login required'; end if;",
-      '  insert into public.households default values returning * into h;',
-      '  insert into public.household_members (household_id, user_id) values (h.id, auth.uid());',
-      '  return query select h.id, h.invite_code;',
+      '  insert into public.households default values',
+      '    returning households.id, households.invite_code into h_id, h_code;',
+      '  insert into public.household_members (household_id, user_id) values (h_id, auth.uid());',
+      "  return jsonb_build_object('id', h_id, 'invite_code', h_code);",
       'end $$;',
       '',
-      'create or replace function public.join_household(code text)',
+      'drop function if exists public.join_household(text);',
+      'create function public.join_household(code text)',
       'returns uuid',
       'language plpgsql security definer set search_path = public as $$',
       'declare h_id uuid;',
       'begin',
       "  if auth.uid() is null then raise exception 'login required'; end if;",
-      '  select id into h_id from public.households where invite_code = code;',
+      '  select h.id into h_id from public.households h where h.invite_code = code;',
       "  if h_id is null then raise exception 'invalid code'; end if;",
       '  insert into public.household_members (household_id, user_id) values (h_id, auth.uid())',
       '    on conflict do nothing;',
@@ -2061,8 +2082,14 @@
       'grant execute on function public.create_household() to authenticated;',
       'grant execute on function public.join_household(text) to authenticated;',
       '',
-      '-- ④ リアルタイム同期を有効化',
-      'alter publication supabase_realtime add table public.households;'
+      '-- ⑤ リアルタイム同期（すでに追加済みでもエラーにならない）',
+      'do $$ begin',
+      '  alter publication supabase_realtime add table public.households;',
+      'exception when duplicate_object then null;',
+      'end $$;',
+      '',
+      '-- ⑥ APIのキャッシュ更新',
+      "notify pgrst, 'reload schema';"
     ].join('\n');
 
     function renderGuide() {
