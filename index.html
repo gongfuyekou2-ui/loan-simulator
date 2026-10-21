@@ -921,7 +921,7 @@
           <span class="ic">📖</span><span class="tt">⑤ 使い方</span><span class="sb">操作ガイド・設定</span><span class="st">見る ›</span>
         </button>
         <button class="hub" onclick="openSync()">
-          <span class="ic">☁️</span><span class="tt">夫婦で同期</span><span class="sb">ログイン・世帯設定</span><span class="st" id="homeStatSync">—</span>
+          <span class="ic">☁️</span><span class="tt">夫婦で同期</span><span class="sb">世帯を作る・参加</span><span class="st" id="homeStatSync">—</span>
         </button>
       </div>
 
@@ -984,10 +984,10 @@
         <ol class="help-list">
           <li>Supabaseで無料プロジェクトを作成</li>
           <li>下のSQLをSQL Editorで実行（RLS設定込み）</li>
-          <li>Authentication → Providers → Email で「Confirm email」をOFF（任意）</li>
+          <li>Authentication → Sign In / Providers → <b>Allow anonymous sign-ins</b> をON</li>
           <li>Settings → API の <b>URL</b> と <b>anon / publishable キー</b> をコピー</li>
-          <li>アプリの ☁️ で入力 → 新規登録 → 世帯を作成</li>
-          <li>パートナーも登録し、「招待コード」で参加</li>
+          <li>アプリの ☁️ で入力 → 世帯を新規作成</li>
+          <li>パートナーは同じURL・キーを入れ、「招待コード」で参加</li>
         </ol>
         <div class="note-text">⚠️ <b>service_role / secret キーは絶対に入力しない</b>（アプリが検知して拒否します）。無料枠は1週間アクセスがないと一時停止されることがあります（ダッシュボードで再開）。</div>
         <div class="flex gap-2 mt-3">
@@ -1109,24 +1109,16 @@
       <input class="field" id="sb_key" type="password" placeholder="anon / publishable キー" autocomplete="off" style="margin-top:8px;">
       <button class="btn btn-s w-full mt-2" onclick="saveSbConfig()">接続先を保存</button>
 
-      <div class="lbl">② ログイン</div>
-      <input class="field" id="sb_email" type="email" placeholder="メールアドレス" autocomplete="email" autocapitalize="off">
-      <input class="field" id="sb_pass" type="password" placeholder="パスワード（8文字以上）" autocomplete="current-password" style="margin-top:8px;">
-      <div class="flex gap-2 mt-2">
-        <button class="btn btn-p" style="flex:1;" onclick="authAction('in')">ログイン</button>
-        <button class="btn btn-s" style="flex:1;" onclick="authAction('up')">新規登録</button>
-      </div>
-      <button class="btn btn-d w-full mt-2" onclick="authAction('out')">ログアウト</button>
-
-      <div class="lbl">③ 世帯（夫婦で共有）</div>
+      <div class="lbl">② 世帯（夫婦で共有）</div>
       <button class="btn btn-g w-full" onclick="createHousehold()">🏠 世帯を新規作成</button>
       <div class="note-text" id="inviteLine"></div>
       <div class="flex gap-2 mt-2">
         <input class="field" id="sb_code" type="text" maxlength="16" placeholder="招待コードで参加" autocapitalize="off" autocomplete="off" style="flex:1;">
         <button class="btn btn-s" onclick="joinHousehold()">参加</button>
       </div>
-      <div class="note-text">※ 参加すると、この端末のデータは世帯のデータで置き換わります。</div>
-      <button class="btn btn-s w-full mt-3" onclick="closeModal('syncModal')">閉じる</button>
+      <div class="note-text">※ 参加すると、この端末のデータは世帯のデータで置き換わります。メール・パスワードは不要です（自動で匿名ログイン）。</div>
+      <button class="btn btn-d w-full mt-3" onclick="resetConnection()">この端末の同期を解除</button>
+      <button class="btn btn-s w-full mt-2" onclick="closeModal('syncModal')">閉じる</button>
     </div>
   </div>
 
@@ -1194,7 +1186,7 @@
       taxTable: { t: '税の年表', p: '年別の税額を一覧する。', s: ['軽減額・累計も確認できる'] },
       ledger: { t: '設備台帳', p: '設備・オプションの仕様を写真で管理。', s: ['📷撮影／🖼選ぶ で写真を追加', '自動で文字を読み取り、各項目に入力', '内容を直して「保存」', 'ステータスは一覧のバッジをタップで切替', '二人で同期されるので相談に使える'] },
       item: { t: '設備の登録', p: '読み取り結果を確認して保存。', s: ['読み取りは端末内で実行（初回は少し待つ）', '間違いは直接書き換える', '不明点は「確認・不明点」へ', '選択肢をタップで仕様を決める', 'ステータス：✅確定 / ⏳未確定 / ❓要確認'] },
-      sync: { t: '夫婦で同期', p: '二人のスマホで同じデータを使う。', s: ['① 接続先（URL・キー）を保存', '② 登録→ログイン', '③ 片方が世帯を作成し、招待コードを共有', '④ もう片方が招待コードで参加', '未設定でも、この端末だけで使える'] }
+      sync: { t: '夫婦で同期', p: '二人のスマホで同じデータを使う。', s: ['① 接続先（URL・キー）を保存', '② 片方が「世帯を新規作成」→ 招待コードをLINEで送る', '③ もう片方が招待コードで「参加」', 'メール・パスワードは不要', '未設定でも、この端末だけで使える'] }
     };
 
     function helpClick(e, key) { if (e) { e.preventDefault(); e.stopPropagation(); } showHelp(key); }
@@ -1430,13 +1422,31 @@
       if (!initSupabase()) { updateSyncUI(); return; }
       const { data } = await sb.auth.getSession();
       session = data.session;
+      if (!session) await ensureSignedIn();
       updateSyncUI();
       if (session && householdId) startSync();
     }
 
+    // メール不要：匿名ログイン（RLSは「世帯メンバーのみ」のまま有効）
+    async function ensureSignedIn() {
+      if (!sb) return false;
+      try {
+        const { data, error } = await sb.auth.signInAnonymously();
+        if (error) {
+          toast(/anonymous/i.test(error.message) ? '管理画面で「Allow anonymous sign-ins」をONに' : '接続失敗：' + error.message.slice(0, 60));
+          return false;
+        }
+        session = data.session;
+        return true;
+      } catch (e) { toast('通信エラー'); return false; }
+    }
+
+    let syncStarting = false;
     async function startSync() {
-      await loadFromCloud();
-      subscribeRealtime();
+      if (syncStarting) return;
+      syncStarting = true;
+      try { await loadFromCloud(); subscribeRealtime(); }
+      finally { syncStarting = false; }
     }
 
     async function loadFromCloud() {
@@ -1500,7 +1510,7 @@
       const home = document.getElementById('homeStatSync');
       let msg, color, short;
       if (!sb) { msg = '端末のみ保存（タップで同期設定）'; color = '#8e8e93'; short = '未設定'; }
-      else if (!session) { msg = 'ログインすると同期できます'; color = 'var(--orange-color)'; short = '要ログイン'; }
+      else if (!session) { msg = '接続中...'; color = 'var(--orange-color)'; short = '接続中…'; }
       else if (!householdId) { msg = '世帯を作成／参加してください'; color = 'var(--orange-color)'; short = '世帯なし'; }
       else if (realtimeState === 'ok') { msg = '☁️ 夫婦で同期中'; color = 'var(--secondary-color)'; short = '同期中 ✓'; }
       else { msg = '再接続中...'; color = 'var(--orange-color)'; short = '接続中…'; }
@@ -1508,7 +1518,7 @@
       txt.textContent = msg;
       if (home) home.textContent = short;
       const line = document.getElementById('syncStateLine');
-      if (line) line.textContent = '状態：' + msg + (session && session.user ? '（' + session.user.email + '）' : '');
+      if (line) line.textContent = '状態：' + msg + '';
       const inv = document.getElementById('inviteLine');
       if (inv) inv.textContent = (householdId && window.__invite) ? '招待コード：' + window.__invite + '（パートナーに伝える）' : '';
     }
@@ -1536,32 +1546,14 @@
       toast('接続先を保存しました');
     }
 
-    async function authAction(kind) {
-      if (!sb) return toast('先に接続先を保存してください');
-      if (kind === 'out') {
-        unsubscribeRealtime();
-        await sb.auth.signOut();
-        session = null; updateSyncUI(); toast('ログアウトしました');
-        return;
-      }
-      const email = document.getElementById('sb_email').value.trim();
-      const pass = document.getElementById('sb_pass').value;
-      if (!email || pass.length < 8) return toast('メールと8文字以上のパスワード');
-      try {
-        if (kind === 'up') {
-          const { data, error } = await sb.auth.signUp({ email, password: pass });
-          if (error) return toast('登録失敗：' + error.message);
-          if (!data.session) return toast('確認メールを開いてからログイン');
-          session = data.session; toast('登録しました');
-        } else {
-          const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-          if (error) return toast('ログイン失敗：' + error.message);
-          session = data.session; toast('ログインしました');
-        }
-        document.getElementById('sb_pass').value = '';
-        updateSyncUI();
-        if (householdId) startSync();
-      } catch (e) { toast('通信エラー'); }
+    async function resetConnection() {
+      if (!confirm('この端末の同期を解除します（端末内のデータは残ります）')) return;
+      unsubscribeRealtime();
+      try { if (sb) await sb.auth.signOut(); } catch (e) {}
+      session = null; householdId = null; window.__invite = null;
+      localStorage.removeItem(LS.household);
+      updateSyncUI();
+      toast('同期を解除しました');
     }
 
     // エラー内容を分かりやすい日本語に
@@ -1576,7 +1568,8 @@
     }
 
     async function createHousehold() {
-      if (!sb || !session) return toast('先にログインしてください');
+      if (!sb) return toast('先に接続先を保存してください');
+      if (!session && !(await ensureSignedIn())) return;
       if (householdId && !confirm('すでに世帯があります。新しく作りますか？')) return;
       const { data, error } = await sb.rpc('create_household');
       if (error) { console.error('create_household', error); return toast('作成失敗：' + rpcErrText(error)); }
@@ -1592,7 +1585,8 @@
     }
 
     async function joinHousehold() {
-      if (!sb || !session) return toast('先にログインしてください');
+      if (!sb) return toast('先に接続先を保存してください');
+      if (!session && !(await ensureSignedIn())) return;
       const code = document.getElementById('sb_code').value.trim().toLowerCase();
       if (!/^[a-f0-9]{16}$/.test(code)) return toast('招待コードが違います');
       if (!confirm('この端末のデータは世帯のデータで置き換わります。参加しますか？')) return;
