@@ -3,162 +3,60 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>共有家計シミュレーター</title>
-  
-  <link rel="manifest" id="dynamic-manifest">
-  
+  <title>テスト用家計シミュレーター</title>
   <style>
     body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9; color: #333; }
     .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 15px; }
     input, button { width: 100%; padding: 12px; margin-top: 8px; margin-bottom: 15px; box-sizing: border-box; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; }
     button { background: #0070f3; color: #fff; border: none; font-weight: bold; cursor: pointer; }
-    button:active { background: #0051a2; }
     .hidden { display: none; }
-    .status { font-size: 12px; color: green; margin-bottom: 10px; }
   </style>
 </head>
 <body>
 
   <!-- 【初期設定画面】 -->
   <div id="setup-screen" class="card">
-    <h2>初期設定</h2>
-    <p>32文字のハウスホールドコードを入力してください。</p>
-    <input type="text" id="code-input" placeholder="32文字のコードを入力">
+    <h2>初期設定テスト</h2>
+    <p>32文字のコードを入力してください。</p>
+    <input type="text" id="code-input" placeholder="コードを入力">
     <button onclick="saveCode()">保存して開始</button>
   </div>
 
   <!-- 【メイン画面】 -->
   <div id="main-screen" class="card hidden">
-    <h2>共有家計シミュレーター</h2>
-    <div id="sync-status" class="status">● 準備完了</div>
-    
-    <label>今月の貯金額 / 収支</label>
-    <input type="number" id="amount-input" placeholder="金額を入力" oninput="handleInput()">
-    
-    <div id="display-area" style="font-size: 24px; font-weight: bold; margin-top: 20px;">
-      ¥ 0
-    </div>
+    <h2>メイン画面に切り替わりました！</h2>
+    <p id="saved-code-display" style="font-weight: bold; color: #0070f3;"></p>
+    <button onclick="resetCode()" style="background: #e53e3e;">設定をリセット</button>
   </div>
 
-  <!-- Supabase CDN -->
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // --- 1. マニフェスト（PWA用）の動적埋め込み ---
-    const manifestData = {
-      "name": "共有家計シミュレーター",
-      "short_name": "家計",
-      "start_url": location.href,
-      "display": "standalone",
-      "background_color": "#f9f9f9",
-      "theme_color": "#0070f3"
-    };
-    const stringifiedManifest = JSON.stringify(manifestData);
-    const blob = new Blob([stringifiedManifest], { type: 'application/json' });
-    document.getElementById('dynamic-manifest').href = URL.createObjectURL(blob);
-
-    // --- 2. サービスワーカー（オフライン対応）の登録 ---
-    if ('serviceWorker' in navigator) {
-      const swCode = `
-        self.addEventListener('fetch', (event) => {
-          event.respondWith(fetch(event.request).catch(() => caches.match(event.request)));
-        });
-      `;
-      const swBlob = new Blob([swCode], { type: 'text/javascript' });
-      navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
-    }
-
-    // --- 3. アプリケーションロジック & Supabase設定 ---
-    const SUPABASE_URL = 'https://pdaiohiduxfgbohppqxq.supabase.co'; // ご自身のURLに変更してください
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkYWlvaGlkdXhmZ2JvaHBwcXhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4MTExMzAsImV4cCI6MjEwNzM4NzEzMH0.N-OTunpFeENEI7y-WEcJwSEhqsvAxa45SQ7_4leCN5E'; // ご自身のキーに変更してください
-    const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
-
     const HOUSEHOLD_KEY = 'my_household_code';
     let householdCode = localStorage.getItem(HOUSEHOLD_KEY);
 
-    // 起動時の画面切り替え判定
+    // 既に保存されている場合
     if (householdCode) {
-      showMainScreen();
-      loadData();
-      setupRealtimeSync();
+      showMainScreen(householdCode);
     }
 
     function saveCode() {
       const code = document.getElementById('code-input').value.trim();
       if (code.length < 5) {
-        alert('正しいコードを入力してください');
+        alert('コードが短すぎます');
         return;
       }
-      // ローカルストレージに保存
       localStorage.setItem(HOUSEHOLD_KEY, code);
-      householdCode = code;
-
-      // リロードせずに直接画面を切り替えて初期化を実行
-      showMainScreen();
-      loadData();
-      setupRealtimeSync();
+      showMainScreen(code);
     }
 
-    function showMainScreen() {
+    function showMainScreen(code) {
       document.getElementById('setup-screen').classList.add('hidden');
       document.getElementById('main-screen').classList.remove('hidden');
+      document.getElementById('saved-code-display').innerText = '現在のコード: ' + code;
     }
 
-    let isRemoteUpdate = false;
-
-    async function loadData() {
-      const { data, error } = await supabase
-        .from('household_data')
-        .select('data_value')
-        .eq('household_code', householdCode)
-        .eq('data_key', 'monthly_amount')
-        .single();
-
-      if (data && data.data_value) {
-        isRemoteUpdate = true;
-        document.getElementById('amount-input').value = data.data_value.amount || 0;
-        document.getElementById('display-area').innerText = '¥ ' + (data.data_value.amount || 0).toLocaleString();
-        isRemoteUpdate = false;
-      }
-    }
-
-    async function handleInput() {
-      if (isRemoteUpdate) return;
-      const val = Number(document.getElementById('amount-input').value) || 0;
-      document.getElementById('display-area').innerText = '¥ ' + val.toLocaleString();
-      
-      document.getElementById('sync-status').innerText = '○ 同期中...';
-
-      await supabase
-        .from('household_data')
-        .upsert({
-          household_code: householdCode,
-          data_key: 'monthly_amount',
-          data_value: { amount: val },
-          updated_at: new Date()
-        }, { onConflict: 'household_code,data_key' });
-
-      document.getElementById('sync-status').innerText = '● 同期完了';
-    }
-
-    function setupRealtimeSync() {
-      supabase
-        .channel('public:household_data')
-        .on('postgres_changes', {
-          event: '*',
-          schema: 'public',
-          table: 'household_data',
-          filter: `household_code=eq.${householdCode}`
-        }, (payload) => {
-          if (payload.new && payload.new.data_key === 'monthly_amount') {
-            const newVal = payload.new.data_value.amount || 0;
-            isRemoteUpdate = true;
-            document.getElementById('amount-input').value = newVal;
-            document.getElementById('display-area').innerText = '¥ ' + newVal.toLocaleString();
-            isRemoteUpdate = false;
-            document.getElementById('sync-status').innerText = '● リアルタイム同期済';
-          }
-        })
-        .subscribe();
+    function resetCode() {
+      localStorage.removeItem(HOUSEHOLD_KEY);
+      location.reload();
     }
   </script>
 </body>
