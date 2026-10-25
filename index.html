@@ -5,7 +5,6 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>共有家計シミュレーター</title>
   
-  <!-- manifest.json を Data URI（ファイル内埋め込み）として動的生成 -->
   <link rel="manifest" id="dynamic-manifest">
   
   <style>
@@ -44,7 +43,7 @@
   <!-- Supabase CDN -->
   <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
   <script>
-    // --- 1. マニフェスト（PWA用）の動的埋め込み ---
+    // --- 1. マニフェスト（PWA用）の動적埋め込み ---
     const manifestData = {
       "name": "共有家計シミュレーター",
       "short_name": "家計",
@@ -57,7 +56,7 @@
     const blob = new Blob([stringifiedManifest], { type: 'application/json' });
     document.getElementById('dynamic-manifest').href = URL.createObjectURL(blob);
 
-    // --- 2. サービスワーカー（オフライン対応）の動的登録 ---
+    // --- 2. サービスワーカー（オフライン対応）の登録 ---
     if ('serviceWorker' in navigator) {
       const swCode = `
         self.addEventListener('fetch', (event) => {
@@ -68,9 +67,9 @@
       navigator.serviceWorker.register(URL.createObjectURL(swBlob)).catch(() => {});
     }
 
-    // --- 3. アプリケーションロジック & Supabase連携 ---
-    const SUPABASE_URL = 'https://pdaiohiduxfgbohppqxq.supabase.co';
-    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkYWlvaGlkdXhmZ2JvaHBwcXhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4MTExMzAsImV4cCI6MjEwNzM4NzEzMH0.N-OTunpFeENEI7y-WEcJwSEhqsvAxa45SQ7_4leCN5E';
+    // --- 3. アプリケーションロジック & Supabase設定 ---
+    const SUPABASE_URL = 'https://pdaiohiduxfgbohppqxq.supabase.co'; // ご自身のURLに変更してください
+    const SUPABASE_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InBkYWlvaGlkdXhmZ2JvaHBwcXhxIiwicm9sZSI6ImFub24iLCJpYXQiOjE3OTE4MTExMzAsImV4cCI6MjEwNzM4NzEzMH0.N-OTunpFeENEI7y-WEcJwSEhqsvAxa45SQ7_4leCN5E'; // ご自身のキーに変更してください
     const supabase = supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
 
     const HOUSEHOLD_KEY = 'my_household_code';
@@ -85,12 +84,18 @@
 
     function saveCode() {
       const code = document.getElementById('code-input').value.trim();
-      if (code.length < 10) {
+      if (code.length < 5) {
         alert('正しいコードを入力してください');
         return;
       }
+      // ローカルストレージに保存
       localStorage.setItem(HOUSEHOLD_KEY, code);
-      location.reload();
+      householdCode = code;
+
+      // リロードせずに直接画面を切り替えて初期化を実行
+      showMainScreen();
+      loadData();
+      setupRealtimeSync();
     }
 
     function showMainScreen() {
@@ -98,7 +103,6 @@
       document.getElementById('main-screen').classList.remove('hidden');
     }
 
-    // --- データ送受信ロジック ---
     let isRemoteUpdate = false;
 
     async function loadData() {
@@ -124,7 +128,6 @@
       
       document.getElementById('sync-status').innerText = '○ 同期中...';
 
-      // Supabaseへ保存（なければ作成、あれば更新）
       await supabase
         .from('household_data')
         .upsert({
@@ -137,7 +140,6 @@
       document.getElementById('sync-status').innerText = '● 同期完了';
     }
 
-    // --- リアルタイム受信設定 ---
     function setupRealtimeSync() {
       supabase
         .channel('public:household_data')
