@@ -3,60 +3,98 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>テスト用家計シミュレーター</title>
+  <title>共有家計シミュレーター</title>
+  
   <style>
     body { font-family: sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; background: #f9f9f9; color: #333; }
     .card { background: #fff; padding: 20px; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.05); margin-bottom: 15px; }
     input, button { width: 100%; padding: 12px; margin-top: 8px; margin-bottom: 15px; box-sizing: border-box; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; }
     button { background: #0070f3; color: #fff; border: none; font-weight: bold; cursor: pointer; }
+    button:active { background: #0051a2; }
     .hidden { display: none; }
+    .status { font-size: 12px; color: green; margin-bottom: 10px; }
   </style>
 </head>
 <body>
 
   <!-- 【初期設定画面】 -->
   <div id="setup-screen" class="card">
-    <h2>初期設定テスト</h2>
-    <p>32文字のコードを入力してください。</p>
+    <h2>初期設定</h2>
+    <p>コードを入力してください。</p>
     <input type="text" id="code-input" placeholder="コードを入力">
     <button onclick="saveCode()">保存して開始</button>
   </div>
 
   <!-- 【メイン画面】 -->
   <div id="main-screen" class="card hidden">
-    <h2>メイン画面に切り替わりました！</h2>
+    <h2>共有家計シミュレーター</h2>
+    <div id="sync-status" class="status">● 準備完了</div>
     <p id="saved-code-display" style="font-weight: bold; color: #0070f3;"></p>
-    <button onclick="resetCode()" style="background: #e53e3e;">設定をリセット</button>
+    
+    <label>今月の貯金額 / 収支</label>
+    <input type="number" id="amount-input" placeholder="金額を入力" oninput="handleInput()">
+    
+    <div id="display-area" style="font-size: 24px; font-weight: bold; margin-top: 20px;">
+      ¥ 0
+    </div>
+    
+    <button onclick="resetCode()" style="background: #e53e3e; margin-top: 20px;">設定をリセット</button>
   </div>
 
   <script>
-    const HOUSEHOLD_KEY = 'my_household_code';
-    let householdCode = localStorage.getItem(HOUSEHOLD_KEY);
-
-    // 既に保存されている場合
-    if (householdCode) {
-      showMainScreen(householdCode);
+    // 起動時の安全なチェック
+    try {
+      const savedCode = localStorage.getItem('my_household_code');
+      if (savedCode) {
+        showMainScreen(savedCode);
+      }
+    } catch (e) {
+      console.warn('LocalStorage error:', e);
     }
 
     function saveCode() {
-      const code = document.getElementById('code-input').value.trim();
-      if (code.length < 5) {
-        alert('コードが短すぎます');
+      const inputEl = document.getElementById('code-input');
+      if (!inputEl) {
+        alert('エラー: 入力欄が見つかりません');
         return;
       }
-      localStorage.setItem(HOUSEHOLD_KEY, code);
+      
+      const code = inputEl.value.trim();
+      if (code.length < 3) {
+        alert('コードが短すぎます。もう少し長くしてください。');
+        return;
+      }
+
+      // 安全に保存を試みる
+      try {
+        localStorage.setItem('my_household_code', code);
+      } catch (e) {
+        console.warn('LocalStorage save error:', e);
+      }
+
       showMainScreen(code);
     }
 
     function showMainScreen(code) {
-      document.getElementById('setup-screen').classList.add('hidden');
-      document.getElementById('main-screen').classList.remove('hidden');
-      document.getElementById('saved-code-display').innerText = '現在のコード: ' + code;
+      const setupScreen = document.getElementById('setup-screen');
+      const mainScreen = document.getElementById('main-screen');
+      const codeDisplay = document.getElementById('saved-code-display');
+
+      if (setupScreen) setupScreen.classList.add('hidden');
+      if (mainScreen) mainScreen.classList.remove('hidden');
+      if (codeDisplay) codeDisplay.innerText = 'コード: ' + code;
     }
 
     function resetCode() {
-      localStorage.removeItem(HOUSEHOLD_KEY);
+      try {
+        localStorage.removeItem('my_household_code');
+      } catch (e) {}
       location.reload();
+    }
+
+    function handleInput() {
+      const val = Number(document.getElementById('amount-input').value) || 0;
+      document.getElementById('display-area').innerText = '¥ ' + val.toLocaleString();
     }
   </script>
 </body>
